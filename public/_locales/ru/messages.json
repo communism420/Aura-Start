@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Aura Start",
+    "description": "Название расширения."
+  },
+  "extensionDescription": {
+    "message": "Локальная, приватная и экспортируемая стартовая страница для новой вкладки Chromium.",
+    "description": "Описание расширения для manifest и Chrome Web Store."
+  }
+}

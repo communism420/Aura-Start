@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Privacy Policy for Aura Start, a local-first Chromium new tab extension."
+    >
+    <title>Aura Start Privacy Policy</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f7f7f5;
+        --panel: #ffffff;
+        --text: #1f2328;
+        --muted: #667085;
+        --border: #d9dde3;
+        --accent: #0f766e;
+        --accent-soft: #e6f4f1;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1f2021;
+          --panel: #262728;
+          --text: #f2f4f7;
+          --muted: #a6adbb;
+          --border: #44484f;
+          --accent: #79d7d0;
+          --accent-soft: #183735;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        line-height: 1.65;
+      }
+
+      main {
+        width: min(100% - 32px, 880px);
+        margin: 0 auto;
+        padding: 56px 0;
+      }
+
+      article {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: var(--panel);
+        padding: clamp(24px, 5vw, 48px);
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
+      }
+
+      h1,
+      h2 {
+        line-height: 1.2;
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(2rem, 5vw, 3.2rem);
+        letter-spacing: -0.02em;
+      }
+
+      h2 {
+        margin: 36px 0 10px;
+        font-size: 1.25rem;
+      }
+
+      p {
+        margin: 0 0 16px;
+      }
+
+      ul {
+        margin: 0 0 16px;
+        padding-left: 1.35rem;
+      }
+
+      li {
+        margin: 6px 0;
+      }
+
+      code {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--accent-soft);
+        padding: 0.12rem 0.35rem;
+        color: var(--text);
+        font-size: 0.92em;
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .meta {
+        margin-bottom: 28px;
+        color: var(--muted);
+        font-size: 0.98rem;
+      }
+
+      .summary {
+        border-left: 4px solid var(--accent);
+        border-radius: 10px;
+        background: var(--accent-soft);
+        padding: 16px 18px;
+      }
+
+      .summary p:last-child {
+        margin-bottom: 0;
+      }
+
+      .footer-note {
+        margin-top: 36px;
+        border-top: 1px solid var(--border);
+        padding-top: 20px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <article>
+        <h1>Aura Start Privacy Policy</h1>
+        <p class="meta">Effective date: May 10, 2026</p>
+
+        <section class="summary" aria-label="Privacy summary">
+          <p>
+            Aura Start is a local-first Chromium extension. It replaces the new tab
+            page with user-created groups of links and keeps those groups under the
+            user's control.
+          </p>
+          <p>
+            Aura Start does not operate a backend service, does not require an
+            account, does not use analytics, and does not sell, rent, share, upload,
+            or sync user data.
+          </p>
+        </section>
+
+        <h2>Scope</h2>
+        <p>
+          This Privacy Policy applies to the Aura Start Chromium extension and the
+          local data it handles while providing its new tab, settings, import,
+          export, and restore point features.
+        </p>
+
+        <h2>Data Aura Start Handles</h2>
+        <p>Aura Start handles only the data needed for its single purpose:</p>
+        <ul>
+          <li>Link groups created by the user.</li>
+          <li>Link titles, URLs, optional descriptions, optional tags, and ordering.</li>
+          <li>
+            Extension settings such as theme, language, columns, compact mode,
+            search visibility, and link-opening behavior.
+          </li>
+          <li>
+            Local restore points created before imports, resets, and destructive
+            actions.
+          </li>
+          <li>
+            Backup files or A Fine Start export codes selected or pasted by the user
+            for import.
+          </li>
+        </ul>
+        <p>
+          Aura Start does not request browser history, browser bookmarks, tabs,
+          cookies, web requests, identity, scripting, or host permissions.
+        </p>
+
+        <h2>Local Storage</h2>
+        <p>
+          Aura Start stores its data in <code>chrome.storage.local</code> inside the
+          user's browser profile. In development mode only, when
+          <code>chrome.storage.local</code> is unavailable, Aura Start can use browser
+          <code>localStorage</code> as a local fallback.
+        </p>
+        <p>
+          Aura Start does not operate a server-side database. User-created groups,
+          links, imports, exports, settings, and restore points remain local to the
+          browser profile unless the user chooses to export them to a file.
+        </p>
+
+        <h2>Network, Accounts, Analytics, and Tracking</h2>
+        <p>Aura Start does not require an account and does not include:</p>
+        <ul>
+          <li>Analytics or telemetry.</li>
+          <li>Trackers, ads, affiliate link replacement, or behavioral profiling.</li>
+          <li>Cloud sync or remote backup services.</li>
+          <li>Remote APIs for its core functionality.</li>
+          <li>Remotely hosted extension code.</li>
+        </ul>
+        <p>
+          Export files are created locally in the browser using Blob downloads. Import
+          files are read locally by the browser and are validated before they change
+          local extension storage.
+        </p>
+
+        <h2>User Control</h2>
+        <p>
+          Users can create, edit, delete, export, import, reset, and restore their own
+          Aura Start data inside the extension. Full Backup JSON export is provided so
+          users can keep independent backups of their data in normal files.
+        </p>
+        <p>
+          If a user resets Aura Start data inside the extension, the extension creates
+          a local restore point before the destructive action when restore protection
+          is enabled. Users can also delete restore points.
+        </p>
+
+        <h2>Data Sharing and Sale</h2>
+        <p>
+          Aura Start does not sell user data. Aura Start does not rent, trade, share,
+          disclose, or transfer user-created groups, links, settings, restore points,
+          imports, or exports to third parties.
+        </p>
+
+        <h2>Chrome Web Store Limited Use Statement</h2>
+        <p>
+          The use of information received from Chrome APIs will adhere to the Chrome Web Store User Data Policy,
+          including the Limited Use requirements. Aura Start uses Chrome extension
+          storage only to provide and improve its single user-facing purpose: a local,
+          private, exportable new tab start page.
+        </p>
+
+        <h2>Security</h2>
+        <p>
+          Aura Start bundles its extension code with the extension package and does not
+          execute remotely hosted code. Local data remains in the user's browser
+          profile. Users should protect their operating system account and browser
+          profile, and should store exported backup files securely.
+        </p>
+
+        <h2>Open Source</h2>
+        <p>
+          Aura Start is fully open-source under the MIT License. The source code,
+          build scripts, validation scripts, and documentation can be inspected, built,
+          forked, and modified under that license. There is no proprietary server
+          component or closed sync service required for the extension to work.
+        </p>
+
+        <h2>Changes to This Policy</h2>
+        <p>
+          This policy may be updated when Aura Start changes. Any updated policy should
+          remain consistent with the extension's actual behavior and with the privacy
+          disclosures provided in the Chrome Web Store Developer Dashboard.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          For privacy or security questions, use the support contact listed on the
+          Chrome Web Store listing or the project repository where Aura Start is
+          published.
+        </p>
+
+        <p class="footer-note">
+          This page is intentionally self-contained so it can be hosted directly from
+          the repository's <code>docs</code> folder using GitHub Pages.
+        </p>
+      </article>
+    </main>
+  </body>
+</html>

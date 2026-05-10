@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Aura Start",
+    "description": "Nome da extensão."
+  },
+  "extensionDescription": {
+    "message": "Uma página inicial local, privada e exportável para a nova guia do Chromium.",
+    "description": "Descrição para o manifest e a Chrome Web Store."
+  }
+}

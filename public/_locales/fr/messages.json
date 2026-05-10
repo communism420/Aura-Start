@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Aura Start",
+    "description": "Nom de l’extension."
+  },
+  "extensionDescription": {
+    "message": "Une page de démarrage locale, privée et exportable pour le nouvel onglet Chromium.",
+    "description": "Description pour le manifest et le Chrome Web Store."
+  }
+}

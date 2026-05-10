@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Aura Start",
+    "description": "Name der Erweiterung."
+  },
+  "extensionDescription": {
+    "message": "Eine lokale, private und exportierbare Startseite für den neuen Chromium-Tab.",
+    "description": "Beschreibung für Manifest und Chrome Web Store."
+  }
+}
