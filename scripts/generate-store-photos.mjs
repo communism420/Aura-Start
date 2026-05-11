@@ -29,7 +29,7 @@ const settings = {
   language: "en",
   columns: 1,
   compactMode: true,
-  openLinksInNewTab: true,
+  openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
   autoRestorePoints: true

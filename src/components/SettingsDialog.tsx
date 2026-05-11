@@ -78,7 +78,6 @@ export function SettingsDialog({
           <div className="space-y-3">
             {[
               ["compactMode", t(language, "compactMode")],
-              ["openLinksInNewTab", t(language, "openLinksInNewTab")],
               ["showDescriptions", t(language, "showDescriptions")],
               ["showSearch", t(language, "showSearch")],
               ["autoRestorePoints", t(language, "updateAutomaticRestoreSafety")]

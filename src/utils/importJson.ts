@@ -81,7 +81,7 @@ function normalizeSettings(value: unknown): AuraStartSettings {
     language: normalizeLanguage(value.language),
     columns: normalizeColumns(value.columns),
     compactMode: asBoolean(value.compactMode, DEFAULT_SETTINGS.compactMode),
-    openLinksInNewTab: asBoolean(value.openLinksInNewTab, DEFAULT_SETTINGS.openLinksInNewTab),
+    openLinksInNewTab: false,
     showDescriptions: asBoolean(value.showDescriptions, DEFAULT_SETTINGS.showDescriptions),
     showSearch: asBoolean(value.showSearch, DEFAULT_SETTINGS.showSearch),
     autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints)

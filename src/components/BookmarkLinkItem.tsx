@@ -72,8 +72,6 @@ export function BookmarkLinkItem({
           <a
             className="bookmark-link"
             href={link.url}
-            rel="noreferrer"
-            target={settings.openLinksInNewTab ? "_blank" : "_self"}
           >
             {content}
           </a>

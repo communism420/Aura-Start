@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
   language: "en",
   columns: "auto",
   compactMode: false,
-  openLinksInNewTab: true,
+  openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
   autoRestorePoints: true
