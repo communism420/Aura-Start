@@ -1036,7 +1036,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       payload: {
         schemaVersion: 1,
         app: "Aura Start",
-        appVersion: "1.1.1",
+        appVersion: "1.1.0",
         updatedAt: conflict.cloudUpdatedAt,
         deviceId: conflict.cloudData.settings.sync.deviceId,
         data: conflict.cloudData

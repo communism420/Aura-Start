@@ -99,7 +99,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.1";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.0";
 }
 
 function oauthClientId(): string {
