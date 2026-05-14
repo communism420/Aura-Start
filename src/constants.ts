@@ -12,5 +12,10 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
   openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
-  autoRestorePoints: true
+  autoRestorePoints: true,
+  sync: {
+    mode: "off",
+    deviceId: "",
+    connected: false
+  }
 };

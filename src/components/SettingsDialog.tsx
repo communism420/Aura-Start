@@ -1,17 +1,36 @@
 import { Download, RotateCcw, Upload } from "lucide-react";
 import { languageOptions, t } from "../i18n";
-import type { AuraStartData, AuraStartSettings } from "../types";
+import type {
+  AuraStartData,
+  AuraStartSettings,
+  AuraSyncConflict,
+  AuraSyncConflictChoice,
+  AuraSyncMode,
+  AuraSyncStatus
+} from "../types";
 import { ExportMenu } from "./ExportMenu";
+import { GoogleDriveSyncPanel } from "./GoogleDriveSyncPanel";
 import { Modal } from "./Modal";
 
 type SettingsDialogProps = {
   open: boolean;
   data: AuraStartData;
+  syncStatus: AuraSyncStatus;
+  syncMessage: string | null;
+  syncConflict: AuraSyncConflict | null;
   onClose: () => void;
   onUpdateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
   onOpenImport: () => void;
   onOpenRestorePoints: () => void;
   onReset: () => void;
+  onConnectGoogleDrive: () => Promise<void>;
+  onDisconnectGoogleDrive: () => Promise<void>;
+  onBackupToGoogleDrive: () => Promise<void>;
+  onRestoreFromGoogleDrive: () => Promise<void>;
+  onSyncGoogleDriveNow: () => Promise<void>;
+  onSetSyncMode: (mode: AuraSyncMode) => Promise<void>;
+  onDeleteGoogleDriveSyncFile: () => Promise<void>;
+  onResolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
 };
 
@@ -20,11 +39,22 @@ const columnOptions = ["auto", 1, 2, 3, 4, 5, 6] as const;
 export function SettingsDialog({
   open,
   data,
+  syncStatus,
+  syncMessage,
+  syncConflict,
   onClose,
   onUpdateSettings,
   onOpenImport,
   onOpenRestorePoints,
   onReset,
+  onConnectGoogleDrive,
+  onDisconnectGoogleDrive,
+  onBackupToGoogleDrive,
+  onRestoreFromGoogleDrive,
+  onSyncGoogleDriveNow,
+  onSetSyncMode,
+  onDeleteGoogleDriveSyncFile,
+  onResolveSyncConflict,
   onError
 }: SettingsDialogProps) {
   const settings = data.settings;
@@ -118,6 +148,23 @@ export function SettingsDialog({
           <button className="btn btn-danger w-full justify-start" type="button" onClick={onReset}>
             {t(language, "resetAllData")}
           </button>
+        </section>
+        <section className="lg:col-span-2">
+          <GoogleDriveSyncPanel
+            data={data}
+            syncConflict={syncConflict}
+            syncMessage={syncMessage}
+            syncStatus={syncStatus}
+            onBackup={onBackupToGoogleDrive}
+            onConnect={onConnectGoogleDrive}
+            onDeleteSyncFile={onDeleteGoogleDriveSyncFile}
+            onDisconnect={onDisconnectGoogleDrive}
+            onError={onError}
+            onResolveConflict={onResolveSyncConflict}
+            onRestore={onRestoreFromGoogleDrive}
+            onSetSyncMode={onSetSyncMode}
+            onSyncNow={onSyncGoogleDriveNow}
+          />
         </section>
       </div>
     </Modal>

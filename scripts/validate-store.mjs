@@ -17,7 +17,10 @@ const requiredFiles = [
   "_locales/pt_BR/messages.json"
 ];
 
-const allowedPermissions = new Set(["storage"]);
+const allowedPermissions = new Set(["storage", "identity"]);
+const allowedHostPermissions = new Set([
+  "https://www.googleapis.com/*"
+]);
 const expectedLocaleDirs = new Set(["de", "en", "es", "fr", "pt_BR", "ru", "uk"]);
 const hardFailures = [];
 const warnings = [];
@@ -102,8 +105,11 @@ if (await exists(manifestPath)) {
     }
   }
 
-  if (manifest.host_permissions?.length) {
-    fail("host_permissions must be empty or omitted.");
+  const hostPermissions = Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [];
+  for (const hostPermission of hostPermissions) {
+    if (!allowedHostPermissions.has(hostPermission)) {
+      fail(`Unexpected host permission requested: ${hostPermission}`);
+    }
   }
 
   if (manifest.optional_host_permissions?.length) {
@@ -112,6 +118,17 @@ if (await exists(manifestPath)) {
 
   if (manifest.permissions?.includes("bookmarks") || manifest.permissions?.includes("history") || manifest.permissions?.includes("tabs")) {
     fail("Do not request bookmarks, history, or tabs permissions for this local-first bookmark database.");
+  }
+
+  const oauthScopes = Array.isArray(manifest.oauth2?.scopes) ? manifest.oauth2.scopes : [];
+  if (!manifest.oauth2?.client_id) {
+    fail("oauth2.client_id is required for optional Google Drive sync.");
+  }
+  if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
+    fail("Google Drive sync must request only the drive.appdata OAuth scope.");
+  }
+  if (oauthScopes.includes("https://www.googleapis.com/auth/drive") || oauthScopes.includes("https://www.googleapis.com/auth/drive.file")) {
+    fail("Do not request full Google Drive or drive.file OAuth scopes.");
   }
 
   const csp = manifest.content_security_policy?.extension_pages ?? "";
@@ -141,7 +158,10 @@ const benignUrlFragments = [
   "www.w3.org/2000/svg",
   "www.w3.org/1998/Math/MathML",
   "www.w3.org/1999/xhtml",
-  "${trimmed}"
+  "${trimmed}",
+  "www.googleapis.com",
+  "oauth2.googleapis.com",
+  "googleapis.com/auth/drive.appdata"
 ];
 
 for (const file of codeFiles) {

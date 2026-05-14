@@ -5,7 +5,7 @@ Aura Start is fully open-source under the MIT License. Contributions, forks, aud
 ## Project Principles
 
 - Keep Aura Start local-first.
-- Do not add accounts, analytics, trackers, affiliate code, forced sync, or backend requirements.
+- Do not add required accounts, analytics, trackers, affiliate code, forced sync, or backend requirements.
 - Do not add remote hosted runtime code.
 - Do not add new extension permissions unless the feature cannot work without them and the permission is clearly documented.
 - Preserve user data ownership, exportability, restore points, and safe import validation.

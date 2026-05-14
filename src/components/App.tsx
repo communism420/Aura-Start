@@ -42,6 +42,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     error,
     corruptRaw,
     usingFallbackStorage,
+    syncStatus,
+    syncMessage,
+    syncConflict,
     load,
     resetCorruptData,
     updateSettings,
@@ -59,6 +62,14 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     createManualRestorePoint,
     restoreRestorePoint,
     deleteRestorePoint,
+    connectGoogleDrive,
+    disconnectGoogleDrive,
+    backupToGoogleDrive,
+    restoreFromGoogleDrive,
+    syncNow,
+    setSyncMode,
+    deleteGoogleDriveSyncFile,
+    resolveSyncConflict,
     addToast
   } = useAuraStore();
 
@@ -219,6 +230,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
             editMode={editMode}
             search={search}
             searchInputRef={searchInputRef}
+            syncMessage={syncMessage}
+            syncStatus={syncStatus}
             onAddGroup={openAddGroup}
             onAddLink={() => openAddLink()}
             onExportError={showError}
@@ -312,11 +325,22 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       <SettingsDialog
         data={data}
         open={settingsOpen}
+        syncConflict={syncConflict}
+        syncMessage={syncMessage}
+        syncStatus={syncStatus}
+        onBackupToGoogleDrive={() => backupToGoogleDrive()}
+        onConnectGoogleDrive={connectGoogleDrive}
         onClose={() => setSettingsOpen(false)}
+        onDeleteGoogleDriveSyncFile={deleteGoogleDriveSyncFile}
+        onDisconnectGoogleDrive={disconnectGoogleDrive}
         onError={showError}
         onOpenImport={closeSettingsAndOpenImport}
         onOpenRestorePoints={closeSettingsAndOpenRestore}
+        onResolveSyncConflict={resolveSyncConflict}
+        onRestoreFromGoogleDrive={restoreFromGoogleDrive}
         onReset={() => setPendingDanger({ type: "resetAll" })}
+        onSetSyncMode={setSyncMode}
+        onSyncGoogleDriveNow={syncNow}
         onUpdateSettings={updateSettings}
       />
       <ImportDialog

@@ -17,6 +17,7 @@ Slogan: All features of A Fine Start and even more - free and forever.
 - Search across title, URL, description, and tags
 - Explicit edit mode: drag-and-drop and inline edit controls stay disabled until you turn editing on
 - Drag and drop for groups and links, including moving links between groups
+- Optional Google Drive sync/backup through the hidden Drive `appDataFolder`
 - JSON import with validation, merge, replace, and restore point protection
 - A Fine Start export-code import for migration from A Fine Start
 - A Fine Start export-code export for moving Aura Start links back into A Fine Start
@@ -27,7 +28,11 @@ Slogan: All features of A Fine Start and even more - free and forever.
 
 ## Local-First Philosophy
 
-Aura Start does not need a server to work. Your groups and links stay in your browser profile, and the extension does not use analytics, trackers, accounts, host permissions, bookmarks permission, history permission, or external APIs for core functionality.
+Aura Start does not need a server to work. Your groups and links stay in your browser profile by default, and the extension does not use analytics, trackers, bookmarks permission, history permission, Firebase, Supabase, or a custom backend.
+
+Google Drive sync is optional, off by default, and user-controlled. When enabled, Aura Start uses Google OAuth through `chrome.identity` and only the `https://www.googleapis.com/auth/drive.appdata` scope. The sync file is named `aura-start-sync.json` and is stored in Google Drive's hidden appDataFolder, not in the visible Drive root and not in a normal user folder.
+
+Aura Start does not request access to the user's full Google Drive, does not scan normal Drive files, and does not create visible Drive backup files. Manual JSON export/import remains fully available without Google Drive.
 
 Your data belongs to you. Export it whenever you want and keep backups in normal files.
 
@@ -82,6 +87,27 @@ Before import replace, group deletion, and reset actions, Aura Start creates a r
 
 If stored data is corrupted, Aura Start shows a recovery screen instead of overwriting it. You can export the raw stored payload before resetting.
 
+## Optional Google Drive Sync
+
+Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive and chooses manual or auto sync.
+
+Available actions:
+
+- Connect Google Drive
+- Backup to Google Drive
+- Restore from Google Drive
+- Sync now
+- Delete Google Drive sync file
+- Disconnect Google Account
+
+Delete Google Drive sync file removes only the hidden `aura-start-sync.json` file from the extension's Google Drive app data. It does not delete local Aura Start data and does not touch normal Google Drive files.
+
+Disconnect Google Account clears Aura Start's cached Google access and turns sync off. It does not delete local data and does not delete the cloud sync file by itself.
+
+Before restoring from Google Drive, Aura Start creates a local restore point named `Before Google Drive restore`.
+
+When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
+
 ## Migrating From A Fine Start
 
 In A Fine Start, open Settings -> Export bookmarks and copy the generated export code. In Aura Start, open Settings -> Import backup, choose A Fine Start export code, paste the code, then choose Merge or Replace.
@@ -98,12 +124,12 @@ To move from Aura Start back to A Fine Start, use Aura Start -> Export -> A Fine
 - Custom icons
 - Command palette
 - Encrypted backup
-- Optional WebDAV, GitHub, or file sync
+- Optional WebDAV, GitHub, or file sync beyond Google Drive appDataFolder
 - Firefox support later
 
 ## Privacy
 
-Aura Start has no backend, no accounts, no analytics, no tracking scripts, no required sync, no host permissions, and no access to browser history or bookmarks.
+Aura Start has no backend, no analytics, no tracking scripts, no required sync, and no access to browser history or bookmarks. Optional Google Drive sync uses `identity`, `drive.appdata`, and Google API host access only when the user enables it.
 
 See [PRIVACY.md](./PRIVACY.md) for the privacy policy text and [STORE_SUBMISSION.md](./STORE_SUBMISSION.md) for Chrome Web Store submission notes.
 

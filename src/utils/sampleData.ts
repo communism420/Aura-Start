@@ -2,6 +2,7 @@ import { DEFAULT_SETTINGS, DATA_VERSION } from "../constants";
 import { isAuraLanguage } from "../i18n";
 import type { AuraLanguage, AuraStartData } from "../types";
 import { nowIso } from "./dates";
+import { createId } from "./ids";
 
 function detectDefaultLanguage(): AuraLanguage {
   if (typeof navigator === "undefined") {
@@ -25,7 +26,11 @@ export function createEmptyData(): AuraStartData {
     updatedAt: nowIso(),
     settings: {
       ...DEFAULT_SETTINGS,
-      language: detectDefaultLanguage()
+      language: detectDefaultLanguage(),
+      sync: {
+        ...DEFAULT_SETTINGS.sync,
+        deviceId: createId("device")
+      }
     },
     groups: [],
     restorePoints: []
