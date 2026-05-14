@@ -1,5 +1,5 @@
 import { Cloud, Download, RefreshCw, Trash2, Upload, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import type { I18nKey } from "../i18n";
 import type {
@@ -11,7 +11,7 @@ import type {
 } from "../types";
 import { formatDateTime } from "../utils/dates";
 import { exportJsonBackup } from "../utils/exportJson";
-import { GoogleDriveSyncError } from "../services/googleDriveSync";
+import { GoogleDriveSyncError, googleOAuthRedirectUrl } from "../services/googleDriveSync";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type GoogleDriveSyncPanelProps = {
@@ -26,6 +26,7 @@ type GoogleDriveSyncPanelProps = {
   onSyncNow: () => Promise<void>;
   onSetSyncMode: (mode: AuraSyncMode) => Promise<void>;
   onDeleteSyncFile: () => Promise<void>;
+  onUpdateOAuthClientId: (oauthClientId: string) => Promise<void>;
   onResolveConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
 };
@@ -55,10 +56,12 @@ export function GoogleDriveSyncPanel({
   onSyncNow,
   onSetSyncMode,
   onDeleteSyncFile,
+  onUpdateOAuthClientId,
   onResolveConflict,
   onError
 }: GoogleDriveSyncPanelProps) {
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
+  const [oauthClientId, setOauthClientId] = useState(data.settings.sync.oauthClientId ?? "");
   const language = data.settings.language;
   const sync = data.settings.sync;
   const busy = isBusy(syncStatus);
@@ -87,6 +90,10 @@ export function GoogleDriveSyncPanel({
       onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"));
     }
   }
+
+  useEffect(() => {
+    setOauthClientId(sync.oauthClientId ?? "");
+  }, [sync.oauthClientId]);
 
   function handleExportLocal() {
     try {
@@ -128,6 +135,37 @@ export function GoogleDriveSyncPanel({
           ))}
         </select>
       </label>
+
+      <div className="mt-4 rounded-lg border border-[var(--border)] p-3">
+        <label className="block">
+          <span className="mb-1 block text-sm font-semibold">{t(language, "googleDriveOAuthClientId")}</span>
+          <input
+            className="field"
+            placeholder={t(language, "googleDriveOAuthClientIdPlaceholder")}
+            spellCheck={false}
+            type="text"
+            value={oauthClientId}
+            onChange={(event) => setOauthClientId(event.target.value)}
+          />
+        </label>
+        <p className="muted mt-2 text-xs leading-5">{t(language, "googleDriveOAuthClientIdDescription")}</p>
+        {googleOAuthRedirectUrl() ? (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">
+              {t(language, "googleDriveOAuthRedirectUrl")}
+            </span>
+            <input className="field font-mono text-xs" readOnly type="text" value={googleOAuthRedirectUrl()} />
+          </label>
+        ) : null}
+        <button
+          className="btn btn-secondary mt-3"
+          disabled={busy || oauthClientId.trim() === (sync.oauthClientId ?? "")}
+          type="button"
+          onClick={() => run(() => onUpdateOAuthClientId(oauthClientId))}
+        >
+          {t(language, "googleDriveSaveOAuthClientId")}
+        </button>
+      </div>
 
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3 text-sm">
         <div className="font-semibold">{displayMessage}</div>

@@ -13,7 +13,7 @@ Aura Start handles only the data needed for its new tab and backup features:
 - Extension settings such as theme, language, columns, compact mode, search visibility, link-opening behavior, and optional sync mode
 - Local restore points created before imports, resets, cloud restores, and destructive actions
 - Backup files or A Fine Start export codes selected or pasted by the user for import
-- Optional Google Drive sync metadata, such as connection status, last sync time, and a locally generated device ID
+- Optional Google Drive sync metadata, such as connection status, last sync time, a locally generated device ID, and a user-provided public OAuth client ID for self-built installs
 
 Aura Start does not request browser history, browser bookmarks, tabs, cookies, web requests, scripting, or full Google Drive access.
 

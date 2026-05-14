@@ -102,13 +102,23 @@ function appVersion(): string {
   return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.0";
 }
 
-function oauthClientId(): string {
+function normalizeOAuthClientId(value: string | undefined): string | undefined {
+  const clientId = value?.trim();
+  return clientId && clientId.endsWith(".apps.googleusercontent.com") ? clientId : undefined;
+}
+
+function oauthClientId(overrideClientId?: string): string {
+  const configuredClientId = normalizeOAuthClientId(overrideClientId);
+  if (configuredClientId) {
+    return configuredClientId;
+  }
+
   const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
   const clientId = manifest?.oauth2?.client_id?.trim();
   if (!clientId || clientId.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is not configured yet. Replace the OAuth client_id in manifest.json with a real Chrome Extension OAuth client ID."
+      "Google Drive sync is not configured yet. Paste a real Google OAuth Client ID in Settings -> Google Drive Sync, or replace the OAuth client_id in manifest.json."
     );
   }
 
@@ -308,6 +318,20 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
     return cached;
   }
 
+  return await getAuthTokenWithClientId(interactive);
+}
+
+export async function getAuthTokenWithClientId(interactive: boolean, oauthClientIdOverride?: string): Promise<string> {
+  const cached = cachedWebAuthToken();
+  if (cached) {
+    return cached;
+  }
+
+  const configuredClientId = normalizeOAuthClientId(oauthClientIdOverride);
+  if (configuredClientId) {
+    return await launchGoogleWebAuthFlow(interactive, configuredClientId);
+  }
+
   const identity = requireIdentityApi();
 
   try {
@@ -337,7 +361,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   }
 }
 
-async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
+async function launchGoogleWebAuthFlow(interactive: boolean, oauthClientIdOverride?: string): Promise<string> {
   const identity = requireIdentityApi();
   if (!identity.launchWebAuthFlow || !identity.getRedirectURL) {
     throw new GoogleDriveSyncError(
@@ -349,7 +373,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   const redirectUri = identity.getRedirectURL("oauth2");
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
-  authUrl.searchParams.set("client_id", oauthClientId());
+  authUrl.searchParams.set("client_id", oauthClientId(oauthClientIdOverride));
   authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("response_type", "token");
   authUrl.searchParams.set("scope", oauthScopes().join(" "));
@@ -400,6 +424,10 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   };
 
   return token;
+}
+
+export function googleOAuthRedirectUrl(): string | undefined {
+  return globalThis.chrome?.identity?.getRedirectURL?.("oauth2");
 }
 
 export async function clearAuthToken(token?: string): Promise<void> {
