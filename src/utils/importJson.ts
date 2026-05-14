@@ -101,7 +101,6 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     lastSyncedAt: normalizeOptionalIso(sync.lastSyncedAt),
     lastCloudUpdatedAt: normalizeOptionalIso(sync.lastCloudUpdatedAt),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
-    oauthClientId: optionalTrimmedString(sync.oauthClientId),
     connected: mode !== "off" && asBoolean(sync.connected, false)
   };
 }

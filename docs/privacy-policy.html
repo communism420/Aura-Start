@@ -173,8 +173,7 @@
           </li>
           <li>
             Optional Google Drive sync metadata, such as connection status, last sync
-            time, a locally generated device ID, and an optional public self-built
-            OAuth client ID if the user enters one for an unpacked install.
+            time, and a locally generated device ID.
           </li>
         </ul>
         <p>
@@ -196,15 +195,17 @@
 
         <h2>Optional Google Drive Sync</h2>
         <p>
-          If the user explicitly connects Google Drive sync, Aura Start uses Google
-          OAuth through <code>chrome.identity</code> and requests only this scope:
+          If the user explicitly connects Google Drive sync, Aura Start uses Chrome's
+          built-in <code>chrome.identity</code> Google Account sign-in and OAuth
+          consent flow and requests only this scope:
           <code>https://www.googleapis.com/auth/drive.appdata</code>.
         </p>
         <p>
           The OAuth Client ID used for this flow identifies the Aura Start
           application, not the user's Google account. Google sign-in provides an
-          access token after user consent; it does not provide Aura Start with a new
-          OAuth Client ID from the user's account.
+          access token after user consent. Aura Start uses that token only for its
+          hidden Google Drive app data file and does not store the user's Google
+          account identifier.
         </p>
         <p>
           This scope allows Aura Start to store and read its own hidden application

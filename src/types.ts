@@ -16,7 +16,6 @@ export type AuraSyncSettings = {
   lastSyncedAt?: string;
   lastCloudUpdatedAt?: string;
   cloudFileId?: string;
-  oauthClientId?: string;
   connected?: boolean;
 };
 

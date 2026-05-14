@@ -13,7 +13,7 @@ Aura Start handles only the data needed for its new tab and backup features:
 - Extension settings such as theme, language, columns, compact mode, search visibility, link-opening behavior, and optional sync mode
 - Local restore points created before imports, resets, cloud restores, and destructive actions
 - Backup files or A Fine Start export codes selected or pasted by the user for import
-- Optional Google Drive sync metadata, such as connection status, last sync time, a locally generated device ID, and an optional public self-built OAuth client ID if the user enters one for an unpacked install
+- Optional Google Drive sync metadata, such as connection status, last sync time, and a locally generated device ID
 
 Aura Start does not request browser history, browser bookmarks, tabs, cookies, web requests, scripting, or full Google Drive access.
 
@@ -25,11 +25,11 @@ Local storage remains the default. Manual JSON export/import continues to work i
 
 ## Optional Google Drive Sync
 
-If the user explicitly connects Google Drive sync, Aura Start uses Google OAuth through `chrome.identity` and requests only this scope:
+If the user explicitly connects Google Drive sync, Aura Start uses Chrome's built-in `chrome.identity` Google Account sign-in and OAuth consent flow and requests only this scope:
 
 `https://www.googleapis.com/auth/drive.appdata`
 
-The OAuth Client ID used for this flow identifies the Aura Start application, not the user's Google account. Google sign-in provides an access token after user consent; it does not provide Aura Start with a new OAuth Client ID from the user's account.
+The OAuth Client ID used for this flow identifies the Aura Start application, not the user's Google account. Google sign-in provides an access token after user consent. Aura Start uses that token only for its hidden Google Drive app data file and does not store the user's Google account identifier.
 
 This scope allows Aura Start to store and read its own hidden application data file in Google Drive `appDataFolder`. Aura Start stores a single sync file named `aura-start-sync.json` in that hidden app data area.
 
