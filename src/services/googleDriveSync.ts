@@ -4,12 +4,25 @@ import { validateAuraData } from "../utils/importJson";
 
 const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD_BASE = "https://www.googleapis.com/upload/drive/v3";
+const GOOGLE_OAUTH_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
+const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const SYNC_FILE_NAME = "aura-start-sync.json";
 const CLOUD_SCHEMA_VERSION = 1;
 const CLOUD_APP_NAME = "Aura Start";
+const TOKEN_EXPIRY_SAFETY_MS = 60_000;
 
 type RecordValue = Record<string, unknown>;
+type ManifestWithOAuth = chrome.runtime.Manifest & {
+  oauth2?: {
+    client_id?: string;
+    scopes?: string[];
+  };
+};
+type CachedToken = {
+  token: string;
+  expiresAt: number;
+};
 
 export type GoogleDriveErrorCode =
   | "auth_cancelled"
@@ -64,6 +77,8 @@ export class GoogleDriveSyncError extends Error {
   }
 }
 
+let webAuthTokenCache: CachedToken | undefined;
+
 function isRecord(value: unknown): value is RecordValue {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -84,7 +99,64 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.0";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.1";
+}
+
+function oauthClientId(): string {
+  const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
+  const clientId = manifest?.oauth2?.client_id?.trim();
+  if (!clientId || clientId.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "Google Drive sync is not configured yet. Replace the OAuth client_id in manifest.json with a real Chrome Extension OAuth client ID."
+    );
+  }
+
+  return clientId;
+}
+
+function oauthScopes(): string[] {
+  const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
+  const scopes = manifest?.oauth2?.scopes?.filter((scope) => typeof scope === "string" && scope.trim());
+  return scopes?.length ? scopes : [DRIVE_APPDATA_SCOPE];
+}
+
+function cachedWebAuthToken(): string | undefined {
+  if (!webAuthTokenCache) return undefined;
+  if (Date.now() + TOKEN_EXPIRY_SAFETY_MS >= webAuthTokenCache.expiresAt) {
+    webAuthTokenCache = undefined;
+    return undefined;
+  }
+
+  return webAuthTokenCache.token;
+}
+
+function randomState(): string {
+  const randomUUID = globalThis.crypto?.randomUUID;
+  if (typeof randomUUID === "function") {
+    return randomUUID.call(globalThis.crypto);
+  }
+
+  const values = new Uint32Array(4);
+  globalThis.crypto?.getRandomValues(values);
+  return Array.from(values, (value) => value.toString(36)).join("");
+}
+
+function authResultToken(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (isRecord(value) && typeof value.token === "string") {
+    return value.token;
+  }
+
+  return undefined;
+}
+
+function isBrowserSigninDisabledError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return message.includes("browser signin") || message.includes("browser sign-in");
 }
 
 function driveHeaders(token: string, extra?: HeadersInit): HeadersInit {
@@ -231,30 +303,112 @@ function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
 }
 
 export async function getAuthToken(interactive: boolean): Promise<string> {
+  const cached = cachedWebAuthToken();
+  if (cached) {
+    return cached;
+  }
+
   const identity = requireIdentityApi();
 
-  return await new Promise<string>((resolve, reject) => {
-    identity.getAuthToken({ interactive }, (token) => {
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      identity.getAuthToken({ interactive }, (token) => {
+        const lastError = getChromeLastErrorMessage();
+        if (lastError) {
+          reject(new GoogleDriveSyncError("auth_cancelled", lastError));
+          return;
+        }
+
+        const resolvedToken = authResultToken(token);
+        if (!resolvedToken) {
+          reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token."));
+          return;
+        }
+
+        resolve(resolvedToken);
+      });
+    });
+  } catch (error) {
+    if (interactive && isBrowserSigninDisabledError(error)) {
+      return await launchGoogleWebAuthFlow(true);
+    }
+
+    throw error;
+  }
+}
+
+async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
+  const identity = requireIdentityApi();
+  if (!identity.launchWebAuthFlow || !identity.getRedirectURL) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "This browser does not support the Google OAuth web auth flow required for Drive sync."
+    );
+  }
+
+  const redirectUri = identity.getRedirectURL("oauth2");
+  const state = randomState();
+  const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
+  authUrl.searchParams.set("client_id", oauthClientId());
+  authUrl.searchParams.set("redirect_uri", redirectUri);
+  authUrl.searchParams.set("response_type", "token");
+  authUrl.searchParams.set("scope", oauthScopes().join(" "));
+  authUrl.searchParams.set("include_granted_scopes", "true");
+  authUrl.searchParams.set("prompt", "select_account consent");
+  authUrl.searchParams.set("state", state);
+
+  const redirectResult = await new Promise<string>((resolve, reject) => {
+    identity.launchWebAuthFlow({ interactive, url: authUrl.toString() }, (redirectedTo) => {
       const lastError = getChromeLastErrorMessage();
       if (lastError) {
         reject(new GoogleDriveSyncError("auth_cancelled", lastError));
         return;
       }
 
-      if (!token) {
-        reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token."));
+      if (!redirectedTo) {
+        reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not complete."));
         return;
       }
 
-      resolve(token);
+      resolve(redirectedTo);
     });
   });
+
+  const redirectedUrl = new URL(redirectResult);
+  const fragmentParams = new URLSearchParams(redirectedUrl.hash.startsWith("#") ? redirectedUrl.hash.slice(1) : "");
+  const queryParams = redirectedUrl.searchParams;
+  const params = fragmentParams.size ? fragmentParams : queryParams;
+  const error = params.get("error");
+  if (error) {
+    throw new GoogleDriveSyncError("auth_cancelled", params.get("error_description") ?? error);
+  }
+
+  if (params.get("state") !== state) {
+    throw new GoogleDriveSyncError("auth_cancelled", "Google authorization returned an invalid state.");
+  }
+
+  const token = params.get("access_token");
+  if (!token) {
+    throw new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return an access token.");
+  }
+
+  const expiresInSeconds = Number(params.get("expires_in") ?? "3600");
+  const expiresIn = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0 ? expiresInSeconds : 3600;
+  webAuthTokenCache = {
+    token,
+    expiresAt: Date.now() + expiresIn * 1000
+  };
+
+  return token;
 }
 
 export async function clearAuthToken(token?: string): Promise<void> {
   const identity = requireIdentityApi();
-  const tokenToClear = token ?? await getAuthToken(false).catch(() => undefined);
+  const tokenToClear = token ?? cachedWebAuthToken() ?? await getAuthToken(false).catch(() => undefined);
   if (!tokenToClear) return;
+  if (webAuthTokenCache?.token === tokenToClear) {
+    webAuthTokenCache = undefined;
+  }
 
   await new Promise<void>((resolve, reject) => {
     identity.removeCachedAuthToken({ token: tokenToClear }, () => {

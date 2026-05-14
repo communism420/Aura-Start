@@ -11,6 +11,7 @@ import type {
 } from "../types";
 import { formatDateTime } from "../utils/dates";
 import { exportJsonBackup } from "../utils/exportJson";
+import { GoogleDriveSyncError } from "../services/googleDriveSync";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type GoogleDriveSyncPanelProps = {
@@ -72,9 +73,19 @@ export function GoogleDriveSyncPanel({
       : t(language, "googleDriveNotConnected"));
 
   function run(action: () => Promise<void>) {
-    void action().catch((error: unknown) =>
-      onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"))
-    );
+    void action().catch((error: unknown) => {
+      if (error instanceof GoogleDriveSyncError) return;
+      onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"));
+    });
+  }
+
+  async function runConfirmed(action: () => Promise<void>) {
+    try {
+      await action();
+    } catch (error) {
+      if (error instanceof GoogleDriveSyncError) return;
+      onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"));
+    }
   }
 
   function handleExportLocal() {
@@ -209,7 +220,7 @@ export function GoogleDriveSyncPanel({
         onConfirm={async () => {
           const action = pendingConfirm === "delete_sync_file" ? onDeleteSyncFile : onDisconnect;
           setPendingConfirm(null);
-          await action();
+          await runConfirmed(action);
         }}
       />
     </div>

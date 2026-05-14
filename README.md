@@ -108,6 +108,8 @@ Before restoring from Google Drive, Aura Start creates a local restore point nam
 
 When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
 
+If Chromium reports that browser sign-in is turned off, Aura Start falls back to an explicit Google OAuth web flow through `chrome.identity.launchWebAuthFlow`. Self-built packages still need a real Chrome Extension OAuth client ID in `public/manifest.json`; the placeholder client ID in source code is not usable for live Drive sync.
+
 ## Migrating From A Fine Start
 
 In A Fine Start, open Settings -> Export bookmarks and copy the generated export code. In Aura Start, open Settings -> Import backup, choose A Fine Start export code, paste the code, then choose Merge or Replace.

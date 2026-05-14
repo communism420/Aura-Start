@@ -136,11 +136,11 @@ function syncStatusFromData(data: AuraStartData): AuraSyncStatus {
   return data.settings.sync.mode !== "off" && data.settings.sync.connected ? "connected" : "idle";
 }
 
-async function getTokenForSync(sync: AuraSyncSettings): Promise<string> {
+async function getTokenForSync(sync: AuraSyncSettings, allowInteractive = true): Promise<string> {
   try {
-    return await getAuthToken(!sync.connected);
+    return await getAuthToken(!sync.connected && allowInteractive);
   } catch (error) {
-    if (sync.connected) {
+    if (sync.connected && allowInteractive) {
       return await getAuthToken(true);
     }
 
@@ -801,7 +801,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveBackingUp"), syncConflict: null });
     try {
       const sync = ensureSyncDevice(data.settings.sync);
-      const token = await getTokenForSync(sync);
+      const token = await getTokenForSync(sync, !options.silent);
       const metadata = await backupToDrive(data, {
         deviceId: sync.deviceId,
         fileId: sync.cloudFileId,
@@ -1036,7 +1036,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       payload: {
         schemaVersion: 1,
         app: "Aura Start",
-        appVersion: "1.1.0",
+        appVersion: "1.1.1",
         updatedAt: conflict.cloudUpdatedAt,
         deviceId: conflict.cloudData.settings.sync.deviceId,
         data: conflict.cloudData
