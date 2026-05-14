@@ -173,8 +173,8 @@
           </li>
           <li>
             Optional Google Drive sync metadata, such as connection status, last sync
-            time, a locally generated device ID, and a user-provided public OAuth
-            client ID for self-built installs.
+            time, a locally generated device ID, and an optional public self-built
+            OAuth client ID if the user enters one for an unpacked install.
           </li>
         </ul>
         <p>
@@ -199,6 +199,12 @@
           If the user explicitly connects Google Drive sync, Aura Start uses Google
           OAuth through <code>chrome.identity</code> and requests only this scope:
           <code>https://www.googleapis.com/auth/drive.appdata</code>.
+        </p>
+        <p>
+          The OAuth Client ID used for this flow identifies the Aura Start
+          application, not the user's Google account. Google sign-in provides an
+          access token after user consent; it does not provide Aura Start with a new
+          OAuth Client ID from the user's account.
         </p>
         <p>
           This scope allows Aura Start to store and read its own hidden application
@@ -246,10 +252,10 @@
         <p>
           When Google Drive sync is enabled and connected, Aura Start may show a
           compact Google Drive status marker in the top-right header. The marker is
-          used only to show sync status, last sync time, and connected account
-          information if Chrome exposes it through existing extension APIs. Aura Start
-          does not request additional Google permissions only to display an avatar or
-          email address.
+          used only to show sync status and last sync time. Aura Start does not
+          request additional Google permissions to display an avatar or email
+          address, and the marker does not mean Aura Start has full Google Drive
+          access.
         </p>
 
         <h2>Network, Accounts, Analytics, and Tracking</h2>

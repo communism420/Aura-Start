@@ -46,7 +46,7 @@ export function Header({
   const language = data.settings.language;
   const sync = data.settings.sync;
   const showSyncMarker = sync.mode !== "off" && Boolean(sync.connected);
-  const syncMarkerLabel = sync.accountName ?? sync.accountEmail ?? t(language, "googleDriveConnectedShort");
+  const syncMarkerLabel = t(language, "googleDriveConnectedShort");
   const syncMarkerTitle = [
     syncStatus === "syncing"
       ? t(language, "googleDriveSyncing")
@@ -55,7 +55,6 @@ export function Header({
         : syncStatus === "conflict"
           ? t(language, "googleDriveConflictDetected")
           : t(language, "googleDriveConnected"),
-    sync.accountEmail ?? sync.accountName,
     sync.lastSyncedAt ? t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) }) : undefined,
     syncMessage
   ].filter(Boolean).join("\n");

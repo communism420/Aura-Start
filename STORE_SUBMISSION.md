@@ -44,7 +44,7 @@ Requested OAuth scope:
 
 - `https://www.googleapis.com/auth/drive.appdata`: lets Aura Start read and write only its own hidden Google Drive app data.
 
-Aura Start first tries `chrome.identity.getAuthToken`. If a Chromium profile has browser sign-in disabled, the extension falls back to `chrome.identity.launchWebAuthFlow` for the same Google OAuth scope and the same extension redirect URL. Self-built or unpacked installs can store a public Google OAuth client ID locally in Settings -> Google Drive Sync. This fallback does not add host permissions and does not grant access to normal Google Drive files.
+Aura Start first tries `chrome.identity.getAuthToken`. If a Chromium profile has browser sign-in disabled, the extension falls back to `chrome.identity.launchWebAuthFlow` for the same Google OAuth scope and the same extension redirect URL. The OAuth Client ID identifies the Aura Start app, not the signed-in user. Google sign-in returns an access token after consent; it does not provide a client ID from the user's account. Official Chrome Web Store builds must include Aura Start's configured OAuth client ID in the manifest. Self-built or unpacked installs can store a public self-built OAuth client ID locally in Settings -> Google Drive Sync. This fallback does not add host permissions and does not grant access to normal Google Drive files.
 
 Aura Start intentionally does not request:
 
@@ -69,6 +69,7 @@ Recommended dashboard disclosure:
 - Aura Start handles user-provided bookmark/link data locally.
 - Google Drive sync is optional and off by default.
 - When enabled, Aura Start stores one hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`.
+- The Google OAuth Client ID identifies the Aura Start app and is not used to identify the user.
 - Aura Start does not request full Google Drive access and does not read, scan, edit, delete, or create visible Drive files.
 - Aura Start does not collect or transmit user data to the developer.
 - Aura Start does not sell user data.

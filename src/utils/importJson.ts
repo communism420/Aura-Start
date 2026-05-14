@@ -100,9 +100,6 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     deviceId,
     lastSyncedAt: normalizeOptionalIso(sync.lastSyncedAt),
     lastCloudUpdatedAt: normalizeOptionalIso(sync.lastCloudUpdatedAt),
-    accountEmail: optionalTrimmedString(sync.accountEmail),
-    accountName: optionalTrimmedString(sync.accountName),
-    accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
     oauthClientId: optionalTrimmedString(sync.oauthClientId),
     connected: mode !== "off" && asBoolean(sync.connected, false)

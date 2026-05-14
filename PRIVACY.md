@@ -13,7 +13,7 @@ Aura Start handles only the data needed for its new tab and backup features:
 - Extension settings such as theme, language, columns, compact mode, search visibility, link-opening behavior, and optional sync mode
 - Local restore points created before imports, resets, cloud restores, and destructive actions
 - Backup files or A Fine Start export codes selected or pasted by the user for import
-- Optional Google Drive sync metadata, such as connection status, last sync time, a locally generated device ID, and a user-provided public OAuth client ID for self-built installs
+- Optional Google Drive sync metadata, such as connection status, last sync time, a locally generated device ID, and an optional public self-built OAuth client ID if the user enters one for an unpacked install
 
 Aura Start does not request browser history, browser bookmarks, tabs, cookies, web requests, scripting, or full Google Drive access.
 
@@ -28,6 +28,8 @@ Local storage remains the default. Manual JSON export/import continues to work i
 If the user explicitly connects Google Drive sync, Aura Start uses Google OAuth through `chrome.identity` and requests only this scope:
 
 `https://www.googleapis.com/auth/drive.appdata`
+
+The OAuth Client ID used for this flow identifies the Aura Start application, not the user's Google account. Google sign-in provides an access token after user consent; it does not provide Aura Start with a new OAuth Client ID from the user's account.
 
 This scope allows Aura Start to store and read its own hidden application data file in Google Drive `appDataFolder`. Aura Start stores a single sync file named `aura-start-sync.json` in that hidden app data area.
 
@@ -50,7 +52,7 @@ Before replacing local data with a Google Drive restore, Aura Start creates a lo
 
 ## Account Marker
 
-When Google Drive sync is enabled and connected, Aura Start may show a compact Google Drive status marker in the top-right header. The marker is used only to show sync status, last sync time, and connected account information if Chrome exposes it through existing extension APIs. Aura Start does not request additional Google permissions only to display an avatar or email address.
+When Google Drive sync is enabled and connected, Aura Start may show a compact Google Drive status marker in the top-right header. The marker is used only to show sync status and last sync time. Aura Start does not request additional Google permissions to display an avatar or email address, and the marker does not mean Aura Start has full Google Drive access.
 
 ## Network, Accounts, Analytics, And Tracking
 

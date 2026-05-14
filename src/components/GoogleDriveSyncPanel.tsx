@@ -169,9 +169,6 @@ export function GoogleDriveSyncPanel({
 
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3 text-sm">
         <div className="font-semibold">{displayMessage}</div>
-        {sync.accountEmail || sync.accountName ? (
-          <div className="muted mt-1">{sync.accountName ?? sync.accountEmail}</div>
-        ) : null}
         {sync.lastSyncedAt ? (
           <div className="muted mt-1">{t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) })}</div>
         ) : null}

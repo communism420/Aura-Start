@@ -118,7 +118,7 @@ function oauthClientId(overrideClientId?: string): string {
   if (!clientId || clientId.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is not configured yet. Paste a real Google OAuth Client ID in Settings -> Google Drive Sync, or replace the OAuth client_id in manifest.json."
+      "Google Drive sync needs Aura Start's app OAuth Client ID. Google sign-in cannot provide a client ID from the user's account because the client ID identifies the app, not the user. Use an official build with a configured manifest client_id, or enter a public self-built OAuth client ID in Settings -> Google Drive Sync."
     );
   }
 
@@ -332,6 +332,8 @@ export async function getAuthTokenWithClientId(interactive: boolean, oauthClient
     return await launchGoogleWebAuthFlow(interactive, configuredClientId);
   }
 
+  oauthClientId();
+
   const identity = requireIdentityApi();
 
   try {
@@ -484,24 +486,6 @@ export async function disconnectGoogleAccount(): Promise<{ revokeError?: string 
 
   await clearAuthToken(token);
   return { revokeError };
-}
-
-export async function getConnectedAccountInfo(): Promise<{
-  email?: string;
-  name?: string;
-  avatarUrl?: string;
-} | undefined> {
-  const identity = requireIdentityApi();
-  if (!identity.getProfileUserInfo) {
-    return undefined;
-  }
-
-  return await new Promise((resolve) => {
-    identity.getProfileUserInfo((info) => {
-      const email = typeof info.email === "string" && info.email ? info.email : undefined;
-      resolve(email ? { email } : undefined);
-    });
-  });
 }
 
 export async function findSyncFile(token?: string): Promise<GoogleDriveFileMetadata | undefined> {

@@ -123,6 +123,8 @@ if (await exists(manifestPath)) {
   const oauthScopes = Array.isArray(manifest.oauth2?.scopes) ? manifest.oauth2.scopes : [];
   if (!manifest.oauth2?.client_id) {
     fail("oauth2.client_id is required for optional Google Drive sync.");
+  } else if (manifest.oauth2.client_id.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
+    warn("oauth2.client_id still contains the source placeholder. Google Drive sync will not work in this package until a real Aura Start app OAuth client ID is configured.");
   }
   if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
     fail("Google Drive sync must request only the drive.appdata OAuth scope.");

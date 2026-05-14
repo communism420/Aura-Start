@@ -10,7 +10,6 @@ import {
   findSyncFile,
   getAuthToken,
   getAuthTokenWithClientId,
-  getConnectedAccountInfo,
   mapDriveError,
   restoreFromDrive,
   type GoogleDriveSyncDownload
@@ -729,7 +728,6 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       const sync = ensureSyncDevice(data.settings.sync);
       const token = await getAuthTokenWithClientId(true, sync.oauthClientId);
       const metadata = await findSyncFile(token);
-      const account = await getConnectedAccountInfo().catch(() => undefined);
       const nextMode = sync.mode === "off" ? "manual" : sync.mode;
       const next = await commitSyncMetadata(
         set,
@@ -737,10 +735,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         {
           mode: nextMode,
           connected: true,
-          cloudFileId: metadata?.id,
-          accountEmail: account?.email,
-          accountName: account?.name,
-          accountAvatarUrl: account?.avatarUrl
+          cloudFileId: metadata?.id
         },
         "connected",
         metadata ? text(data, "googleDriveConnected") : text(data, "googleDriveConnectedNoFile")
@@ -771,9 +766,6 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         {
           mode: "off",
           connected: false,
-          accountEmail: undefined,
-          accountName: undefined,
-          accountAvatarUrl: undefined,
           cloudFileId: undefined,
           lastSyncedAt: undefined,
           lastCloudUpdatedAt: undefined

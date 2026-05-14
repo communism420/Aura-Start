@@ -30,7 +30,7 @@ Slogan: All features of A Fine Start and even more - free and forever.
 
 Aura Start does not need a server to work. Your groups and links stay in your browser profile by default, and the extension does not use analytics, trackers, bookmarks permission, history permission, Firebase, Supabase, or a custom backend.
 
-Google Drive sync is optional, off by default, and user-controlled. When enabled, Aura Start uses Google OAuth through `chrome.identity` and only the `https://www.googleapis.com/auth/drive.appdata` scope. The sync file is named `aura-start-sync.json` and is stored in Google Drive's hidden appDataFolder, not in the visible Drive root and not in a normal user folder.
+Google Drive sync is optional, off by default, and user-controlled. When enabled, Aura Start uses Google OAuth through `chrome.identity` and only the `https://www.googleapis.com/auth/drive.appdata` scope. The OAuth Client ID identifies the Aura Start app, not the user's Google account. The sync file is named `aura-start-sync.json` and is stored in Google Drive's hidden appDataFolder, not in the visible Drive root and not in a normal user folder.
 
 Aura Start does not request access to the user's full Google Drive, does not scan normal Drive files, and does not create visible Drive backup files. Manual JSON export/import remains fully available without Google Drive.
 
@@ -106,9 +106,9 @@ Disconnect Google Account clears Aura Start's cached Google access and turns syn
 
 Before restoring from Google Drive, Aura Start creates a local restore point named `Before Google Drive restore`.
 
-When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
+When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not display personal Google account details and does not mean Aura Start has full Drive access.
 
-If Chromium reports that browser sign-in is turned off, Aura Start falls back to an explicit Google OAuth web flow through `chrome.identity.launchWebAuthFlow`. Self-built or unpacked packages still need a real Google OAuth client ID: paste it in Settings -> Google Drive Sync, or replace the placeholder client ID in `public/manifest.json`. The placeholder client ID in source code is not usable for live Drive sync.
+If Chromium reports that browser sign-in is turned off, Aura Start falls back to an explicit Google OAuth web flow through `chrome.identity.launchWebAuthFlow`. Google sign-in cannot supply an OAuth Client ID from the user's account because OAuth Client IDs are app credentials. Official builds must include Aura Start's configured app client ID in `public/manifest.json`. Self-built or unpacked packages can paste their own public self-built client ID in Settings -> Google Drive Sync, or replace the placeholder client ID in `public/manifest.json`. The placeholder client ID in source code is not usable for live Drive sync.
 
 ## Migrating From A Fine Start
 
