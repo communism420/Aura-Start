@@ -11,7 +11,7 @@ import type {
 } from "../types";
 import { formatDateTime } from "../utils/dates";
 import { exportJsonBackup } from "../utils/exportJson";
-import { GoogleDriveSyncError } from "../services/googleDriveSync";
+import { GoogleDriveSyncError, isGoogleDriveSignInConfigured } from "../services/googleDriveSync";
 import { ConfirmDialog } from "./ConfirmDialog";
 
 type GoogleDriveSyncPanelProps = {
@@ -62,11 +62,13 @@ export function GoogleDriveSyncPanel({
   const language = data.settings.language;
   const sync = data.settings.sync;
   const busy = isBusy(syncStatus);
+  const signInConfigured = isGoogleDriveSignInConfigured();
   const hasGoogleConnection = Boolean(sync.connected);
   const connected = sync.mode !== "off" && hasGoogleConnection;
-  const canSync = connected && !busy;
-  const canManageConnection = hasGoogleConnection && !busy;
-  const displayMessage = syncMessage ?? (sync.mode === "off"
+  const canConnect = signInConfigured && !busy;
+  const canSync = signInConfigured && connected && !busy;
+  const canManageConnection = signInConfigured && hasGoogleConnection && !busy;
+  const displayMessage = !signInConfigured ? t(language, "googleDriveSignInNotConfigured") : syncMessage ?? (sync.mode === "off"
     ? t(language, "googleDriveSyncDisabled")
     : connected
       ? t(language, "googleDriveConnected")
@@ -132,6 +134,9 @@ export function GoogleDriveSyncPanel({
 
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3 text-sm">
         <div className="font-semibold">{displayMessage}</div>
+        {!signInConfigured ? (
+          <div className="muted mt-1 leading-6">{t(language, "googleDriveSignInNotConfiguredDescription")}</div>
+        ) : null}
         {sync.lastSyncedAt ? (
           <div className="muted mt-1">{t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) })}</div>
         ) : null}
@@ -141,7 +146,7 @@ export function GoogleDriveSyncPanel({
       </div>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button className="btn btn-primary justify-start" disabled={busy} type="button" onClick={() => run(onConnect)}>
+        <button className="btn btn-primary justify-start" disabled={!canConnect} type="button" onClick={() => run(onConnect)}>
           <Cloud size={17} />
           {hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}
         </button>

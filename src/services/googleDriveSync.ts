@@ -113,6 +113,15 @@ function ensureOAuthConfigured(): void {
   }
 }
 
+export function isGoogleDriveSignInConfigured(): boolean {
+  try {
+    ensureOAuthConfigured();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function authResultToken(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value;
