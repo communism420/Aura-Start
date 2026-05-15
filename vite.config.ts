@@ -52,9 +52,22 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const googleOAuthClientId = env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
+  const googleWebOAuthClientId = env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+
+  if (googleWebOAuthClientId) {
+    if (!OAUTH_CLIENT_ID_PATTERN.test(googleWebOAuthClientId)) {
+      throw new Error("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID must be a real Google OAuth Web Client ID ending with .apps.googleusercontent.com.");
+    }
+    if (looksLikeExampleOAuthClientId(googleWebOAuthClientId)) {
+      throw new Error("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID points to an example value. Create a real Web OAuth Client ID in Google Cloud Console and use that value.");
+    }
+  }
 
   return {
     plugins: [react(), googleOAuthClientPlugin(googleOAuthClientId)],
+    define: {
+      __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__: JSON.stringify(googleWebOAuthClientId)
+    },
     build: {
       rollupOptions: {
         input: {

@@ -110,7 +110,11 @@ When Google Drive sync is enabled and connected, Aura Start shows a compact stat
 
 Connect Google Drive uses Chrome's built-in `chrome.identity.getAuthToken` OAuth flow and may open a Google authorization prompt when Chrome needs explicit sign-in or consent. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID, not a user secret, and not entered by users in Aura Start settings. Google requires an OAuth client ID for Drive authorization, so there is no Client-ID-free Google Drive API flow.
 
-Google Drive sync is designed for the Chrome Web Store build running in Google Chrome with Chrome's Google sign-in available. Some Chromium-based browsers or profiles with browser sign-in disabled may block `chrome.identity.getAuthToken`; in that case Aura Start stays fully local and manual export/import still works.
+Google Drive sync can use either Chrome's built-in token flow or a Web OAuth fallback. For Google Chrome Web Store builds, create a Chrome Extension OAuth client. For Brave, Edge, or profiles where `chrome.identity.getAuthToken` opens a `Custom URI scheme is not supported on Chrome apps` error, also create a Web Application OAuth client and add this authorized redirect URI:
+
+```text
+https://pdhhhnmcammpmmklkbbfbmnijimgjiabi.chromiumapp.org/oauth2
+```
 
 For release builds, do not edit `public/manifest.json` manually. Create a real OAuth client for the Aura Start extension in Google Cloud Console, enable the Google Drive API for that project, then set `AURA_GOOGLE_OAUTH_CLIENT_ID` before running the build. Vite will inject it into `dist/manifest.json`.
 
@@ -130,9 +134,12 @@ For repeat local builds, put the value in `.env.local`:
 
 ```env
 AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com
+AURA_GOOGLE_WEB_OAUTH_CLIENT_ID=PASTE_REAL_WEB_CLIENT_ID_HERE.apps.googleusercontent.com
 ```
 
 If Google shows `invalid_client`, the generated `dist/manifest.json` contains a Client ID that Google does not recognize. Recreate the OAuth client in Google Cloud Console, make sure it belongs to the same extension/app setup, rebuild with `AURA_GOOGLE_OAUTH_CLIENT_ID`, and reload the extension from `dist`.
+
+If Google shows `invalid_request` with `Custom URI scheme is not supported on Chrome apps`, create the Web Application OAuth client above, set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`, rebuild, and reload the extension.
 
 ## Migrating From A Fine Start
 
