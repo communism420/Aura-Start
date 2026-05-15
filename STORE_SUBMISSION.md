@@ -4,7 +4,7 @@ These notes are for preparing Aura Start for Chrome Web Store review. They do no
 
 ## Single Purpose
 
-Aura Start is a local-first new tab start page for organizing user-created groups of links. Google Drive sync is optional, off by default, and limited to the hidden Drive app data folder.
+Aura Start is a local-first new tab start page for organizing user-created groups of links. Google Drive backup is optional and works through normal user-managed export/import files.
 
 Suggested short description:
 
@@ -16,7 +16,7 @@ Suggested slogan:
 
 Suggested detailed description:
 
-> Aura Start replaces the new tab page with a clean local-first start page. Create your own groups of links, search them, reorder groups and links, import from Aura Start backups or A Fine Start export codes, create restore points, export your data as JSON, Browser Bookmarks HTML, Markdown, CSV, or A Fine Start export code, and optionally back up/sync through Google Drive app data. Fully open-source under the MIT License. No required account, no analytics, no tracking, no forced cloud sync, and no backend.
+> Aura Start replaces the new tab page with a clean local-first start page. Create your own groups of links, search them, reorder groups and links, import from Aura Start backups or A Fine Start export codes, create restore points, export your data as JSON, Browser Bookmarks HTML, Markdown, CSV, or A Fine Start export code, and optionally keep exported backups in Google Drive yourself. Fully open-source under the MIT License. No required account, no analytics, no tracking, no forced cloud sync, and no backend.
 
 ## Open Source Policy
 
@@ -34,17 +34,16 @@ npm run build:store
 Requested permissions:
 
 - `storage`: saves user-created groups, links, settings, imports, exports metadata, and restore points in local extension storage.
-- `identity`: lets the user explicitly connect optional Google Drive sync through Chrome's OAuth flow.
 
-Requested host permission:
+Requested host permissions:
 
-- `https://www.googleapis.com/*`: used only for optional Google Drive API calls to read and write Aura Start's hidden app data file.
+- None.
 
-Requested OAuth scope:
+Requested OAuth scopes:
 
-- `https://www.googleapis.com/auth/drive.appdata`: lets Aura Start read and write only its own hidden Google Drive app data.
+- None.
 
-Aura Start uses `chrome.identity.getAuthToken` so the user connects Google Drive through Chrome's built-in Google Account sign-in and OAuth consent UI. The OAuth Client ID identifies the Aura Start app, not the signed-in user. Google sign-in returns an access token after consent; it does not provide a client ID from the user's account. Official Chrome Web Store builds must include Aura Start's configured OAuth client ID in the manifest. Aura Start does not store the user's Google account identifier and does not request access to normal Google Drive files.
+Aura Start does not use Google Drive API. The Google Drive panel exports a normal local backup file and includes a user-initiated link to open Google Drive in a browser tab. The user decides whether to upload or move the backup file to Google Drive.
 
 Aura Start intentionally does not request:
 
@@ -54,8 +53,10 @@ Aura Start intentionally does not request:
 - `cookies`
 - `webRequest`
 - `scripting`
+- `identity`
 - `https://www.googleapis.com/auth/drive`
 - `https://www.googleapis.com/auth/drive.file`
+- `https://www.googleapis.com/auth/drive.appdata`
 - full Google Drive access
 - broad host permissions such as `<all_urls>`
 
@@ -67,16 +68,15 @@ Recommended dashboard disclosure:
 
 - Aura Start is fully open-source under the MIT License.
 - Aura Start handles user-provided bookmark/link data locally.
-- Google Drive sync is optional and off by default.
-- When enabled, Aura Start stores one hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`.
-- The Google OAuth Client ID identifies the Aura Start app and is not used to identify the user.
-- Aura Start connects through Chrome's Google Account sign-in flow and does not store the user's Google account identifier.
-- Aura Start does not request full Google Drive access and does not read, scan, edit, delete, or create visible Drive files.
+- Google Drive backup is optional and manual.
+- Aura Start does not sign in to Google and does not request Google Drive API permissions.
+- Aura Start does not track, scan, read, edit, delete, or create files in Google Drive.
+- The user may export a Full Backup JSON file and upload or move it to Google Drive manually.
 - Aura Start does not collect or transmit user data to the developer.
 - Aura Start does not sell user data.
 - Aura Start does not use user data for advertising.
 - Aura Start does not allow humans to read user data.
-- Aura Start uses `chrome.storage.local`, optional `chrome.identity`, and the Google Drive `drive.appdata` scope only for the extension's single purpose.
+- Aura Start uses `chrome.storage.local` only for the extension's single purpose.
 
 ## Remote Hosted Code
 
@@ -111,4 +111,4 @@ Required generated files:
 
 Suggested note for reviewers:
 
-> Aura Start is a fully open-source, local-first new tab extension released under the MIT License. It uses `storage` to save user-created groups, links, settings, and restore points locally in `chrome.storage.local`. It uses `identity`, the `https://www.googleapis.com/auth/drive.appdata` OAuth scope, and the `https://www.googleapis.com/*` host permission only when the user explicitly enables optional Google Drive sync. The sync file is `aura-start-sync.json` in Google Drive `appDataFolder`, so Aura Start does not request full Drive access and does not touch visible Drive files. Aura Start has no content scripts, no browser bookmarks/history permissions, no analytics, no tracking, no backend, and no remotely hosted code.
+> Aura Start is a fully open-source, local-first new tab extension released under the MIT License. It uses `storage` to save user-created groups, links, settings, and restore points locally in `chrome.storage.local`. Google Drive backup is a manual file workflow: Aura Start exports a normal JSON backup file, and the user may upload or move it to Google Drive themselves. Aura Start does not request Google account access, Google Drive API scopes, host permissions, browser bookmarks/history permissions, content scripts, analytics, tracking, a backend, or remotely hosted code.

@@ -315,49 +315,6 @@ select.field {
   height: 14px;
 }
 
-.sync-account-marker {
-  display: inline-flex;
-  min-height: 34px;
-  max-width: 14rem;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  overflow: hidden;
-  border: 0;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  padding: 0.5em 0.7em;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.sync-account-marker span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sync-account-marker:hover {
-  background: var(--button-secondary-hover-bg);
-}
-
-.sync-account-marker-error {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-.sync-account-marker-syncing svg {
-  animation: aura-spin 1s linear infinite;
-}
-
-@keyframes aura-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .aura-search-row {
   display: flex;
   flex-wrap: wrap;

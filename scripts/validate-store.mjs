@@ -17,10 +17,8 @@ const requiredFiles = [
   "_locales/pt_BR/messages.json"
 ];
 
-const allowedPermissions = new Set(["storage", "identity"]);
-const allowedHostPermissions = new Set([
-  "https://www.googleapis.com/*"
-]);
+const allowedPermissions = new Set(["storage"]);
+const allowedHostPermissions = new Set();
 const expectedLocaleDirs = new Set(["de", "en", "es", "fr", "pt_BR", "ru", "uk"]);
 const hardFailures = [];
 const warnings = [];
@@ -120,17 +118,8 @@ if (await exists(manifestPath)) {
     fail("Do not request bookmarks, history, or tabs permissions for this local-first bookmark database.");
   }
 
-  const oauthScopes = Array.isArray(manifest.oauth2?.scopes) ? manifest.oauth2.scopes : [];
-  if (!manifest.oauth2?.client_id) {
-    fail("oauth2.client_id is required for optional Google Drive sync.");
-  } else if (manifest.oauth2.client_id.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
-    warn("oauth2.client_id still contains the source placeholder. Google Drive sync will not work in this package until a real Aura Start app OAuth client ID is configured.");
-  }
-  if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
-    fail("Google Drive sync must request only the drive.appdata OAuth scope.");
-  }
-  if (oauthScopes.includes("https://www.googleapis.com/auth/drive") || oauthScopes.includes("https://www.googleapis.com/auth/drive.file")) {
-    fail("Do not request full Google Drive or drive.file OAuth scopes.");
+  if (manifest.oauth2) {
+    fail("oauth2 must be omitted because Aura Start uses manual Google Drive file backup, not Google Drive API sync.");
   }
 
   const csp = manifest.content_security_policy?.extension_pages ?? "";
@@ -161,10 +150,7 @@ const benignUrlFragments = [
   "www.w3.org/1998/Math/MathML",
   "www.w3.org/1999/xhtml",
   "${trimmed}",
-  "accounts.google.com/o/oauth2/v2/auth",
-  "www.googleapis.com",
-  "oauth2.googleapis.com",
-  "googleapis.com/auth/drive.appdata"
+  "drive.google.com/drive/my-drive"
 ];
 
 for (const file of codeFiles) {

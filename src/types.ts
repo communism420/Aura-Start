@@ -1,23 +1,6 @@
 export type AuraTheme = "light" | "dark" | "system";
 export type AuraColumns = "auto" | 1 | 2 | 3 | 4 | 5 | 6;
 export type AuraLanguage = "en" | "ru" | "es" | "de" | "fr" | "pt" | "uk";
-export type AuraSyncMode = "off" | "manual" | "auto";
-export type AuraSyncStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "syncing"
-  | "error"
-  | "conflict";
-
-export type AuraSyncSettings = {
-  mode: AuraSyncMode;
-  deviceId: string;
-  lastSyncedAt?: string;
-  lastCloudUpdatedAt?: string;
-  cloudFileId?: string;
-  connected?: boolean;
-};
 
 export type AuraStartSettings = {
   theme: AuraTheme;
@@ -28,7 +11,6 @@ export type AuraStartSettings = {
   showDescriptions: boolean;
   showSearch: boolean;
   autoRestorePoints: boolean;
-  sync: AuraSyncSettings;
 };
 
 export type AuraStartLink = {
@@ -76,12 +58,3 @@ export type AuraStartData = {
 };
 
 export type ImportMode = "replace" | "merge";
-export type AuraSyncConflictChoice = "keep_local" | "keep_cloud";
-
-export type AuraSyncConflict = {
-  detectedAt: string;
-  localUpdatedAt: string;
-  cloudUpdatedAt: string;
-  cloudFileId?: string;
-  cloudData: AuraStartData;
-};

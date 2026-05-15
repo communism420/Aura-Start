@@ -17,7 +17,7 @@ Slogan: All features of A Fine Start and even more - free and forever.
 - Search across title, URL, description, and tags
 - Explicit edit mode: drag-and-drop and inline edit controls stay disabled until you turn editing on
 - Drag and drop for groups and links, including moving links between groups
-- Optional Google Drive sync/backup through the hidden Drive `appDataFolder`
+- Optional manual Google Drive backup through normal export/import files
 - JSON import with validation, merge, replace, and restore point protection
 - A Fine Start export-code import for migration from A Fine Start
 - A Fine Start export-code export for moving Aura Start links back into A Fine Start
@@ -30,9 +30,9 @@ Slogan: All features of A Fine Start and even more - free and forever.
 
 Aura Start does not need a server to work. Your groups and links stay in your browser profile by default, and the extension does not use analytics, trackers, bookmarks permission, history permission, Firebase, Supabase, or a custom backend.
 
-Google Drive sync is optional, off by default, and user-controlled. When enabled, Aura Start asks the user to connect a Google Account through Chrome's built-in `chrome.identity` sign-in flow and requests only the `https://www.googleapis.com/auth/drive.appdata` scope. The OAuth Client ID identifies the Aura Start app, not the user's Google account. The sync file is named `aura-start-sync.json` and is stored in Google Drive's hidden appDataFolder, not in the visible Drive root and not in a normal user folder.
+Google Drive backup is optional and user-controlled. Aura Start does not sign in to Google, does not request Google Drive API access, and does not read, scan, edit, or delete files in the user's Google Drive. Instead, Aura Start creates a normal local Full Backup JSON file; the user can upload or move that file to Google Drive manually and later import it back through Aura Start.
 
-Aura Start does not request access to the user's full Google Drive, does not scan normal Drive files, and does not create visible Drive backup files. Manual JSON export/import remains fully available without Google Drive.
+Manual JSON export/import remains fully available without Google Drive.
 
 Your data belongs to you. Export it whenever you want and keep backups in normal files.
 
@@ -87,28 +87,16 @@ Before import replace, group deletion, and reset actions, Aura Start creates a r
 
 If stored data is corrupted, Aura Start shows a recovery screen instead of overwriting it. You can export the raw stored payload before resetting.
 
-## Optional Google Drive Sync
+## Optional Google Drive Backup
 
-Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive and chooses manual or auto sync.
+Google Drive backup is available in Settings as a manual file workflow:
 
-Available actions:
+- Export a Full Backup JSON file.
+- Upload or move that file to Google Drive yourself.
+- Restore later by choosing the file through Import backup.
+- Open Google Drive from the settings panel if you want to manage the file there.
 
-- Connect Google Drive
-- Backup to Google Drive
-- Restore from Google Drive
-- Sync now
-- Delete Google Drive sync file
-- Disconnect Google Account
-
-Delete Google Drive sync file removes only the hidden `aura-start-sync.json` file from the extension's Google Drive app data. It does not delete local Aura Start data and does not touch normal Google Drive files.
-
-Disconnect Google Account clears Aura Start's cached Google access and turns sync off. It does not delete local data and does not delete the cloud sync file by itself.
-
-Before restoring from Google Drive, Aura Start creates a local restore point named `Before Google Drive restore`.
-
-When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not display personal Google account details and does not mean Aura Start has full Drive access.
-
-Connect Google Drive uses the browser's Google Account sign-in and OAuth consent UI. Aura Start does not ask for a Google password, does not store a Google account identifier, and does not show personal account details in the header. Official builds must include Aura Start's configured app client ID in `public/manifest.json`. The placeholder client ID in source code is not usable for live Drive sync.
+Aura Start does not connect to a Google account, does not use Google Drive API, does not request OAuth scopes, and does not track what is inside Google Drive. Google Drive is only a place where the user may choose to keep an exported backup file. Aura Start continues to work fully without Google Drive.
 
 ## Migrating From A Fine Start
 
@@ -126,12 +114,12 @@ To move from Aura Start back to A Fine Start, use Aura Start -> Export -> A Fine
 - Custom icons
 - Command palette
 - Encrypted backup
-- Optional WebDAV, GitHub, or file sync beyond Google Drive appDataFolder
+- Optional WebDAV, GitHub, or file sync as opt-in future features
 - Firefox support later
 
 ## Privacy
 
-Aura Start has no backend, no analytics, no tracking scripts, no required sync, and no access to browser history or bookmarks. Optional Google Drive sync uses `identity`, `drive.appdata`, and Google API host access only when the user enables it.
+Aura Start has no backend, no analytics, no tracking scripts, no required sync, no Google Drive API access, and no access to browser history or bookmarks. Google Drive backup is a manual export/import file workflow.
 
 See [PRIVACY.md](./PRIVACY.md) for the privacy policy text and [STORE_SUBMISSION.md](./STORE_SUBMISSION.md) for Chrome Web Store submission notes.
 
