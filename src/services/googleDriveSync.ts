@@ -36,6 +36,22 @@ type NavigatorWithBrave = Navigator & {
   };
 };
 
+type GoogleApiErrorDetail = {
+  domain?: string;
+  message?: string;
+  reason?: string;
+};
+
+type GoogleApiErrorBody = {
+  error?: {
+    code?: number;
+    details?: unknown[];
+    errors?: GoogleApiErrorDetail[];
+    message?: string;
+    status?: string;
+  };
+};
+
 export type GoogleDriveErrorCode =
   | "auth_cancelled"
   | "identity_unavailable"
@@ -79,12 +95,14 @@ export type GoogleDriveComparison =
 
 export class GoogleDriveSyncError extends Error {
   code: GoogleDriveErrorCode;
+  reason?: string;
   status?: number;
 
-  constructor(code: GoogleDriveErrorCode, message: string, status?: number) {
+  constructor(code: GoogleDriveErrorCode, message: string, status?: number, reason?: string) {
     super(message);
     this.name = "GoogleDriveSyncError";
     this.code = code;
+    this.reason = reason;
     this.status = status;
   }
 }
@@ -335,14 +353,16 @@ function statusCodeToErrorCode(status: number): GoogleDriveErrorCode {
 
 async function errorFromResponse(response: Response): Promise<GoogleDriveSyncError> {
   let message = response.statusText || "Google Drive request failed.";
+  let reason: string | undefined;
   try {
-    const body = await response.json() as { error?: { message?: string } };
+    const body = await response.json() as GoogleApiErrorBody;
     message = body.error?.message ?? message;
+    reason = body.error?.errors?.find((item) => item.reason)?.reason ?? body.error?.status;
   } catch {
     // Keep the HTTP status text when Google returns a non-JSON error body.
   }
 
-  return new GoogleDriveSyncError(statusCodeToErrorCode(response.status), message, response.status);
+  return new GoogleDriveSyncError(statusCodeToErrorCode(response.status), message, response.status, reason);
 }
 
 async function driveFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
@@ -749,6 +769,9 @@ export async function deleteSyncFile(token?: string): Promise<boolean> {
 
 export function mapDriveError(error: unknown): string {
   if (error instanceof GoogleDriveSyncError) {
+    const message = error.message.toLowerCase();
+    const reason = error.reason?.toLowerCase() ?? "";
+
     if (error.code === "auth_cancelled") {
       return error.message || "Google authorization was cancelled or did not complete.";
     }
@@ -759,7 +782,24 @@ export function mapDriveError(error: unknown): string {
       return "Google authorization expired. Reconnect Google Drive and try again.";
     }
     if (error.code === "forbidden") {
-      return "Aura Start does not have permission to access its Google Drive app data.";
+      if (
+        reason === "accessnotconfigured"
+        || message.includes("api has not been used")
+        || message.includes("api has not been enabled")
+        || message.includes("it is disabled")
+      ) {
+        return "Google Drive API is disabled for this OAuth project. Enable Google Drive API in Google Cloud Console, wait a few minutes, then reconnect Google Drive.";
+      }
+
+      if (
+        reason === "insufficientpermissions"
+        || message.includes("insufficient authentication scopes")
+        || message.includes("insufficient permission")
+      ) {
+        return "Google authorized Aura Start without the required drive.appdata permission. Disconnect Google Account, connect again, and make sure the OAuth consent screen includes the Google Drive appdata scope.";
+      }
+
+      return `Google Drive denied access: ${error.message}`;
     }
     if (error.code === "not_found") {
       return "No Google Drive sync file found.";
