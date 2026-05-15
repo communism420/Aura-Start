@@ -1,7 +1,8 @@
-import { FolderPlus, LinkIcon, Pencil, Search, Settings, Upload } from "lucide-react";
+import { AlertCircle, Cloud, FolderPlus, LinkIcon, Pencil, RefreshCw, Search, Settings, Upload } from "lucide-react";
 import type { RefObject } from "react";
 import { t } from "../i18n";
-import type { AuraStartData } from "../types";
+import type { AuraStartData, AuraSyncStatus } from "../types";
+import { formatDateTime } from "../utils/dates";
 import { ExportMenu } from "./ExportMenu";
 import { SearchBar } from "./SearchBar";
 
@@ -10,6 +11,8 @@ type HeaderProps = {
   search: string;
   searchOpen: boolean;
   editMode: boolean;
+  syncStatus: AuraSyncStatus;
+  syncMessage: string | null;
   searchInputRef: RefObject<HTMLInputElement>;
   onSearchChange: (value: string) => void;
   onOpenSearch: () => void;
@@ -26,6 +29,8 @@ export function Header({
   search,
   searchOpen,
   editMode,
+  syncStatus,
+  syncMessage,
   searchInputRef,
   onSearchChange,
   onOpenSearch,
@@ -39,6 +44,22 @@ export function Header({
   const linkCount = data.groups.reduce((total, group) => total + group.links.length, 0);
   const searchVisible = data.settings.showSearch && (searchOpen || search.length > 0);
   const language = data.settings.language;
+  const sync = data.settings.sync;
+  const showSyncMarker = sync.mode !== "off" && Boolean(sync.connected);
+  const syncMarkerLabel = sync.accountName ?? sync.accountEmail ?? t(language, "googleDriveConnectedShort");
+  const syncMarkerTitle = [
+    syncStatus === "syncing"
+      ? t(language, "googleDriveSyncing")
+      : syncStatus === "error"
+        ? t(language, "googleDriveSyncFailed")
+        : syncStatus === "conflict"
+          ? t(language, "googleDriveConflictDetected")
+          : t(language, "googleDriveConnected"),
+    sync.accountEmail ?? sync.accountName,
+    sync.lastSyncedAt ? t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) }) : undefined,
+    syncMessage
+  ].filter(Boolean).join("\n");
+  const SyncIcon = syncStatus === "syncing" ? RefreshCw : syncStatus === "error" || syncStatus === "conflict" ? AlertCircle : Cloud;
 
   return (
     <header className="aura-header">
@@ -85,6 +106,19 @@ export function Header({
             <Settings size={17} />
             {t(language, "settings")}
           </button>
+          {showSyncMarker ? (
+            <button
+              className={`sync-account-marker ${
+                syncStatus === "error" || syncStatus === "conflict" ? "sync-account-marker-error" : ""
+              } ${syncStatus === "syncing" ? "sync-account-marker-syncing" : ""}`}
+              title={syncMarkerTitle}
+              type="button"
+              onClick={onOpenSettings}
+            >
+              <SyncIcon size={14} />
+              <span>{syncMarkerLabel}</span>
+            </button>
+          ) : null}
         </div>
       </div>
       {searchVisible ? (

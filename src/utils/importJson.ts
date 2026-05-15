@@ -4,6 +4,8 @@ import type {
   AuraLanguage,
   AuraRestorePoint,
   AuraRestorePointReason,
+  AuraSyncMode,
+  AuraSyncSettings,
   AuraStartData,
   AuraStartDataWithoutRestorePoints,
   AuraStartGroup,
@@ -55,6 +57,15 @@ function normalizeIso(value: unknown, fallback = nowIso()): string {
   return Number.isFinite(time) ? new Date(time).toISOString() : fallback;
 }
 
+function normalizeOptionalIso(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const time = new Date(value).getTime();
+  return Number.isFinite(time) ? new Date(time).toISOString() : undefined;
+}
+
 function normalizeTheme(value: unknown): AuraTheme {
   return value === "light" || value === "dark" || value === "system" ? value : DEFAULT_SETTINGS.theme;
 }
@@ -71,9 +82,39 @@ function normalizeColumns(value: unknown): AuraColumns {
   return DEFAULT_SETTINGS.columns;
 }
 
+function normalizeSyncMode(value: unknown): AuraSyncMode {
+  return value === "manual" || value === "auto" || value === "off" ? value : "off";
+}
+
+function optionalTrimmedString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeSyncSettings(value: unknown): AuraSyncSettings {
+  const sync = isRecord(value) ? value : {};
+  const mode = normalizeSyncMode(sync.mode);
+  const deviceId = optionalTrimmedString(sync.deviceId) ?? createId("device");
+
+  return {
+    mode,
+    deviceId,
+    lastSyncedAt: normalizeOptionalIso(sync.lastSyncedAt),
+    lastCloudUpdatedAt: normalizeOptionalIso(sync.lastCloudUpdatedAt),
+    accountEmail: optionalTrimmedString(sync.accountEmail),
+    accountName: optionalTrimmedString(sync.accountName),
+    accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
+    cloudFileId: optionalTrimmedString(sync.cloudFileId),
+    oauthClientId: optionalTrimmedString(sync.oauthClientId),
+    connected: mode !== "off" && asBoolean(sync.connected, false)
+  };
+}
+
 function normalizeSettings(value: unknown): AuraStartSettings {
   if (!isRecord(value)) {
-    return DEFAULT_SETTINGS;
+    return {
+      ...DEFAULT_SETTINGS,
+      sync: normalizeSyncSettings(undefined)
+    };
   }
 
   return {
@@ -84,7 +125,8 @@ function normalizeSettings(value: unknown): AuraStartSettings {
     openLinksInNewTab: false,
     showDescriptions: asBoolean(value.showDescriptions, DEFAULT_SETTINGS.showDescriptions),
     showSearch: asBoolean(value.showSearch, DEFAULT_SETTINGS.showSearch),
-    autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints)
+    autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints),
+    sync: normalizeSyncSettings(value.sync)
   };
 }
 
