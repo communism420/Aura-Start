@@ -4,6 +4,22 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
 const OAUTH_CLIENT_ID_PATTERN = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
+const EXAMPLE_OAUTH_CLIENT_IDS = new Set([
+  "123-example.apps.googleusercontent.com",
+  "1234567890-abcdef.apps.googleusercontent.com"
+]);
+
+function normalizeOAuthClientId(clientId: string): string {
+  return clientId.trim();
+}
+
+function looksLikeExampleOAuthClientId(clientId: string): boolean {
+  const normalized = clientId.toLowerCase();
+  return EXAMPLE_OAUTH_CLIENT_IDS.has(normalized)
+    || normalized.includes("your_google_oauth_client_id")
+    || normalized.includes("your-real-client-id")
+    || normalized.includes("paste_real_client_id_here");
+}
 
 function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
   return {
@@ -11,8 +27,12 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
     apply: "build",
     async closeBundle() {
       if (!clientId) return;
-      if (!OAUTH_CLIENT_ID_PATTERN.test(clientId)) {
-        throw new Error("AURA_GOOGLE_OAUTH_CLIENT_ID must look like 123-example.apps.googleusercontent.com.");
+      const normalizedClientId = normalizeOAuthClientId(clientId);
+      if (!OAUTH_CLIENT_ID_PATTERN.test(normalizedClientId)) {
+        throw new Error("AURA_GOOGLE_OAUTH_CLIENT_ID must be a real Google OAuth Client ID ending with .apps.googleusercontent.com.");
+      }
+      if (looksLikeExampleOAuthClientId(normalizedClientId)) {
+        throw new Error("AURA_GOOGLE_OAUTH_CLIENT_ID points to an example value. Create a real OAuth Client ID in Google Cloud Console and use that value.");
       }
 
       const manifestPath = resolve(__dirname, "dist", "manifest.json");
@@ -21,7 +41,7 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
       };
       manifest.oauth2 = {
         ...manifest.oauth2,
-        client_id: clientId
+        client_id: normalizedClientId
       };
       await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
       console.log("Injected Google OAuth Client ID into dist/manifest.json.");

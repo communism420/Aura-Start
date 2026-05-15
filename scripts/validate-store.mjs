@@ -22,6 +22,10 @@ const allowedHostPermissions = new Set([
   "https://www.googleapis.com/*"
 ]);
 const expectedLocaleDirs = new Set(["de", "en", "es", "fr", "pt_BR", "ru", "uk"]);
+const exampleOAuthClientIds = new Set([
+  "123-example.apps.googleusercontent.com",
+  "1234567890-abcdef.apps.googleusercontent.com"
+]);
 const hardFailures = [];
 const warnings = [];
 
@@ -125,6 +129,8 @@ if (await exists(manifestPath)) {
     fail("oauth2.client_id is required for optional Google Drive sync.");
   } else if (manifest.oauth2.client_id.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
     warn("oauth2.client_id still contains the source placeholder. Set AURA_GOOGLE_OAUTH_CLIENT_ID before npm run build:store for a publishable package.");
+  } else if (exampleOAuthClientIds.has(String(manifest.oauth2.client_id).toLowerCase())) {
+    fail("oauth2.client_id is an example value. Set AURA_GOOGLE_OAUTH_CLIENT_ID to a real Google OAuth Client ID before building the store package.");
   }
   if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
     fail("Google Drive sync must request only the drive.appdata OAuth scope.");
