@@ -108,7 +108,9 @@ Before restoring from Google Drive, Aura Start creates a local restore point nam
 
 When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
 
-Connect Google Drive uses Chrome's `chrome.identity` OAuth flow and may open a Google authorization window when Chrome needs explicit sign-in or consent. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID, not a user secret, and not entered by users in Aura Start settings. Google requires an OAuth client ID for Drive authorization, so there is no Client-ID-free Google Drive API flow.
+Connect Google Drive uses Chrome's built-in `chrome.identity.getAuthToken` OAuth flow and may open a Google authorization prompt when Chrome needs explicit sign-in or consent. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID, not a user secret, and not entered by users in Aura Start settings. Google requires an OAuth client ID for Drive authorization, so there is no Client-ID-free Google Drive API flow.
+
+Google Drive sync is designed for the Chrome Web Store build running in Google Chrome with Chrome's Google sign-in available. Some Chromium-based browsers or profiles with browser sign-in disabled may block `chrome.identity.getAuthToken`; in that case Aura Start stays fully local and manual export/import still works.
 
 For release builds, do not edit `public/manifest.json` manually. Create a real OAuth client for the Aura Start extension in Google Cloud Console, enable the Google Drive API for that project, then set `AURA_GOOGLE_OAUTH_CLIENT_ID` before running the build. Vite will inject it into `dist/manifest.json`.
 
