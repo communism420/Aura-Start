@@ -124,7 +124,7 @@ if (await exists(manifestPath)) {
   if (!manifest.oauth2?.client_id) {
     fail("oauth2.client_id is required for optional Google Drive sync.");
   } else if (manifest.oauth2.client_id.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
-    warn("oauth2.client_id still contains the source placeholder. Published Chrome Web Store packages must replace it with Aura Start's real Chrome Extension OAuth client ID.");
+    warn("oauth2.client_id still contains the source placeholder. Set AURA_GOOGLE_OAUTH_CLIENT_ID before npm run build:store for a publishable package.");
   }
   if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
     fail("Google Drive sync must request only the drive.appdata OAuth scope.");

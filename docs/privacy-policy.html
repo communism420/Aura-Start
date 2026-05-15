@@ -204,8 +204,8 @@
           data file in Google Drive <code>appDataFolder</code>. Aura Start stores a
           single sync file named <code>aura-start-sync.json</code> in that hidden app
           data area. Google authorization is used only for this sync file and is not
-          used for analytics, tracking, advertising, account profiling, or reading the
-          user's normal Drive contents.
+          used for analytics, telemetry, tracking, advertising, account profiling, or
+          reading the user's normal Drive contents.
         </p>
         <p>
           Aura Start does not request <code>https://www.googleapis.com/auth/drive</code>
@@ -239,6 +239,11 @@
           that file.
         </p>
         <p>
+          Users can turn cloud sync off at any time by setting sync mode to off. They
+          can also disconnect the Google account at any time. These actions do not
+          remove local groups, links, settings, exports, imports, or restore points.
+        </p>
+        <p>
           Before replacing local data with a Google Drive restore, Aura Start creates
           a local restore point.
         </p>
@@ -261,10 +266,13 @@
         </p>
         <p>
           Network access is used only for optional Google Drive sync after the user
-          connects it. Aura Start does not make background tracking calls and does
-          not send data to an Aura Start server. Export files are created locally in
-          the browser using Blob downloads. Import files are read locally by the
-          browser and are validated before they change local extension storage.
+          connects it. Google Drive sync contains no telemetry; network calls go only
+          to Google OAuth and Google Drive API endpoints for user-requested sync,
+          backup, restore, delete, or disconnect actions. Aura Start does not make
+          background tracking calls and does not send data to an Aura Start server.
+          Export files are created locally in the browser using Blob downloads.
+          Import files are read locally by the browser and are validated before they
+          change local extension storage.
         </p>
 
         <h2>User Control</h2>

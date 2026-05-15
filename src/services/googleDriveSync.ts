@@ -113,7 +113,7 @@ function oauthClientId(): string {
   if (!clientId) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is not configured yet. The extension package must include Aura Start's real Google OAuth Client ID in manifest.json."
+      "Google Drive sync is not configured in this build. Build Aura Start with AURA_GOOGLE_OAUTH_CLIENT_ID set so the generated manifest contains the Google OAuth Client ID."
     );
   }
 
@@ -320,7 +320,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   if (!manifestOAuthClientId()) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is not configured yet. The extension package must include Aura Start's real Google OAuth Client ID in manifest.json."
+      "Google Drive sync is not configured in this build. Build Aura Start with AURA_GOOGLE_OAUTH_CLIENT_ID set so the generated manifest contains the Google OAuth Client ID."
     );
   }
 

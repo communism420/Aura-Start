@@ -108,7 +108,25 @@ Before restoring from Google Drive, Aura Start creates a local restore point nam
 
 When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
 
-Connect Google Drive opens Google's authorization window directly through `chrome.identity.launchWebAuthFlow`. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID and is not entered by users in Aura Start settings. Self-built or unpacked source builds still need the placeholder OAuth client ID in `public/manifest.json` replaced before live Drive sync can work.
+Connect Google Drive opens Google's authorization window directly through `chrome.identity.launchWebAuthFlow`. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID, not a user secret, and not entered by users in Aura Start settings. Google requires an OAuth client ID for Drive authorization, so there is no Client-ID-free Google Drive API flow.
+
+For release builds, do not edit `public/manifest.json` manually. Create an OAuth client for the Aura Start extension in Google Cloud Console, enable the Google Drive API for that project, then set `AURA_GOOGLE_OAUTH_CLIENT_ID` before running the build. Vite will inject it into `dist/manifest.json`:
+
+```bash
+AURA_GOOGLE_OAUTH_CLIENT_ID=1234567890-abcdef.apps.googleusercontent.com npm run build:store
+```
+
+On PowerShell:
+
+```powershell
+$env:AURA_GOOGLE_OAUTH_CLIENT_ID="1234567890-abcdef.apps.googleusercontent.com"; npm run build:store
+```
+
+For repeat local builds, put the value in `.env.local`:
+
+```env
+AURA_GOOGLE_OAUTH_CLIENT_ID=1234567890-abcdef.apps.googleusercontent.com
+```
 
 ## Migrating From A Fine Start
 
