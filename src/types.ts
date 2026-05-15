@@ -19,7 +19,6 @@ export type AuraSyncSettings = {
   accountName?: string;
   accountAvatarUrl?: string;
   cloudFileId?: string;
-  oauthClientId?: string;
   connected?: boolean;
 };
 

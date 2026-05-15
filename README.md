@@ -108,7 +108,7 @@ Before restoring from Google Drive, Aura Start creates a local restore point nam
 
 When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
 
-If Chromium reports that browser sign-in is turned off, Aura Start falls back to an explicit Google OAuth web flow through `chrome.identity.launchWebAuthFlow`. Both auth paths request the same minimal `drive.appdata` permission and no full Drive scope. Self-built or unpacked packages still need a real Google OAuth client ID: paste it in Settings -> Google Drive Sync, or replace the placeholder client ID in `public/manifest.json`. The OAuth client ID identifies the Aura Start app to Google; it is not a user tracking ID. The placeholder client ID in source code is not usable for live Drive sync.
+Connect Google Drive opens Google's authorization window directly through `chrome.identity.launchWebAuthFlow`. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID and is not entered by users in Aura Start settings. Self-built or unpacked source builds still need the placeholder OAuth client ID in `public/manifest.json` replaced before live Drive sync can work.
 
 ## Migrating From A Fine Start
 

@@ -160,14 +160,6 @@ export function SettingsDialog({
             onDeleteSyncFile={onDeleteGoogleDriveSyncFile}
             onDisconnect={onDisconnectGoogleDrive}
             onError={onError}
-            onUpdateOAuthClientId={(oauthClientId) =>
-              onUpdateSettings({
-                sync: {
-                  ...data.settings.sync,
-                  oauthClientId: oauthClientId.trim() || undefined
-                }
-              })
-            }
             onResolveConflict={onResolveSyncConflict}
             onRestore={onRestoreFromGoogleDrive}
             onSetSyncMode={onSetSyncMode}

@@ -102,28 +102,18 @@ function appVersion(): string {
   return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.1.0";
 }
 
-function normalizeOAuthClientId(value: string | undefined): string | undefined {
-  const clientId = value?.trim();
-  return clientId && clientId.endsWith(".apps.googleusercontent.com") ? clientId : undefined;
-}
-
 function manifestOAuthClientId(): string | undefined {
   const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
   const clientId = manifest?.oauth2?.client_id?.trim();
   return clientId && !clientId.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID") ? clientId : undefined;
 }
 
-function oauthClientId(overrideClientId?: string): string {
-  const configuredClientId = normalizeOAuthClientId(overrideClientId);
-  if (configuredClientId) {
-    return configuredClientId;
-  }
-
+function oauthClientId(): string {
   const clientId = manifestOAuthClientId();
   if (!clientId) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is not configured yet. Published builds need Aura Start's Google OAuth Client ID in manifest.json. For unpacked builds, paste your own Google OAuth Client ID in Settings -> Google Drive Sync."
+      "Google Drive sync is not configured yet. The extension package must include Aura Start's real Google OAuth Client ID in manifest.json."
     );
   }
 
@@ -323,54 +313,47 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
     return cached;
   }
 
-  return await getAuthTokenWithClientId(interactive);
-}
-
-export async function getAuthTokenWithClientId(interactive: boolean, oauthClientIdOverride?: string): Promise<string> {
-  const cached = cachedWebAuthToken();
-  if (cached) {
-    return cached;
-  }
-
-  const configuredClientId = normalizeOAuthClientId(oauthClientIdOverride);
-  if (configuredClientId) {
-    return await launchGoogleWebAuthFlow(interactive, configuredClientId);
+  if (interactive) {
+    return await launchGoogleWebAuthFlow(true);
   }
 
   if (!manifestOAuthClientId()) {
-    return await launchGoogleWebAuthFlow(interactive);
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "Google Drive sync is not configured yet. The extension package must include Aura Start's real Google OAuth Client ID in manifest.json."
+    );
   }
 
   const identity = requireIdentityApi();
+  return await new Promise<string>((resolve, reject) => {
+    identity.getAuthToken({ interactive: false }, (token) => {
+      const lastError = getChromeLastErrorMessage();
+      if (lastError) {
+        reject(new GoogleDriveSyncError("auth_cancelled", lastError));
+        return;
+      }
 
-  try {
-    return await new Promise<string>((resolve, reject) => {
-      identity.getAuthToken({ interactive }, (token) => {
-        const lastError = getChromeLastErrorMessage();
-        if (lastError) {
-          reject(new GoogleDriveSyncError("auth_cancelled", lastError));
-          return;
-        }
+      const resolvedToken = authResultToken(token);
+      if (!resolvedToken) {
+        reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token."));
+        return;
+      }
 
-        const resolvedToken = authResultToken(token);
-        if (!resolvedToken) {
-          reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token."));
-          return;
-        }
-
-        resolve(resolvedToken);
-      });
+      resolve(resolvedToken);
     });
-  } catch (error) {
-    if (interactive && isBrowserSigninDisabledError(error)) {
-      return await launchGoogleWebAuthFlow(true);
+  }).catch((error) => {
+    if (isBrowserSigninDisabledError(error)) {
+      throw new GoogleDriveSyncError(
+        "auth_cancelled",
+        "Chrome browser sign-in is disabled for this profile. Click Connect Google Drive to open the Google authorization window."
+      );
     }
 
     throw error;
-  }
+  });
 }
 
-async function launchGoogleWebAuthFlow(interactive: boolean, oauthClientIdOverride?: string): Promise<string> {
+async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   const identity = requireIdentityApi();
   if (!identity.launchWebAuthFlow || !identity.getRedirectURL) {
     throw new GoogleDriveSyncError(
@@ -382,7 +365,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean, oauthClientIdOverri
   const redirectUri = identity.getRedirectURL("oauth2");
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
-  authUrl.searchParams.set("client_id", oauthClientId(oauthClientIdOverride));
+  authUrl.searchParams.set("client_id", oauthClientId());
   authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("response_type", "token");
   authUrl.searchParams.set("scope", oauthScopes().join(" "));
@@ -433,10 +416,6 @@ async function launchGoogleWebAuthFlow(interactive: boolean, oauthClientIdOverri
   };
 
   return token;
-}
-
-export function googleOAuthRedirectUrl(): string | undefined {
-  return globalThis.chrome?.identity?.getRedirectURL?.("oauth2");
 }
 
 export async function clearAuthToken(token?: string): Promise<void> {

@@ -9,7 +9,6 @@ import {
   downloadSyncFile,
   findSyncFile,
   getAuthToken,
-  getAuthTokenWithClientId,
   getConnectedAccountInfo,
   mapDriveError,
   restoreFromDrive,
@@ -139,10 +138,10 @@ function syncStatusFromData(data: AuraStartData): AuraSyncStatus {
 
 async function getTokenForSync(sync: AuraSyncSettings, allowInteractive = true): Promise<string> {
   try {
-    return await getAuthTokenWithClientId(!sync.connected && allowInteractive, sync.oauthClientId);
+    return await getAuthToken(!sync.connected && allowInteractive);
   } catch (error) {
     if (sync.connected && allowInteractive) {
-      return await getAuthTokenWithClientId(true, sync.oauthClientId);
+      return await getAuthToken(true);
     }
 
     throw error;
@@ -727,7 +726,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     set({ syncStatus: "connecting", syncMessage: text(data, "googleDriveConnecting"), syncConflict: null });
     try {
       const sync = ensureSyncDevice(data.settings.sync);
-      const token = await getAuthTokenWithClientId(true, sync.oauthClientId);
+      const token = await getAuthToken(true);
       const metadata = await findSyncFile(token);
       const account = await getConnectedAccountInfo().catch(() => undefined);
       const nextMode = sync.mode === "off" ? "manual" : sync.mode;
