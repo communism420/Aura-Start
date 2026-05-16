@@ -1,4 +1,4 @@
-import { Cloud, Download, Trash2, Upload } from "lucide-react";
+import { Cloud, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
 import type {
@@ -18,8 +18,6 @@ type GoogleDriveSyncPanelProps = {
   syncMessage: string | null;
   syncConflict: AuraSyncConflict | null;
   onConnect: () => Promise<void>;
-  onBackup: () => Promise<void>;
-  onRestore: () => Promise<void>;
   onDeleteBackupAndDisconnect: () => Promise<void>;
   onResolveConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
@@ -37,8 +35,6 @@ export function GoogleDriveSyncPanel({
   syncMessage,
   syncConflict,
   onConnect,
-  onBackup,
-  onRestore,
   onDeleteBackupAndDisconnect,
   onResolveConflict,
   onError
@@ -49,7 +45,6 @@ export function GoogleDriveSyncPanel({
   const busy = isBusy(syncStatus);
   const hasGoogleConnection = Boolean(sync.connected);
   const connected = sync.mode !== "off" && hasGoogleConnection;
-  const canSync = connected && !busy;
   const canManageConnection = hasGoogleConnection && !busy;
   const displayMessage = syncMessage ?? (sync.mode === "off"
     ? t(language, "googleDriveSyncDisabled")
@@ -115,18 +110,10 @@ export function GoogleDriveSyncPanel({
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <button className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={busy} type="button" onClick={() => run(onConnect)}>
           <Cloud className="shrink-0" size={17} />
           <span className="truncate">{hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}</span>
-        </button>
-        <button className="btn btn-secondary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={!canSync} type="button" onClick={() => run(onBackup)}>
-          <Upload className="shrink-0" size={17} />
-          <span className="truncate">{t(language, "googleDriveBackupToDrive")}</span>
-        </button>
-        <button className="btn btn-secondary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={!canSync} type="button" onClick={() => run(onRestore)}>
-          <Download className="shrink-0" size={17} />
-          <span className="truncate">{t(language, "googleDriveRestoreFromDrive")}</span>
         </button>
         <button
           className="btn btn-danger h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"

@@ -38,16 +38,16 @@ When Google Drive sync is enabled, the user's Aura Start data may be transmitted
 Users can:
 
 - Keep sync off and use Aura Start fully locally
+- Restore an existing Google Drive sync file automatically when connecting sync
+- Create a Google Drive sync file automatically when none exists
 - Back up local changes to Google Drive automatically after connecting sync
-- Back up to Google Drive manually when they want an immediate backup
-- Restore from Google Drive manually
 - Delete the hidden Google Drive sync file and disconnect the Google account through one confirmed action
 
 Deleting the Google Drive sync file and disconnecting the Google account does not delete local Aura Start data. The action is shown in a confirmation dialog before it runs. Removing the extension may not remove the hidden Google Drive app data file automatically, so Aura Start provides this explicit delete-and-disconnect action.
 
 Users can turn cloud sync off at any time by deleting the Google Drive backup and disconnecting the Google account. This does not remove local groups, links, settings, exports, imports, or restore points.
 
-Before replacing local data with a Google Drive restore, Aura Start creates a local restore point.
+Before replacing local data with a Google Drive restore during connection, Aura Start creates a local restore point.
 
 ## Account Marker
 
@@ -57,7 +57,7 @@ When Google Drive sync is enabled and connected, Aura Start may show a compact G
 
 Aura Start does not require an account for normal use. It does not include analytics, trackers, ads, affiliate replacement, telemetry, behavioral profiling, or hidden data collection.
 
-Network access is used only for optional Google Drive sync after the user connects it. Google Drive sync contains no telemetry; network calls go only to Google OAuth and Google Drive API endpoints for user-requested sync, backup, restore, delete, or disconnect actions. Aura Start does not make background tracking calls and does not send data to an Aura Start server. Export files are created locally in the browser with Blob downloads. Import files are read locally by the browser and validated before they change local extension storage.
+Network access is used only for optional Google Drive sync after the user connects it. Google Drive sync contains no telemetry; network calls go only to Google OAuth and Google Drive API endpoints for user-requested connection, automatic sync, automatic connection-time restore/create, delete, or disconnect actions. Aura Start does not make background tracking calls and does not send data to an Aura Start server. Export files are created locally in the browser with Blob downloads. Import files are read locally by the browser and validated before they change local extension storage.
 
 ## User Control
 

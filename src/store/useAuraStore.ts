@@ -341,7 +341,8 @@ function driveFailure(
 async function applyCloudDownload(
   set: (partial: Partial<AuraStore>) => void,
   get: () => AuraStore,
-  download: GoogleDriveSyncDownload
+  download: GoogleDriveSyncDownload,
+  syncPatch: Partial<AuraSyncSettings> = {}
 ): Promise<void> {
   const current = get().data;
   if (!current) return;
@@ -351,6 +352,7 @@ async function applyCloudDownload(
   const currentSync = ensureSyncDevice(current.settings.sync);
   const nextSync: AuraSyncSettings = {
     ...currentSync,
+    ...syncPatch,
     mode: "auto",
     connected: true,
     cloudFileId: download.metadata.id,
@@ -733,30 +735,60 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       const token = await getAuthToken(true);
       const metadata = await findSyncFile(token);
       const account = await getConnectedAccountInfo().catch(() => undefined);
+      const accountPatch: Partial<AuraSyncSettings> = {
+        accountEmail: account?.email,
+        accountName: account?.name,
+        accountAvatarUrl: account?.avatarUrl
+      };
+
+      if (metadata) {
+        const download = await downloadSyncFile(metadata.id, token);
+        if (download) {
+          await applyCloudDownload(set, get, download, accountPatch);
+          get().addToast({
+            type: "success",
+            title: text(get().data, "googleDriveConnected"),
+            message: text(get().data, "googleDriveSyncFileFoundAndRestored")
+          });
+          return;
+        }
+      }
+
+      const nextSync = mergeSyncSettings(data, {
+        ...accountPatch,
+        mode: "auto",
+        connected: true
+      });
+      const uploadData: AuraStartData = {
+        ...data,
+        settings: {
+          ...data.settings,
+          sync: nextSync
+        }
+      };
+      const createdMetadata = await backupToDrive(uploadData, {
+        deviceId: nextSync.deviceId,
+        token
+      });
       const next = await commitSyncMetadata(
         set,
         data,
         {
+          ...accountPatch,
           mode: "auto",
           connected: true,
-          cloudFileId: metadata?.id,
-          accountEmail: account?.email,
-          accountName: account?.name,
-          accountAvatarUrl: account?.avatarUrl
+          cloudFileId: createdMetadata.id,
+          lastSyncedAt: nowIso(),
+          lastCloudUpdatedAt: data.updatedAt
         },
         "connected",
-        metadata ? text(data, "googleDriveConnected") : text(data, "googleDriveConnectedNoFile")
+        text(data, "googleDriveNoSyncFileCreated")
       );
 
-      if (!metadata) {
-        await get().syncNow({ silent: true });
-      }
-
-      const toastData = get().data ?? next;
       get().addToast({
         type: "success",
-        title: text(toastData, "googleDriveConnected"),
-        message: metadata ? text(toastData, "googleDriveSyncFileFound") : text(toastData, "googleDriveNoSyncFileCreated")
+        title: text(next, "googleDriveConnected"),
+        message: text(next, "googleDriveNoSyncFileCreated")
       });
     } catch (error) {
       driveFailure(set, get, error);

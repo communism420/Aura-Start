@@ -23,8 +23,6 @@ type SettingsDialogProps = {
   onOpenRestorePoints: () => void;
   onReset: () => void;
   onConnectGoogleDrive: () => Promise<void>;
-  onBackupToGoogleDrive: () => Promise<void>;
-  onRestoreFromGoogleDrive: () => Promise<void>;
   onDeleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   onResolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
@@ -44,8 +42,6 @@ export function SettingsDialog({
   onOpenRestorePoints,
   onReset,
   onConnectGoogleDrive,
-  onBackupToGoogleDrive,
-  onRestoreFromGoogleDrive,
   onDeleteGoogleDriveBackupAndDisconnect,
   onResolveSyncConflict,
   onError
@@ -148,12 +144,10 @@ export function SettingsDialog({
             syncConflict={syncConflict}
             syncMessage={syncMessage}
             syncStatus={syncStatus}
-            onBackup={onBackupToGoogleDrive}
             onConnect={onConnectGoogleDrive}
             onDeleteBackupAndDisconnect={onDeleteGoogleDriveBackupAndDisconnect}
             onError={onError}
             onResolveConflict={onResolveSyncConflict}
-            onRestore={onRestoreFromGoogleDrive}
           />
         </section>
       </div>

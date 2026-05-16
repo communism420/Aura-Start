@@ -63,8 +63,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     restoreRestorePoint,
     deleteRestorePoint,
     connectGoogleDrive,
-    backupToGoogleDrive,
-    restoreFromGoogleDrive,
     deleteGoogleDriveBackupAndDisconnect,
     resolveSyncConflict,
     addToast
@@ -325,7 +323,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         syncConflict={syncConflict}
         syncMessage={syncMessage}
         syncStatus={syncStatus}
-        onBackupToGoogleDrive={() => backupToGoogleDrive()}
         onConnectGoogleDrive={connectGoogleDrive}
         onClose={() => setSettingsOpen(false)}
         onDeleteGoogleDriveBackupAndDisconnect={deleteGoogleDriveBackupAndDisconnect}
@@ -333,7 +330,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onOpenImport={closeSettingsAndOpenImport}
         onOpenRestorePoints={closeSettingsAndOpenRestore}
         onResolveSyncConflict={resolveSyncConflict}
-        onRestoreFromGoogleDrive={restoreFromGoogleDrive}
         onReset={() => setPendingDanger({ type: "resetAll" })}
         onUpdateSettings={updateSettings}
       />
