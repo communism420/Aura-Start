@@ -193,6 +193,16 @@ function withRestorePoint(
   };
 }
 
+function keepLocalSyncSettings(data: AuraStartData, current: AuraStartData): AuraStartData {
+  return {
+    ...data,
+    settings: {
+      ...data.settings,
+      sync: ensureSyncDevice(current.settings.sync)
+    }
+  };
+}
+
 function findGroup(data: AuraStartData, groupId: string): AuraStartGroup {
   const group = data.groups.find((item) => item.id === groupId);
   if (!group) {
@@ -672,10 +682,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const withSafety = withRestorePoint(data, "Before import", "before_import");
     const next =
       mode === "replace"
-        ? {
-            ...imported,
-            restorePoints: [withSafety.restorePoints[0], ...imported.restorePoints].slice(0, MAX_RESTORE_POINTS)
-          }
+        ? keepLocalSyncSettings(
+            {
+              ...imported,
+              restorePoints: [withSafety.restorePoints[0], ...imported.restorePoints].slice(0, MAX_RESTORE_POINTS)
+            },
+            data
+          )
         : mergeImportedData(withSafety, imported);
 
     await safeCommit(set, next);
