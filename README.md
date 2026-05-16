@@ -89,20 +89,16 @@ If stored data is corrupted, Aura Start shows a recovery screen instead of overw
 
 ## Optional Google Drive Sync
 
-Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive and chooses manual or auto sync.
+Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive. After connection, local changes are queued and synced to the hidden Google Drive app data file automatically.
 
 Available actions:
 
 - Connect Google Drive
 - Backup to Google Drive
 - Restore from Google Drive
-- Sync now
-- Delete Google Drive sync file
-- Disconnect Google Account
+- Delete Drive backup and disconnect
 
-Delete Google Drive sync file removes only the hidden `aura-start-sync.json` file from the extension's Google Drive app data. It does not delete local Aura Start data and does not touch normal Google Drive files.
-
-Disconnect Google Account clears Aura Start's cached Google access and turns sync off. It does not delete local data and does not delete the cloud sync file by itself.
+Delete Drive backup and disconnect is a single destructive action with a confirmation dialog. It deletes only the hidden `aura-start-sync.json` file from the extension's Google Drive app data, clears Aura Start's cached Google access, and turns sync off. It does not delete local Aura Start data and does not touch normal Google Drive files.
 
 Before restoring from Google Drive, Aura Start creates a local restore point named `Before Google Drive restore`.
 

@@ -5,7 +5,6 @@ import type {
   AuraStartSettings,
   AuraSyncConflict,
   AuraSyncConflictChoice,
-  AuraSyncMode,
   AuraSyncStatus
 } from "../types";
 import { ExportMenu } from "./ExportMenu";
@@ -24,12 +23,9 @@ type SettingsDialogProps = {
   onOpenRestorePoints: () => void;
   onReset: () => void;
   onConnectGoogleDrive: () => Promise<void>;
-  onDisconnectGoogleDrive: () => Promise<void>;
   onBackupToGoogleDrive: () => Promise<void>;
   onRestoreFromGoogleDrive: () => Promise<void>;
-  onSyncGoogleDriveNow: () => Promise<void>;
-  onSetSyncMode: (mode: AuraSyncMode) => Promise<void>;
-  onDeleteGoogleDriveSyncFile: () => Promise<void>;
+  onDeleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   onResolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
 };
@@ -48,12 +44,9 @@ export function SettingsDialog({
   onOpenRestorePoints,
   onReset,
   onConnectGoogleDrive,
-  onDisconnectGoogleDrive,
   onBackupToGoogleDrive,
   onRestoreFromGoogleDrive,
-  onSyncGoogleDriveNow,
-  onSetSyncMode,
-  onDeleteGoogleDriveSyncFile,
+  onDeleteGoogleDriveBackupAndDisconnect,
   onResolveSyncConflict,
   onError
 }: SettingsDialogProps) {
@@ -157,13 +150,10 @@ export function SettingsDialog({
             syncStatus={syncStatus}
             onBackup={onBackupToGoogleDrive}
             onConnect={onConnectGoogleDrive}
-            onDeleteSyncFile={onDeleteGoogleDriveSyncFile}
-            onDisconnect={onDisconnectGoogleDrive}
+            onDeleteBackupAndDisconnect={onDeleteGoogleDriveBackupAndDisconnect}
             onError={onError}
             onResolveConflict={onResolveSyncConflict}
             onRestore={onRestoreFromGoogleDrive}
-            onSetSyncMode={onSetSyncMode}
-            onSyncNow={onSyncGoogleDriveNow}
           />
         </section>
       </div>

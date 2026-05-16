@@ -38,15 +38,14 @@ When Google Drive sync is enabled, the user's Aura Start data may be transmitted
 Users can:
 
 - Keep sync off and use Aura Start fully locally
-- Back up to Google Drive manually
+- Back up local changes to Google Drive automatically after connecting sync
+- Back up to Google Drive manually when they want an immediate backup
 - Restore from Google Drive manually
-- Use optional auto sync
-- Delete only the hidden Google Drive sync file
-- Disconnect the Google account
+- Delete the hidden Google Drive sync file and disconnect the Google account through one confirmed action
 
-Deleting the Google Drive sync file does not delete local Aura Start data. Disconnecting the Google account does not delete local Aura Start data and does not delete the cloud sync file unless the user separately chooses to delete it. Removing the extension may not remove the hidden Google Drive app data file automatically, so Aura Start provides a separate delete action for that file.
+Deleting the Google Drive sync file and disconnecting the Google account does not delete local Aura Start data. The action is shown in a confirmation dialog before it runs. Removing the extension may not remove the hidden Google Drive app data file automatically, so Aura Start provides this explicit delete-and-disconnect action.
 
-Users can turn cloud sync off at any time by setting sync mode to off. They can also disconnect the Google account at any time. These actions do not remove local groups, links, settings, exports, imports, or restore points.
+Users can turn cloud sync off at any time by deleting the Google Drive backup and disconnecting the Google account. This does not remove local groups, links, settings, exports, imports, or restore points.
 
 Before replacing local data with a Google Drive restore, Aura Start creates a local restore point.
 

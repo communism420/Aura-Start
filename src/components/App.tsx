@@ -63,12 +63,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     restoreRestorePoint,
     deleteRestorePoint,
     connectGoogleDrive,
-    disconnectGoogleDrive,
     backupToGoogleDrive,
     restoreFromGoogleDrive,
-    syncNow,
-    setSyncMode,
-    deleteGoogleDriveSyncFile,
+    deleteGoogleDriveBackupAndDisconnect,
     resolveSyncConflict,
     addToast
   } = useAuraStore();
@@ -331,16 +328,13 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onBackupToGoogleDrive={() => backupToGoogleDrive()}
         onConnectGoogleDrive={connectGoogleDrive}
         onClose={() => setSettingsOpen(false)}
-        onDeleteGoogleDriveSyncFile={deleteGoogleDriveSyncFile}
-        onDisconnectGoogleDrive={disconnectGoogleDrive}
+        onDeleteGoogleDriveBackupAndDisconnect={deleteGoogleDriveBackupAndDisconnect}
         onError={showError}
         onOpenImport={closeSettingsAndOpenImport}
         onOpenRestorePoints={closeSettingsAndOpenRestore}
         onResolveSyncConflict={resolveSyncConflict}
         onRestoreFromGoogleDrive={restoreFromGoogleDrive}
         onReset={() => setPendingDanger({ type: "resetAll" })}
-        onSetSyncMode={setSyncMode}
-        onSyncGoogleDriveNow={syncNow}
         onUpdateSettings={updateSettings}
       />
       <ImportDialog

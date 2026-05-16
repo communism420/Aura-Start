@@ -549,20 +549,20 @@ export async function revokeAuthToken(token: string): Promise<void> {
   }
 }
 
-export async function disconnectGoogleAccount(): Promise<{ revokeError?: string }> {
-  const token = await getAuthToken(false).catch(() => undefined);
-  if (!token) {
+export async function disconnectGoogleAccount(token?: string): Promise<{ revokeError?: string }> {
+  const tokenToDisconnect = token ?? await getAuthToken(false).catch(() => undefined);
+  if (!tokenToDisconnect) {
     return {};
   }
 
   let revokeError: string | undefined;
   try {
-    await revokeAuthToken(token);
+    await revokeAuthToken(tokenToDisconnect);
   } catch (error) {
     revokeError = mapDriveError(error);
   }
 
-  await clearAuthToken(token);
+  await clearAuthToken(tokenToDisconnect);
   return { revokeError };
 }
 

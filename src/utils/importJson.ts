@@ -83,7 +83,8 @@ function normalizeColumns(value: unknown): AuraColumns {
 }
 
 function normalizeSyncMode(value: unknown): AuraSyncMode {
-  return value === "manual" || value === "auto" || value === "off" ? value : "off";
+  if (value === "manual") return "auto";
+  return value === "auto" || value === "off" ? value : "off";
 }
 
 function optionalTrimmedString(value: unknown): string | undefined {

@@ -1,12 +1,10 @@
-import { Cloud, Download, RefreshCw, Trash2, Upload, XCircle } from "lucide-react";
+import { Cloud, Download, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
-import type { I18nKey } from "../i18n";
 import type {
   AuraStartData,
   AuraSyncConflict,
   AuraSyncConflictChoice,
-  AuraSyncMode,
   AuraSyncStatus
 } from "../types";
 import { formatDateTime } from "../utils/dates";
@@ -20,24 +18,14 @@ type GoogleDriveSyncPanelProps = {
   syncMessage: string | null;
   syncConflict: AuraSyncConflict | null;
   onConnect: () => Promise<void>;
-  onDisconnect: () => Promise<void>;
   onBackup: () => Promise<void>;
   onRestore: () => Promise<void>;
-  onSyncNow: () => Promise<void>;
-  onSetSyncMode: (mode: AuraSyncMode) => Promise<void>;
-  onDeleteSyncFile: () => Promise<void>;
+  onDeleteBackupAndDisconnect: () => Promise<void>;
   onResolveConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
 };
 
-type PendingConfirm = "delete_sync_file" | "disconnect" | null;
-
-const syncModeOptions: AuraSyncMode[] = ["off", "manual", "auto"];
-const syncModeLabelKeys: Record<AuraSyncMode, I18nKey> = {
-  off: "googleDriveSyncMode_off",
-  manual: "googleDriveSyncMode_manual",
-  auto: "googleDriveSyncMode_auto"
-};
+type PendingConfirm = "delete_backup_and_disconnect" | null;
 
 function isBusy(status: AuraSyncStatus): boolean {
   return status === "connecting" || status === "syncing";
@@ -49,12 +37,9 @@ export function GoogleDriveSyncPanel({
   syncMessage,
   syncConflict,
   onConnect,
-  onDisconnect,
   onBackup,
   onRestore,
-  onSyncNow,
-  onSetSyncMode,
-  onDeleteSyncFile,
+  onDeleteBackupAndDisconnect,
   onResolveConflict,
   onError
 }: GoogleDriveSyncPanelProps) {
@@ -108,6 +93,7 @@ export function GoogleDriveSyncPanel({
 
       <ul className="muted mt-3 list-disc space-y-1 pl-5 text-sm leading-6">
         <li>{t(language, "googleDriveSyncOffByDefault")}</li>
+        <li>{t(language, "googleDriveAutoSyncActive")}</li>
         <li>{t(language, "googleDriveGoogleWindow")}</li>
         <li>{t(language, "googleDriveMinimalScope")}</li>
         <li>{t(language, "googleDriveSyncUsesAppData")}</li>
@@ -115,22 +101,6 @@ export function GoogleDriveSyncPanel({
         <li>{t(language, "googleDriveNoTracking")}</li>
         <li>{t(language, "googleDriveManualExportStillWorks")}</li>
       </ul>
-
-      <label className="mt-4 block">
-        <span className="mb-1 block text-sm font-semibold">{t(language, "googleDriveSyncMode")}</span>
-        <select
-          className="field"
-          disabled={busy}
-          value={sync.mode}
-          onChange={(event) => run(() => onSetSyncMode(event.target.value as AuraSyncMode))}
-        >
-          {syncModeOptions.map((mode) => (
-            <option key={mode} value={mode}>
-              {t(language, syncModeLabelKeys[mode])}
-            </option>
-          ))}
-        </select>
-      </label>
 
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3 text-sm">
         <div className="font-semibold">{displayMessage}</div>
@@ -150,10 +120,6 @@ export function GoogleDriveSyncPanel({
           <Cloud size={17} />
           {hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}
         </button>
-        <button className="btn btn-secondary justify-start" disabled={!canSync} type="button" onClick={() => run(onSyncNow)}>
-          <RefreshCw size={17} />
-          {t(language, "googleDriveSyncNow")}
-        </button>
         <button className="btn btn-secondary justify-start" disabled={!canSync} type="button" onClick={() => run(onBackup)}>
           <Upload size={17} />
           {t(language, "googleDriveBackupToDrive")}
@@ -163,22 +129,13 @@ export function GoogleDriveSyncPanel({
           {t(language, "googleDriveRestoreFromDrive")}
         </button>
         <button
-          className="btn btn-danger justify-start"
+          className="btn btn-danger justify-start sm:col-span-2"
           disabled={!canManageConnection}
           type="button"
-          onClick={() => setPendingConfirm("delete_sync_file")}
+          onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
         >
           <Trash2 size={17} />
-          {t(language, "googleDriveDeleteSyncFile")}
-        </button>
-        <button
-          className="btn btn-secondary justify-start"
-          disabled={!canManageConnection}
-          type="button"
-          onClick={() => setPendingConfirm("disconnect")}
-        >
-          <XCircle size={17} />
-          {t(language, "googleDriveDisconnectAccount")}
+          {t(language, "googleDriveDeleteBackupAndDisconnect")}
         </button>
       </div>
 
@@ -207,23 +164,14 @@ export function GoogleDriveSyncPanel({
 
       <ConfirmDialog
         cancelLabel={t(language, "cancel")}
-        confirmLabel={pendingConfirm === "delete_sync_file" ? t(language, "delete") : t(language, "googleDriveDisconnectAccount")}
-        message={
-          pendingConfirm === "delete_sync_file"
-            ? t(language, "googleDriveDeleteSyncFileConfirmMessage")
-            : t(language, "googleDriveDisconnectConfirmMessage")
-        }
+        confirmLabel={t(language, "googleDriveDeleteBackupAndDisconnectConfirm")}
+        message={t(language, "googleDriveDeleteBackupAndDisconnectConfirmMessage")}
         open={pendingConfirm !== null}
-        title={
-          pendingConfirm === "delete_sync_file"
-            ? t(language, "googleDriveDeleteSyncFile")
-            : t(language, "googleDriveDisconnectAccount")
-        }
+        title={t(language, "googleDriveDeleteBackupAndDisconnect")}
         onCancel={() => setPendingConfirm(null)}
         onConfirm={async () => {
-          const action = pendingConfirm === "delete_sync_file" ? onDeleteSyncFile : onDisconnect;
           setPendingConfirm(null);
-          await runConfirmed(action);
+          await runConfirmed(onDeleteBackupAndDisconnect);
         }}
       />
     </div>

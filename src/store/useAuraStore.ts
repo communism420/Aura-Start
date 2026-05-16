@@ -53,6 +53,7 @@ type LinkInput = {
 
 type AuraStoreStatus = "idle" | "loading" | "ready" | "corrupt" | "error";
 type GoogleDriveBackupOptions = { silent?: boolean };
+type GoogleDriveSyncNowOptions = { silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
 
 type AuraStore = {
@@ -86,9 +87,10 @@ type AuraStore = {
   disconnectGoogleDrive: () => Promise<void>;
   backupToGoogleDrive: (options?: GoogleDriveBackupOptions) => Promise<void>;
   restoreFromGoogleDrive: () => Promise<void>;
-  syncNow: () => Promise<void>;
+  syncNow: (options?: GoogleDriveSyncNowOptions) => Promise<void>;
   setSyncMode: (mode: AuraSyncMode) => Promise<void>;
   deleteGoogleDriveSyncFile: () => Promise<void>;
+  deleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   resolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   addToast: (toast: Omit<ToastMessage, "id">) => void;
   removeToast: (toastId: string) => void;
@@ -247,7 +249,7 @@ function scheduleAutoSync(data: AuraStartData): void {
     }
 
     autoSyncDirty = false;
-    void state.backupToGoogleDrive({ silent: true }).catch(() => {
+    void state.syncNow({ silent: true }).catch(() => {
       // The store records sync errors and keeps local work uninterrupted.
     });
   }, AUTO_SYNC_DELAY_MS);
@@ -298,11 +300,13 @@ async function commitSyncMetadata(
   syncMessage: string | null,
   syncConflict: AuraSyncConflict | null = null
 ): Promise<AuraStartData> {
+  const current = useAuraStore.getState().data;
+  const base = current && current.updatedAt !== data.updatedAt ? current : data;
   const next: AuraStartData = {
-    ...data,
+    ...base,
     settings: {
-      ...data.settings,
-      sync: mergeSyncSettings(data, patch)
+      ...base.settings,
+      sync: mergeSyncSettings(base, patch)
     }
   };
 
@@ -347,7 +351,7 @@ async function applyCloudDownload(
   const currentSync = ensureSyncDevice(current.settings.sync);
   const nextSync: AuraSyncSettings = {
     ...currentSync,
-    mode: currentSync.mode === "off" ? "manual" : currentSync.mode,
+    mode: "auto",
     connected: true,
     cloudFileId: download.metadata.id,
     lastSyncedAt: syncedAt,
@@ -729,12 +733,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       const token = await getAuthToken(true);
       const metadata = await findSyncFile(token);
       const account = await getConnectedAccountInfo().catch(() => undefined);
-      const nextMode = sync.mode === "off" ? "manual" : sync.mode;
       const next = await commitSyncMetadata(
         set,
         data,
         {
-          mode: nextMode,
+          mode: "auto",
           connected: true,
           cloudFileId: metadata?.id,
           accountEmail: account?.email,
@@ -750,6 +753,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         title: text(next, "googleDriveConnected"),
         message: metadata ? text(next, "googleDriveSyncFileFound") : text(next, "googleDriveNoSyncFileFound")
       });
+      await get().syncNow({ silent: true });
     } catch (error) {
       driveFailure(set, get, error);
       throw error;
@@ -812,7 +816,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         set,
         data,
         {
-          mode: sync.mode === "off" ? "manual" : sync.mode,
+          mode: "auto",
           connected: true,
           cloudFileId: metadata.id,
           lastSyncedAt: syncedAt,
@@ -874,7 +878,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     }
   },
 
-  async syncNow() {
+  async syncNow(options = {}) {
     const data = get().data;
     if (!data) return;
 
@@ -887,11 +891,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
 
       if (comparison === "no_cloud_file") {
         await get().backupToGoogleDrive({ silent: true });
-        get().addToast({
-          type: "success",
-          title: text(get().data, "googleDriveBackupSuccess"),
-          message: text(get().data, "googleDriveNoFileUploadedLocal")
-        });
+        if (!options.silent) {
+          get().addToast({
+            type: "success",
+            title: text(get().data, "googleDriveBackupSuccess"),
+            message: text(get().data, "googleDriveNoFileUploadedLocal")
+          });
+        }
         return;
       }
 
@@ -902,7 +908,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           set,
           data,
           {
-            mode: sync.mode === "off" ? "manual" : sync.mode,
+            mode: "auto",
             connected: true,
             cloudFileId: download.metadata.id,
             lastSyncedAt: nowIso(),
@@ -911,17 +917,21 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           "connected",
           text(data, "googleDriveAlreadySynced")
         );
-        get().addToast({ type: "success", title: text(next, "googleDriveAlreadySynced") });
+        if (!options.silent) {
+          get().addToast({ type: "success", title: text(next, "googleDriveAlreadySynced") });
+        }
         return;
       }
 
       if (comparison === "local_newer") {
         await get().backupToGoogleDrive({ silent: true });
-        get().addToast({
-          type: "success",
-          title: text(get().data, "googleDriveBackupSuccess"),
-          message: text(get().data, "googleDriveLocalUploaded")
-        });
+        if (!options.silent) {
+          get().addToast({
+            type: "success",
+            title: text(get().data, "googleDriveBackupSuccess"),
+            message: text(get().data, "googleDriveLocalUploaded")
+          });
+        }
         return;
       }
 
@@ -930,7 +940,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           set,
           data,
           {
-            mode: sync.mode === "off" ? "manual" : sync.mode,
+            mode: "auto",
             connected: true,
             cloudFileId: download.metadata.id,
             lastCloudUpdatedAt: download.cloudUpdatedAt
@@ -972,17 +982,19 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const data = get().data;
     if (!data) return;
 
-    if (mode === "off") {
+    const nextMode: AuraSyncMode = mode === "off" ? "off" : "auto";
+
+    if (nextMode === "off") {
       clearAutoSyncQueue();
     }
-    const patch: Partial<AuraSyncSettings> = { mode };
+    const patch: Partial<AuraSyncSettings> = { mode: nextMode };
 
     await commitSyncMetadata(
       set,
       data,
       patch,
-      mode === "off" ? "idle" : syncStatusFromData({ ...data, settings: { ...data.settings, sync: mergeSyncSettings(data, patch) } }),
-      mode === "off" ? text(data, "googleDriveSyncDisabled") : text(data, "googleDriveSyncModeUpdated")
+      nextMode === "off" ? "idle" : syncStatusFromData({ ...data, settings: { ...data.settings, sync: mergeSyncSettings(data, patch) } }),
+      nextMode === "off" ? text(data, "googleDriveSyncDisabled") : text(data, "googleDriveSyncModeUpdated")
     );
   },
 
@@ -1011,6 +1023,48 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         type: deleted ? "success" : "info",
         title: deleted ? text(next, "googleDriveSyncFileDeleted") : text(next, "googleDriveNoSyncFileFound"),
         message: deleted ? text(next, "googleDriveSyncFileDeletedDescription") : undefined
+      });
+    } catch (error) {
+      driveFailure(set, get, error);
+      throw error;
+    }
+  },
+
+  async deleteGoogleDriveBackupAndDisconnect() {
+    const data = get().data;
+    if (!data) return;
+
+    clearAutoSyncQueue();
+    set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveDeleteBackupAndDisconnecting"), syncConflict: null });
+    try {
+      const token = await getTokenForSync(data.settings.sync);
+      const deleted = await deleteSyncFile(token);
+      const result = await disconnectGoogleDriveAccount(token);
+      const next = await commitSyncMetadata(
+        set,
+        data,
+        {
+          mode: "off",
+          connected: false,
+          accountEmail: undefined,
+          accountName: undefined,
+          accountAvatarUrl: undefined,
+          cloudFileId: undefined,
+          lastSyncedAt: undefined,
+          lastCloudUpdatedAt: undefined
+        },
+        "idle",
+        text(data, "googleDriveBackupDeletedAndAccountDisconnected")
+      );
+
+      get().addToast({
+        type: result.revokeError ? "info" : "success",
+        title: text(next, "googleDriveBackupDeletedAndAccountDisconnected"),
+        message: result.revokeError
+          ? text(next, "googleDriveTokenRevokeFailed", { message: result.revokeError })
+          : deleted
+            ? text(next, "googleDriveBackupDeletedAndAccountDisconnectedDescription")
+            : text(next, "googleDriveNoBackupFoundAccountDisconnectedDescription")
       });
     } catch (error) {
       driveFailure(set, get, error);
