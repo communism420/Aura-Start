@@ -360,8 +360,10 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   authUrl.searchParams.set("response_type", "token");
   authUrl.searchParams.set("scope", oauthScopes().join(" "));
   authUrl.searchParams.set("include_granted_scopes", "true");
-  authUrl.searchParams.set("prompt", "select_account consent");
   authUrl.searchParams.set("state", state);
+  if (interactive) {
+    authUrl.searchParams.set("prompt", "select_account consent");
+  }
 
   const redirectResult = await new Promise<string>((resolve, reject) => {
     identity.launchWebAuthFlow({ interactive, url: authUrl.toString() }, (redirectedTo) => {
