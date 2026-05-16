@@ -11,6 +11,7 @@ const SYNC_FILE_NAME = "aura-start-sync.json";
 const CLOUD_SCHEMA_VERSION = 1;
 const CLOUD_APP_NAME = "Aura Start";
 const TOKEN_EXPIRY_SAFETY_MS = 60_000;
+const WEB_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-web-auth-token";
 const OAUTH_CLIENT_ID_PATTERN = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
 const WEB_OAUTH_CLIENT_ID = __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__.trim();
 const EXAMPLE_OAUTH_CLIENT_IDS = new Set([
@@ -191,8 +192,66 @@ function cachedWebAuthToken(): string | undefined {
   return webAuthTokenCache.token;
 }
 
+function normalizeCachedToken(value: unknown): CachedToken | undefined {
+  if (!isRecord(value) || typeof value.token !== "string" || typeof value.expiresAt !== "number") {
+    return undefined;
+  }
+
+  if (Date.now() + TOKEN_EXPIRY_SAFETY_MS >= value.expiresAt) {
+    return undefined;
+  }
+
+  return {
+    token: value.token,
+    expiresAt: value.expiresAt
+  };
+}
+
+function sessionStorageArea(): chrome.storage.StorageArea | undefined {
+  return globalThis.chrome?.storage?.session;
+}
+
+async function readStoredWebAuthToken(): Promise<string | undefined> {
+  const area = sessionStorageArea();
+  if (!area) {
+    return undefined;
+  }
+
+  const result = await area.get(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+  const cached = result ? normalizeCachedToken(result[WEB_AUTH_TOKEN_STORAGE_KEY]) : undefined;
+  if (!cached) {
+    await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+    return undefined;
+  }
+
+  webAuthTokenCache = cached;
+  return cached.token;
+}
+
+async function writeStoredWebAuthToken(token: CachedToken): Promise<void> {
+  const area = sessionStorageArea();
+  if (!area) {
+    return;
+  }
+
+  await area.set({ [WEB_AUTH_TOKEN_STORAGE_KEY]: token }).catch(() => undefined);
+}
+
+async function removeStoredWebAuthToken(): Promise<void> {
+  const area = sessionStorageArea();
+  if (!area) {
+    return;
+  }
+
+  await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+}
+
+async function getCachedWebAuthToken(): Promise<string | undefined> {
+  return cachedWebAuthToken() ?? await readStoredWebAuthToken();
+}
+
 async function getNonInteractiveCachedToken(): Promise<string | undefined> {
-  const cached = cachedWebAuthToken();
+  const cached = await getCachedWebAuthToken();
   if (cached) {
     return cached;
   }
@@ -280,7 +339,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const cached = cachedWebAuthToken();
+  const cached = await getCachedWebAuthToken();
   if (cached) {
     return cached;
   }
@@ -341,10 +400,12 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
 
   const expiresInSeconds = Number(params.get("expires_in") ?? "3600");
   const expiresIn = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0 ? expiresInSeconds : 3600;
-  webAuthTokenCache = {
+  const cachedToken = {
     token,
     expiresAt: Date.now() + expiresIn * 1000
   };
+  webAuthTokenCache = cachedToken;
+  await writeStoredWebAuthToken(cachedToken);
 
   return token;
 }
@@ -534,6 +595,7 @@ export async function clearAuthToken(token?: string): Promise<void> {
   if (webAuthTokenCache?.token === tokenToClear) {
     webAuthTokenCache = undefined;
   }
+  await removeStoredWebAuthToken();
 
   await new Promise<void>((resolve, reject) => {
     identity.removeCachedAuthToken({ token: tokenToClear }, () => {

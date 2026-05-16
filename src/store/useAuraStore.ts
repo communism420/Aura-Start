@@ -97,7 +97,7 @@ type AuraStore = {
   removeToast: (toastId: string) => void;
 };
 
-const AUTO_SYNC_DELAY_MS = 45_000;
+const AUTO_SYNC_DELAY_MS = 2_000;
 let autoSyncTimer: number | undefined;
 let autoSyncDirty = false;
 
@@ -922,7 +922,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveSyncing"), syncConflict: null });
     try {
       const sync = ensureSyncDevice(data.settings.sync);
-      const token = await getTokenForSync(sync);
+      const token = await getTokenForSync(sync, !options.silent);
       const download = await downloadSyncFile(sync.cloudFileId, token);
       const comparison = compareLocalAndCloud(data, download, sync);
 
