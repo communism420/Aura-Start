@@ -132,7 +132,7 @@
     <main>
       <article>
         <h1>Aura Start Privacy Policy</h1>
-        <p class="meta">Effective date: May 15, 2026</p>
+        <p class="meta">Effective date: May 16, 2026</p>
 
         <section class="summary" aria-label="Privacy summary">
           <p>
@@ -173,7 +173,8 @@
           </li>
           <li>
             Optional Google Drive sync metadata, such as connection status, last sync
-            time, and a locally generated device ID.
+            time, hidden sync file ID, account label when available from Chrome, and
+            a locally generated device ID.
           </li>
         </ul>
         <p>
@@ -217,24 +218,41 @@
         <p>
           When Google Drive sync is enabled, the user's Aura Start data may be
           transmitted to Google Drive API and stored in the user's Google Drive app
-          data. This includes groups, links, settings, and restore points. The data is
-          not sent to an Aura Start server because Aura Start does not operate a
-          backend service.
+          data. This includes groups, links, settings, restore points, and sync
+          metadata required to keep the hidden sync file up to date. The data is not
+          sent to an Aura Start server because Aura Start does not operate a backend
+          service.
         </p>
         <p>Users can:</p>
         <ul>
           <li>Keep sync off and use Aura Start fully locally.</li>
           <li>Restore an existing Google Drive sync file automatically when connecting sync.</li>
           <li>Create a Google Drive sync file automatically when none exists.</li>
-          <li>Back up local changes to Google Drive automatically after connecting sync.</li>
+          <li>
+            Back up local changes to Google Drive automatically after connecting sync,
+            including creating, editing, deleting, importing, resetting, restoring,
+            and reordering Aura Start groups and links.
+          </li>
           <li>Delete the hidden Google Drive sync file and disconnect the Google account through one confirmed action.</li>
         </ul>
+        <p>
+          Importing a JSON backup preserves the current Google Drive connection for
+          the current installation. A backup file cannot silently replace or remove
+          the local Google Drive connection metadata that belongs to the installed
+          extension profile.
+        </p>
         <p>
           Deleting the Google Drive sync file and disconnecting the Google account
           does not delete local Aura Start data. The action is shown in a confirmation
           dialog before it runs. Removing the extension may not remove the hidden
           Google Drive app data file automatically, so Aura Start provides this
           explicit delete-and-disconnect action.
+        </p>
+        <p>
+          Disconnecting does not open a Google sign-in or account chooser window. If
+          Google authorization is no longer available when the user disconnects, Aura
+          Start disconnects locally without prompting for sign-in; in that case the
+          hidden Drive backup may remain until the user reconnects and deletes it.
         </p>
         <p>
           Users can turn cloud sync off at any time by deleting the Google Drive
