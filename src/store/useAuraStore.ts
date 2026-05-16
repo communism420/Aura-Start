@@ -748,12 +748,16 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         metadata ? text(data, "googleDriveConnected") : text(data, "googleDriveConnectedNoFile")
       );
 
+      if (!metadata) {
+        await get().syncNow({ silent: true });
+      }
+
+      const toastData = get().data ?? next;
       get().addToast({
         type: "success",
-        title: text(next, "googleDriveConnected"),
-        message: metadata ? text(next, "googleDriveSyncFileFound") : text(next, "googleDriveNoSyncFileFound")
+        title: text(toastData, "googleDriveConnected"),
+        message: metadata ? text(toastData, "googleDriveSyncFileFound") : text(toastData, "googleDriveNoSyncFileCreated")
       });
-      await get().syncNow({ silent: true });
     } catch (error) {
       driveFailure(set, get, error);
       throw error;
