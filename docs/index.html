@@ -3,9 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="0; url=privacy-policy.html">
-    <link rel="canonical" href="privacy-policy.html">
-    <title>Aura Start Privacy Policy</title>
+    <title>Aura Start</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -62,22 +60,71 @@
       }
 
       p {
-        margin: 0;
+        margin: 0 auto;
+        max-width: 34rem;
         color: var(--muted);
       }
 
       a {
         color: var(--accent);
       }
+
+      .actions {
+        display: grid;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .action {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 18px;
+        background: color-mix(in srgb, var(--panel), var(--accent) 4%);
+        color: var(--text);
+        text-align: left;
+        text-decoration: none;
+        transition:
+          border-color 0.16s ease,
+          transform 0.16s ease,
+          background-color 0.16s ease;
+      }
+
+      .action:hover,
+      .action:focus-visible {
+        border-color: var(--accent);
+        background: color-mix(in srgb, var(--panel), var(--accent) 9%);
+        transform: translateY(-1px);
+      }
+
+      .action strong {
+        display: block;
+        color: var(--accent);
+        font-size: 1.05rem;
+      }
+
+      .action span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>Aura Start Privacy Policy</h1>
-      <p>
-        Redirecting to the privacy policy. If nothing happens,
-        <a href="privacy-policy.html">open it here</a>.
-      </p>
+      <h1>Aura Start</h1>
+      <p>A local-first Chromium new tab extension for user-owned link groups, exportable backups, and optional Google Drive sync.</p>
+      <div class="actions" aria-label="Aura Start links">
+        <a class="action" href="privacy-policy.html">
+          <strong>Privacy Policy</strong>
+          <span>Read how Aura Start stores local data and handles optional Google Drive sync.</span>
+        </a>
+        <a class="action" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">
+          <strong>Source Code</strong>
+          <span>Open the public Aura Start repository on GitHub.</span>
+        </a>
+      </div>
     </main>
   </body>
 </html>
