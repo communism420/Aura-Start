@@ -9,6 +9,7 @@ import {
   downloadSyncFile,
   findSyncFile,
   getAuthToken,
+  getCachedAuthToken,
   getConnectedAccountInfo,
   mapDriveError,
   restoreFromDrive,
@@ -1073,8 +1074,17 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     clearAutoSyncQueue();
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveDeleteBackupAndDisconnecting"), syncConflict: null });
     try {
-      const token = await getTokenForSync(data.settings.sync);
-      const deleted = await deleteSyncFile(token);
+      const token = await getCachedAuthToken();
+      let deleted = false;
+      let deleteError: string | undefined;
+      if (token) {
+        try {
+          deleted = await deleteSyncFile(token);
+        } catch (error) {
+          deleteError = mapDriveError(error);
+        }
+      }
+
       const result = await disconnectGoogleDriveAccount(token);
       const next = await commitSyncMetadata(
         set,
@@ -1093,14 +1103,23 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         text(data, "googleDriveBackupDeletedAndAccountDisconnected")
       );
 
+      let toastMessage: string;
+      if (deleteError) {
+        toastMessage = text(next, "googleDriveBackupDeleteFailedAccountDisconnected", { message: deleteError });
+      } else if (result.revokeError) {
+        toastMessage = text(next, "googleDriveTokenRevokeFailed", { message: result.revokeError });
+      } else if (!token) {
+        toastMessage = text(next, "googleDriveDisconnectedWithoutGoogleWindow");
+      } else if (deleted) {
+        toastMessage = text(next, "googleDriveBackupDeletedAndAccountDisconnectedDescription");
+      } else {
+        toastMessage = text(next, "googleDriveNoBackupFoundAccountDisconnectedDescription");
+      }
+
       get().addToast({
-        type: result.revokeError ? "info" : "success",
+        type: deleteError || result.revokeError || !token ? "info" : "success",
         title: text(next, "googleDriveBackupDeletedAndAccountDisconnected"),
-        message: result.revokeError
-          ? text(next, "googleDriveTokenRevokeFailed", { message: result.revokeError })
-          : deleted
-            ? text(next, "googleDriveBackupDeletedAndAccountDisconnectedDescription")
-            : text(next, "googleDriveNoBackupFoundAccountDisconnectedDescription")
+        message: toastMessage
       });
     } catch (error) {
       driveFailure(set, get, error);

@@ -191,6 +191,19 @@ function cachedWebAuthToken(): string | undefined {
   return webAuthTokenCache.token;
 }
 
+async function getNonInteractiveCachedToken(): Promise<string | undefined> {
+  const cached = cachedWebAuthToken();
+  if (cached) {
+    return cached;
+  }
+
+  if (configuredWebOAuthClientId()) {
+    return undefined;
+  }
+
+  return await getChromeAuthToken(false).catch(() => undefined);
+}
+
 function randomState(): string {
   const randomUUID = globalThis.crypto?.randomUUID;
   if (typeof randomUUID === "function") {
@@ -510,9 +523,13 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   });
 }
 
+export async function getCachedAuthToken(): Promise<string | undefined> {
+  return await getNonInteractiveCachedToken();
+}
+
 export async function clearAuthToken(token?: string): Promise<void> {
   const identity = requireIdentityApi();
-  const tokenToClear = token ?? cachedWebAuthToken() ?? await getAuthToken(false).catch(() => undefined);
+  const tokenToClear = token ?? await getNonInteractiveCachedToken();
   if (!tokenToClear) return;
   if (webAuthTokenCache?.token === tokenToClear) {
     webAuthTokenCache = undefined;
@@ -550,7 +567,7 @@ export async function revokeAuthToken(token: string): Promise<void> {
 }
 
 export async function disconnectGoogleAccount(token?: string): Promise<{ revokeError?: string }> {
-  const tokenToDisconnect = token ?? await getAuthToken(false).catch(() => undefined);
+  const tokenToDisconnect = token ?? await getNonInteractiveCachedToken();
   if (!tokenToDisconnect) {
     return {};
   }
@@ -562,7 +579,13 @@ export async function disconnectGoogleAccount(token?: string): Promise<{ revokeE
     revokeError = mapDriveError(error);
   }
 
-  await clearAuthToken(tokenToDisconnect);
+  try {
+    await clearAuthToken(tokenToDisconnect);
+  } catch (error) {
+    const clearError = mapDriveError(error);
+    revokeError = revokeError ? `${revokeError}; ${clearError}` : clearError;
+  }
+
   return { revokeError };
 }
 
