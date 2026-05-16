@@ -147,13 +147,6 @@ To move from Aura Start back to A Fine Start, use Aura Start -> Export -> A Fine
 
 ## Roadmap
 
-- Optional browser bookmarks import
-- Optional HTML bookmarks import
-- Favicons
-- Custom icons
-- Command palette
-- Encrypted backup
-- Optional WebDAV, GitHub, or file sync beyond Google Drive appDataFolder
 - Firefox support later
 
 ## Privacy
