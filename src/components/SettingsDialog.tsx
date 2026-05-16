@@ -60,7 +60,7 @@ export function SettingsDialog({
   }
 
   return (
-    <Modal open={open} title={t(language, "settings")} description={t(language, "settingsDescription")} closeLabel={t(language, "closeDialog")} onClose={onClose} size="lg">
+    <Modal open={open} title={t(language, "settings")} description={t(language, "settingsDescription")} closeLabel={t(language, "closeDialog")} onClose={onClose} size="xl">
       <div className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
         <section className="space-y-4">
           <label className="block">

@@ -115,27 +115,27 @@ export function GoogleDriveSyncPanel({
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button className="btn btn-primary justify-start" disabled={busy} type="button" onClick={() => run(onConnect)}>
-          <Cloud size={17} />
-          {hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <button className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={busy} type="button" onClick={() => run(onConnect)}>
+          <Cloud className="shrink-0" size={17} />
+          <span className="truncate">{hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}</span>
         </button>
-        <button className="btn btn-secondary justify-start" disabled={!canSync} type="button" onClick={() => run(onBackup)}>
-          <Upload size={17} />
-          {t(language, "googleDriveBackupToDrive")}
+        <button className="btn btn-secondary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={!canSync} type="button" onClick={() => run(onBackup)}>
+          <Upload className="shrink-0" size={17} />
+          <span className="truncate">{t(language, "googleDriveBackupToDrive")}</span>
         </button>
-        <button className="btn btn-secondary justify-start" disabled={!canSync} type="button" onClick={() => run(onRestore)}>
-          <Download size={17} />
-          {t(language, "googleDriveRestoreFromDrive")}
+        <button className="btn btn-secondary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={!canSync} type="button" onClick={() => run(onRestore)}>
+          <Download className="shrink-0" size={17} />
+          <span className="truncate">{t(language, "googleDriveRestoreFromDrive")}</span>
         </button>
         <button
-          className="btn btn-danger justify-start"
+          className="btn btn-danger h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
           disabled={!canManageConnection}
           type="button"
           onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
         >
-          <Trash2 size={17} />
-          {t(language, "googleDriveDeleteBackupAndDisconnect")}
+          <Trash2 className="shrink-0" size={17} />
+          <span className="truncate">{t(language, "googleDriveDeleteBackupAndDisconnect")}</span>
         </button>
       </div>
 

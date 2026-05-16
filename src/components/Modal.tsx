@@ -8,13 +8,14 @@ type ModalProps = {
   children: ReactNode;
   closeLabel?: string;
   onClose: () => void;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 };
 
 const sizeClass = {
   sm: "max-w-md",
   md: "max-w-xl",
-  lg: "max-w-3xl"
+  lg: "max-w-3xl",
+  xl: "max-w-6xl"
 };
 
 export function Modal({ open, title, description, children, closeLabel = "Close dialog", onClose, size = "md" }: ModalProps) {
