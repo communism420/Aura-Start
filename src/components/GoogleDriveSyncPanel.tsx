@@ -129,7 +129,7 @@ export function GoogleDriveSyncPanel({
           {t(language, "googleDriveRestoreFromDrive")}
         </button>
         <button
-          className="btn btn-danger justify-start sm:col-span-2"
+          className="btn btn-danger justify-start"
           disabled={!canManageConnection}
           type="button"
           onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
