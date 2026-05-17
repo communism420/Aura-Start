@@ -41,6 +41,7 @@ type PendingDanger =
 
 function isTextInput(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
+  if (target.dataset.keyboardFocusTarget === "true") return false;
   const tag = target.tagName.toLowerCase();
   return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
 }
@@ -120,9 +121,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger>(null);
-  const keyboardFocusRef = useRef<HTMLDivElement | null>(null);
+  const keyboardFocusRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const initialKeyboardFocusAttemptedRef = useRef(false);
   const autoOnboardingCheckedRef = useRef(false);
   const fallbackLanguage = DEFAULT_SETTINGS.language;
 
@@ -173,20 +173,28 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   }, [searchOpen]);
 
   useEffect(() => {
-    if (!data || initialKeyboardFocusAttemptedRef.current) return;
-    initialKeyboardFocusAttemptedRef.current = true;
-
     const focusKeyboardScope = () => {
+      if (document.visibilityState !== "visible") return;
       if (isTextInput(document.activeElement) || isInteractiveControl(document.activeElement)) {
         return;
       }
+      window.focus();
       keyboardFocusRef.current?.focus({ preventScroll: true });
     };
 
     window.requestAnimationFrame(focusKeyboardScope);
-    const timeoutId = window.setTimeout(focusKeyboardScope, 120);
-    return () => window.clearTimeout(timeoutId);
-  }, [data]);
+    const timeoutIds = [0, 50, 150, 300, 700, 1200].map((delay) => window.setTimeout(focusKeyboardScope, delay));
+    window.addEventListener("pageshow", focusKeyboardScope);
+    window.addEventListener("focus", focusKeyboardScope);
+    document.addEventListener("visibilitychange", focusKeyboardScope);
+
+    return () => {
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      window.removeEventListener("pageshow", focusKeyboardScope);
+      window.removeEventListener("focus", focusKeyboardScope);
+      document.removeEventListener("visibilitychange", focusKeyboardScope);
+    };
+  }, []);
 
   const parsedSearch = useMemo(() => parseSearchQuery(search), [search]);
   const searchMode = searchHasQuery(parsedSearch);
@@ -394,17 +402,33 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     setImportOpen(true);
   };
 
+  const keyboardFocusTarget = (
+    <input
+      ref={keyboardFocusRef}
+      data-keyboard-focus-target="true"
+      tabIndex={-1}
+      readOnly
+      aria-label={t(data?.settings.language ?? fallbackLanguage, "keyboardShortcuts")}
+      className="sr-only"
+      autoFocus
+    />
+  );
+
   if (status === "loading" || status === "idle") {
     return (
-      <main className="app-shell flex items-center justify-center">
-        <div className="surface rounded-xl px-5 py-4 text-sm font-semibold">{t(fallbackLanguage, "loadingAuraStart")}</div>
-      </main>
+      <>
+        {keyboardFocusTarget}
+        <main className="app-shell flex items-center justify-center">
+          <div className="surface rounded-xl px-5 py-4 text-sm font-semibold">{t(fallbackLanguage, "loadingAuraStart")}</div>
+        </main>
+      </>
     );
   }
 
   if (status === "corrupt") {
     return (
       <>
+        {keyboardFocusTarget}
         <RecoveryScreen language={fallbackLanguage} message={error ?? t(fallbackLanguage, "storageCorrupt")} raw={corruptRaw} onError={showError} onReset={resetCorruptData} />
         <Toasts />
       </>
@@ -413,12 +437,15 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   if (!data) {
     return (
-      <main className="app-shell flex items-center justify-center">
-        <div className="surface rounded-xl p-6">
-          <h1 className="text-xl font-semibold">{t(fallbackLanguage, "unavailableTitle")}</h1>
-          <p className="muted mt-2 text-sm">{error ?? t(fallbackLanguage, "couldNotLoadLocalData")}</p>
-        </div>
-      </main>
+      <>
+        {keyboardFocusTarget}
+        <main className="app-shell flex items-center justify-center">
+          <div className="surface rounded-xl p-6">
+            <h1 className="text-xl font-semibold">{t(fallbackLanguage, "unavailableTitle")}</h1>
+            <p className="muted mt-2 text-sm">{error ?? t(fallbackLanguage, "couldNotLoadLocalData")}</p>
+          </div>
+        </main>
+      </>
     );
   }
 
@@ -570,7 +597,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   return (
     <div className={`afs-like ${data.settings.compactMode ? "compact" : ""}`}>
-      <div ref={keyboardFocusRef} tabIndex={-1} aria-label={t(language, "keyboardShortcuts")} className="sr-only" autoFocus />
+      {keyboardFocusTarget}
       <main className="app-shell">
         <div className="container-narrow">
           {usingFallbackStorage ? (
