@@ -120,7 +120,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger>(null);
+  const keyboardFocusRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const initialKeyboardFocusAttemptedRef = useRef(false);
   const autoOnboardingCheckedRef = useRef(false);
   const fallbackLanguage = DEFAULT_SETTINGS.language;
 
@@ -169,6 +171,22 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       window.requestAnimationFrame(() => searchInputRef.current?.focus());
     }
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (!data || initialKeyboardFocusAttemptedRef.current) return;
+    initialKeyboardFocusAttemptedRef.current = true;
+
+    const focusKeyboardScope = () => {
+      if (isTextInput(document.activeElement) || isInteractiveControl(document.activeElement)) {
+        return;
+      }
+      keyboardFocusRef.current?.focus({ preventScroll: true });
+    };
+
+    window.requestAnimationFrame(focusKeyboardScope);
+    const timeoutId = window.setTimeout(focusKeyboardScope, 120);
+    return () => window.clearTimeout(timeoutId);
+  }, [data]);
 
   const parsedSearch = useMemo(() => parseSearchQuery(search), [search]);
   const searchMode = searchHasQuery(parsedSearch);
@@ -552,6 +570,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   return (
     <div className={`afs-like ${data.settings.compactMode ? "compact" : ""}`}>
+      <div ref={keyboardFocusRef} tabIndex={-1} aria-label={t(language, "keyboardShortcuts")} className="sr-only" autoFocus />
       <main className="app-shell">
         <div className="container-narrow">
           {usingFallbackStorage ? (
