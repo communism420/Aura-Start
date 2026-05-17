@@ -218,7 +218,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      const modalOpen =
+      const blockingModalOpen =
         groupDialogOpen ||
         linkDialogOpen ||
         settingsOpen ||
@@ -226,22 +226,26 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restoreOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
-        commandPaletteOpen ||
         pendingDanger;
+      const modalOpen = blockingModalOpen || commandPaletteOpen;
       const searchInputFocused = event.target === searchInputRef.current;
       const typingTarget = isTextInput(event.target);
       const key = event.key.toLowerCase();
       const modified = event.altKey || event.metaKey || event.ctrlKey;
 
-      if (event.defaultPrevented) return;
-
       if ((event.ctrlKey || event.metaKey) && key === "k") {
-        if (!typingTarget && !modalOpen) {
+        if (event.cancelable) {
           event.preventDefault();
-          setCommandPaletteOpen(true);
         }
+        event.stopPropagation();
+        setCommandPaletteOpen((open) => {
+          if (open) return false;
+          return blockingModalOpen ? open : true;
+        });
         return;
       }
+
+      if (event.defaultPrevented) return;
 
       if (modalOpen) {
         return;
@@ -301,8 +305,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       }
     }
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [
     groupDialogOpen,
     commandPaletteOpen,
