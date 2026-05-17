@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Chrome Web Store screenshot checklist and capture notes.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Aura Start Screenshot Plan — Aura Start</title>
+    <style>
+      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
+      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
+      a { color:var(--accent-strong); }
+      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
+      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
+      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
+      .brand img { width:38px; height:38px; object-fit:contain; }
+      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
+      nav a { text-decoration:none; }
+      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
+      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
+      h1,h2,h3,h4 { line-height:1.2; }
+      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
+      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
+      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
+      p,li { color:var(--muted); }
+      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
+      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
+      pre code { background:transparent; padding:0; color:var(--text); }
+      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
+      .table-wrap { overflow-x:auto; margin:1rem 0; }
+      table { width:100%; border-collapse:collapse; font-size:.95rem; }
+      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
+      th { background:var(--accent-soft); color:var(--text); }
+      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
+      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
+      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
+      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
+</style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
+        <nav aria-label="Documentation links">
+          <a href="index.html">Home</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+      <main class="doc">
+        <div class="kicker">Aura Start Docs</div>
+        <h1>Aura Start Screenshot Plan</h1>
+<p>This plan prepares Chrome Web Store and GitHub screenshots from the current Aura Start 1.2.0 feature set. It avoids unsupported claims, fake statistics, competitor criticism, and visual use of third-party brands beyond plain text references needed for migration.</p>
+<p>Recommended base sizes:</p>
+<ul>
+<li>Chrome Web Store screenshots: 1280 x 800 or 1280 x 720 PNG</li>
+<li>GitHub/social crops: 1600 x 900 PNG</li>
+<li>Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data.</li>
+<li>Final publishable screenshots live in <code>Photo/</code>; GitHub Pages copies live in <code>docs/assets/screenshots/</code>.</li>
+<li><code>docs/screenshot-gallery.html</code> displays the real captured screenshots. It is not a mockup renderer.</li>
+</ul>
+<h2>General Capture Rules</h2>
+<ul>
+<li>Use the demo data from <code>docs/SCREENSHOT_DEMO_DATA.md</code>.</li>
+<li>Do not show personal bookmarks, email addresses, OAuth tokens, browser profiles, or real Drive files.</li>
+<li>Do not show a fake Chrome Web Store listing URL.</li>
+<li>Mention A Fine Start only on the migration screenshot and only as an import/export compatibility path.</li>
+<li>Keep wording factual: no &quot;best&quot;, &quot;#1&quot;, &quot;guaranteed&quot;, &quot;forever&quot;, or aggressive comparisons.</li>
+<li>Verify the screen exists in the current local build before publishing a screenshot as product UI.</li>
+</ul>
+<h2>1. Main New Tab</h2>
+<ul>
+<li>Goal: show the core value: clean grouped links on the Chromium new tab page.</li>
+<li>Screen: real extension new tab page with demo groups.</li>
+<li>Demo data: Work, Development, Design, Research, Reading, Tools.</li>
+<li>Overlay text: &quot;Clean groups of links on every new tab&quot;</li>
+<li>Theme recommendation: light theme for the main store screenshot.</li>
+<li>What not to show: browser bookmarks bar, private user links, debug panels, or unpublished store links.</li>
+<li>Manual verification: confirm groups open, links are visible, drag handles/edit controls are not distracting unless edit mode is intentionally shown.</li>
+<li>Chrome Web Store-safe wording: &quot;Clean groups of links&quot; is factual and matches the product.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: Aura Start is organized, calm, and useful immediately.</li>
+</ul>
+<h2>2. Import from A Fine Start</h2>
+<ul>
+<li>Goal: show a clear migration path without implying affiliation.</li>
+<li>Screen: Settings / Import / Import from A Fine Start flow with preview.</li>
+<li>Demo data: a small valid A Fine Start-compatible export code with 3-4 groups.</li>
+<li>Overlay text: &quot;Import from A Fine Start in seconds&quot;</li>
+<li>Theme recommendation: light theme.</li>
+<li>What not to show: A Fine Start UI, A Fine Start logos, or claims that Aura Start includes every A Fine Start feature.</li>
+<li>Manual verification: confirm preview counts appear, Merge/Replace choices are visible, and invalid data does not apply changes.</li>
+<li>Chrome Web Store-safe wording: include a small note if space allows: &quot;Independent project, not affiliated with A Fine Start.&quot;</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: users can migrate their own export code in a controlled way.</li>
+</ul>
+<h2>3. Export / Backup</h2>
+<ul>
+<li>Goal: make data ownership obvious.</li>
+<li>Screen: Export / Backup area in Settings.</li>
+<li>Demo data: populated demo groups so all export formats are meaningful.</li>
+<li>Overlay text: &quot;Export anytime: JSON, HTML, Markdown, CSV&quot;</li>
+<li>Theme recommendation: light or system theme.</li>
+<li>What not to show: local filesystem paths, user downloads folder, or fake cloud upload.</li>
+<li>Manual verification: confirm Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export are visible where supported.</li>
+<li>Chrome Web Store-safe wording: export is local browser-generated backup/export, not a hosted service.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: users are not locked in.</li>
+</ul>
+<h2>4. Restore Points</h2>
+<ul>
+<li>Goal: show protection around destructive operations.</li>
+<li>Screen: Settings / Restore Points manager.</li>
+<li>Demo data: several restore points with readable reasons and counts.</li>
+<li>Overlay text: &quot;Restore points before destructive changes&quot;</li>
+<li>Theme recommendation: dark theme can work well if contrast is checked.</li>
+<li>What not to show: stack traces, raw storage JSON, or corrupted data unless documenting support.</li>
+<li>Manual verification: confirm Restore, Export restore point, Delete restore point, and Delete old restore points are visible if included in the UI.</li>
+<li>Chrome Web Store-safe wording: restore points are local safety snapshots, not a guarantee against every browser/profile failure.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: replace, restore, reset, and duplicate deletion are guarded.</li>
+</ul>
+<h2>5. Privacy Promise</h2>
+<ul>
+<li>Goal: build trust with concrete privacy claims.</li>
+<li>Screen: Settings / Privacy Promise.</li>
+<li>Demo data: not required.</li>
+<li>Overlay text: &quot;No account. No analytics. No tracking.&quot;</li>
+<li>Theme recommendation: light theme with high readability.</li>
+<li>What not to show: unsupported privacy claims, full Google Drive access, or unrelated browser permissions.</li>
+<li>Manual verification: confirm wording matches <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
+<li>Chrome Web Store-safe wording: &quot;No account. No analytics. No tracking.&quot; matches the local-first implementation and docs.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: Aura Start has no backend and does not monetize user data.</li>
+</ul>
+<h2>6. Command Palette</h2>
+<ul>
+<li>Goal: show power-user navigation.</li>
+<li>Screen: Command Palette opened with Ctrl+K or Cmd+K.</li>
+<li>Demo data: populated groups so commands feel useful.</li>
+<li>Overlay text: &quot;Press Ctrl+K and move faster&quot;</li>
+<li>Theme recommendation: dark theme for contrast around the palette.</li>
+<li>What not to show: disabled or fake commands.</li>
+<li>Manual verification: confirm Enter runs selected command, arrows move selection, and Esc closes the palette.</li>
+<li>Chrome Web Store-safe wording: &quot;move faster&quot; is a workflow claim, not a performance guarantee.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: Aura Start is efficient without adding tracking or heavy services.</li>
+</ul>
+<h2>7. Duplicate Finder</h2>
+<ul>
+<li>Goal: show cleanup with user control.</li>
+<li>Screen: Settings / Tools / Duplicate Finder.</li>
+<li>Demo data: include exact duplicates and possible http/https variants.</li>
+<li>Overlay text: &quot;Find duplicate links before they become a mess&quot;</li>
+<li>Theme recommendation: light theme.</li>
+<li>What not to show: auto-selected mass deletion, destructive action without confirmation, or all copies selected.</li>
+<li>Manual verification: confirm scan is read-only, exact/possible duplicates are separated, and deletion requires selection, restore point, and confirmation.</li>
+<li>Chrome Web Store-safe wording: &quot;Find duplicate links&quot; is accurate; do not claim automatic cleanup.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI.</li>
+<li>Trust message: cleanup is visible, reversible where supported, and never automatic.</li>
+</ul>
+<h2>8. Optional Google Drive Backup</h2>
+<ul>
+<li>Goal: explain optional backup without implying required account or full Drive access.</li>
+<li>Screen: Settings / Google Drive sync.</li>
+<li>Demo data: local groups populated; sync disconnected or connected with non-personal account details hidden.</li>
+<li>Overlay text: &quot;Optional backup through Google Drive appDataFolder&quot;</li>
+<li>Theme recommendation: light theme.</li>
+<li>What not to show: real Google account email, OAuth client IDs, tokens, visible Drive files, or a fake success state.</li>
+<li>Manual verification: confirm Google Drive sync is optional/off by default and Drive access is limited to <code>drive.appdata</code>.</li>
+<li>Chrome Web Store-safe wording: &quot;Optional backup&quot; and &quot;appDataFolder&quot; match the implemented permission model.</li>
+<li>Recommended size: 1280 x 800.</li>
+<li>Capture source: real extension UI. Hide account data if a connected account is used.</li>
+<li>Trust message: cloud backup is opt-in and least-privilege.</li>
+</ul>
+<h2>Publishing Checklist</h2>
+<ul>
+<li>Screenshots match the current local build.</li>
+<li>No private data appears.</li>
+<li>No competitor logo or UI appears.</li>
+<li>No unsupported claims appear.</li>
+<li>Privacy claims match <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
+<li>The Chrome Web Store listing uses the same terminology as <code>docs/STORE_LISTING.md</code>.</li>
+</ul>
+      </main>
+      <footer>Aura Start is independent and open-source under the MIT License.</footer>
+    </div>
+  </body>
+</html>

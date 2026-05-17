@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Honest comparison and migration-focused positioning.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Aura Start vs A Fine Start — Aura Start</title>
+    <style>
+      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
+      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
+      a { color:var(--accent-strong); }
+      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
+      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
+      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
+      .brand img { width:38px; height:38px; object-fit:contain; }
+      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
+      nav a { text-decoration:none; }
+      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
+      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
+      h1,h2,h3,h4 { line-height:1.2; }
+      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
+      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
+      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
+      p,li { color:var(--muted); }
+      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
+      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
+      pre code { background:transparent; padding:0; color:var(--text); }
+      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
+      .table-wrap { overflow-x:auto; margin:1rem 0; }
+      table { width:100%; border-collapse:collapse; font-size:.95rem; }
+      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
+      th { background:var(--accent-soft); color:var(--text); }
+      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
+      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
+      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
+      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
+</style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
+        <nav aria-label="Documentation links">
+          <a href="index.html">Home</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+      <main class="doc">
+        <div class="kicker">Aura Start Docs</div>
+        <h1>Aura Start vs A Fine Start</h1>
+<h2>Summary</h2>
+<p>Aura Start is an independent, open-source, local-first start page inspired by simple grouped links and focused on data ownership, export, privacy, and migration.</p>
+<p>Aura Start is not affiliated with A Fine Start. This document only makes claims about Aura Start behavior documented in this repository. For A Fine Start, check the official listing and current product documentation.</p>
+<h2>When Aura Start is a better fit</h2>
+<ul>
+<li>You want open-source</li>
+<li>You want local-first storage</li>
+<li>You want no required account</li>
+<li>You want export formats</li>
+<li>You want A Fine Start migration</li>
+<li>You want optional Google Drive appDataFolder backup</li>
+</ul>
+<h2>Feature comparison</h2>
+<div class="table-wrap"><table><thead><tr><th>Area</th><th>Aura Start</th><th>A Fine Start</th></tr></thead><tbody>
+<tr><td>Project relationship</td><td>Independent open-source project, not affiliated with A Fine Start</td><td>Separate product; check official listing</td></tr>
+<tr><td>Source availability</td><td>Open-source under the MIT License</td><td>Not verified here</td></tr>
+<tr><td>Account requirement</td><td>No account required for local use</td><td>Depends on current version; check official listing</td></tr>
+<tr><td>Default storage</td><td>Local extension storage through <code>chrome.storage.local</code></td><td>Not claimed by Aura Start docs</td></tr>
+<tr><td>Analytics/tracking</td><td>No analytics or tracking in Aura Start docs and source</td><td>Not verified here</td></tr>
+<tr><td>Link organization</td><td>User-created groups of links</td><td>Depends on current version</td></tr>
+<tr><td>Search</td><td>Search across title, URL, description, tags, and supported query modifiers</td><td>Check official listing</td></tr>
+<tr><td>Drag and drop</td><td>Groups and links can be reordered in edit mode</td><td>Check official listing</td></tr>
+<tr><td>Full Aura backup</td><td>Full Backup JSON export/import</td><td>Not verified here</td></tr>
+<tr><td>Export formats</td><td>JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export code</td><td>Depends on current version</td></tr>
+<tr><td>A Fine Start migration</td><td>Imports A Fine Start export codes</td><td>Native format behavior depends on current version</td></tr>
+<tr><td>Restore points</td><td>Local Restore Points Manager and safety points before destructive operations</td><td>Not verified here</td></tr>
+<tr><td>Power-user tools</td><td>Command Palette, keyboard shortcuts, and read-only Duplicate Finder scan</td><td>Not verified here</td></tr>
+<tr><td>Optional cloud backup</td><td>Google Drive <code>appDataFolder</code> sync file, off by default</td><td>Not claimed by Aura Start docs</td></tr>
+<tr><td>Browser permissions</td><td><code>storage</code>, <code>identity</code>, Google API host permission for optional Drive sync</td><td>Check official listing</td></tr>
+</tbody></table></div>
+<h2>Migration guide</h2>
+<ol>
+<li>Open A Fine Start.</li>
+<li>Go to Settings.</li>
+<li>Export bookmarks and copy the export code.</li>
+<li>Open Aura Start.</li>
+<li>Open Settings, then choose Import from A Fine Start.</li>
+<li>Paste the export code.</li>
+<li>Review the preview.</li>
+<li>Choose Merge or Replace.</li>
+<li>Confirm the import.</li>
+</ol>
+<p>Aura Start validates imported URLs before saving them. Unsupported or unsafe URL schemes are rejected instead of being stored.</p>
+<h2>Data ownership</h2>
+<p>Aura Start is export-first. The primary data lives in local extension storage by default, and users can export a full JSON backup at any time. Manual JSON export/import works independently of optional Google Drive sync.</p>
+<p>Optional Google Drive sync uses a hidden <code>aura-start-sync.json</code> file in the user's Google Drive <code>appDataFolder</code>. Aura Start does not request full Google Drive access and does not create visible Drive files.</p>
+<p>When exporting back to an A Fine Start-compatible export code, Aura Start writes the compatibility fields supported by that format: group names and bookmark <code>name</code>/<code>url</code> values. Aura Start-specific fields such as descriptions and tags are not included in that compatibility export when the target format does not support them.</p>
+<h2>Notes</h2>
+<p>Aura Start is independent and not affiliated with A Fine Start. A Fine Start is mentioned only for inspiration, migration, and compatibility context.</p>
+      </main>
+      <footer>Aura Start is independent and open-source under the MIT License.</footer>
+    </div>
+  </body>
+</html>

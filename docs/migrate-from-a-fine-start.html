@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Step-by-step migration guide with safety notes.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Migrate from A Fine Start — Aura Start</title>
+    <style>
+      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
+      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
+      a { color:var(--accent-strong); }
+      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
+      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
+      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
+      .brand img { width:38px; height:38px; object-fit:contain; }
+      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
+      nav a { text-decoration:none; }
+      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
+      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
+      h1,h2,h3,h4 { line-height:1.2; }
+      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
+      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
+      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
+      p,li { color:var(--muted); }
+      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
+      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
+      pre code { background:transparent; padding:0; color:var(--text); }
+      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
+      .table-wrap { overflow-x:auto; margin:1rem 0; }
+      table { width:100%; border-collapse:collapse; font-size:.95rem; }
+      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
+      th { background:var(--accent-soft); color:var(--text); }
+      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
+      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
+      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
+      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
+</style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
+        <nav aria-label="Documentation links">
+          <a href="index.html">Home</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+      <main class="doc">
+        <div class="kicker">Aura Start Docs</div>
+        <h1>Migrate from A Fine Start</h1>
+<p>Aura Start is an independent, open-source project and is not affiliated with A Fine Start. Migration support exists so users can move their own grouped links using A Fine Start export codes.</p>
+<h2>1. Why migrate?</h2>
+<p>Aura Start may be a good fit if you want:</p>
+<ul>
+<li>Free and open-source extension code</li>
+<li>No required account</li>
+<li>Local-first storage by default</li>
+<li>No analytics or tracking</li>
+<li>Full JSON backups</li>
+<li>Multiple export formats</li>
+<li>Optional Google Drive backup through the hidden Drive <code>appDataFolder</code></li>
+<li>Restore points before destructive changes</li>
+<li>Command Palette, keyboard shortcuts, and Duplicate Finder</li>
+</ul>
+<h2>2. What is preserved?</h2>
+<p>Group names and links should migrate if the A Fine Start export code is valid and contains supported URL values.</p>
+<p>Aura Start also keeps the order provided by the parsed export structure as far as the export code makes that order available.</p>
+<h2>3. What may not be preserved?</h2>
+<p>Some data may not exist in the A Fine Start-compatible export format. Aura Start can only import what the export code contains.</p>
+<p>When exporting back from Aura Start to an A Fine Start-compatible export code, Aura Start writes group names and bookmark <code>name</code>/<code>url</code> values. Aura Start-specific fields such as descriptions and tags may not be preserved when exporting back to that format if the format does not support them.</p>
+<p>Unsupported or unsafe URL schemes are rejected during import rather than saved.</p>
+<h2>4. Export from A Fine Start</h2>
+<ol>
+<li>Open A Fine Start.</li>
+<li>Go to Settings.</li>
+<li>Use Export bookmarks.</li>
+<li>Copy the generated export code.</li>
+</ol>
+<p>Check the official A Fine Start UI or listing if these labels change in a future version.</p>
+<h2>5. Import into Aura Start</h2>
+<ol>
+<li>Open Aura Start.</li>
+<li>Open Settings.</li>
+<li>Choose Import from A Fine Start.</li>
+<li>Paste the export code.</li>
+<li>Review the validation summary or warnings.</li>
+<li>Choose Merge or Replace.</li>
+<li>Import.</li>
+</ol>
+<h2>6. Merge vs Replace</h2>
+<p>Merge adds imported groups to your current Aura Start data and avoids ID conflicts.</p>
+<p>Replace replaces current groups and settings with the imported data. Export a Full Backup JSON first if you want an extra copy before replacing data.</p>
+<h2>7. Restore points</h2>
+<p>Aura Start creates a restore point before import operations. Restore points are local and capped to avoid unbounded storage growth.</p>
+<p>Users should still create or export a backup before destructive operations such as replace imports, resets, restore point deletion, or deleting Google Drive backup data.</p>
+<h2>8. Export back to A Fine Start-compatible code</h2>
+<p>Aura Start can export an A Fine Start-compatible export code from the Export menu.</p>
+<p>Use this if you change your mind or want to move a basic grouped-link list elsewhere. The compatibility export contains group names and link names/URLs. Aura Start descriptions and tags are not included when the target format does not support them.</p>
+<h2>9. Troubleshooting</h2>
+<ul>
+<li>If Aura Start says the code is not valid JSON, copy the whole export code again from A Fine Start.</li>
+<li>If no bookmarks are imported, check that the export code includes groups and bookmarks.</li>
+<li>If a link is skipped, its URL may use an unsupported or unsafe scheme. Aura Start allows only <code>http</code> and <code>https</code> links.</li>
+<li>If you chose Replace by mistake, open Restore points and restore the point created before import.</li>
+<li>If you are unsure, export a Full Backup JSON from Aura Start before trying again.</li>
+</ul>
+<h2>10. FAQ</h2>
+<p><strong>Is Aura Start affiliated with A Fine Start?</strong></p>
+<p>No. Aura Start is independent and not affiliated with A Fine Start.</p>
+<p><strong>Does Aura Start import every possible A Fine Start setting?</strong></p>
+<p>No. Aura Start imports grouped links from supported export-code shapes. It does not promise to import fields that are not present in the export code.</p>
+<p><strong>Can I use Aura Start without Google Drive?</strong></p>
+<p>Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default.</p>
+<p><strong>Can I keep a normal backup file?</strong></p>
+<p>Yes. Use Full Backup JSON export from Aura Start to keep an independent backup file.</p>
+<p><strong>Can I export back to A Fine Start-compatible format?</strong></p>
+<p>Yes. Aura Start can export an A Fine Start-compatible code, but that compatibility format contains only group names and bookmark names/URLs.</p>
+      </main>
+      <footer>Aura Start is independent and open-source under the MIT License.</footer>
+    </div>
+  </body>
+</html>

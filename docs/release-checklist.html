@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Manual release and Chrome Web Store upload checklist.">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Aura Start Release Checklist — Aura Start</title>
+    <style>
+      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
+      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
+      a { color:var(--accent-strong); }
+      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
+      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
+      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
+      .brand img { width:38px; height:38px; object-fit:contain; }
+      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
+      nav a { text-decoration:none; }
+      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
+      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
+      h1,h2,h3,h4 { line-height:1.2; }
+      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
+      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
+      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
+      p,li { color:var(--muted); }
+      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
+      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
+      pre code { background:transparent; padding:0; color:var(--text); }
+      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
+      .table-wrap { overflow-x:auto; margin:1rem 0; }
+      table { width:100%; border-collapse:collapse; font-size:.95rem; }
+      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
+      th { background:var(--accent-soft); color:var(--text); }
+      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
+      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
+      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
+      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
+</style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
+        <nav aria-label="Documentation links">
+          <a href="index.html">Home</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+      <main class="doc">
+        <div class="kicker">Aura Start Docs</div>
+        <h1>Aura Start Release Checklist</h1>
+<p>Use this checklist before preparing a Chrome Web Store upload. Do not publish from automation; upload manually through the Chrome Web Store Developer Dashboard.</p>
+<h2>Pre-Build</h2>
+<ul>
+<li>Run <code>npm install</code>.</li>
+<li>Run <code>npm run typecheck</code>.</li>
+<li>Run <code>npm run build</code>.</li>
+<li>Run <code>npm run build:store</code>.</li>
+<li>Set a real <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> for release builds.</li>
+<li>Set <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> too if the Web OAuth fallback is required.</li>
+<li>Inspect <code>dist/manifest.json</code>.</li>
+<li>Confirm <code>manifest_version</code> is <code>3</code>.</li>
+<li>Confirm no remote hosted code or remote scripts are present.</li>
+<li>Confirm permissions are least-privilege.</li>
+<li>Confirm there is no full Google Drive scope.</li>
+</ul>
+<h2>Fresh Chrome Web Store ZIP</h2>
+<ul>
+<li>Run <code>npm run build:store</code>.</li>
+<li>Confirm <code>dist/manifest.json</code>.</li>
+<li>Create ZIP with the contents of <code>dist</code> at the archive root.</li>
+<li>Verify <code>manifest.json</code> is at the ZIP root, not under <code>dist/</code>.</li>
+<li>Verify no source files or secrets are included.</li>
+<li>Verify real OAuth client ID for release build.</li>
+<li>Verify ZIP does not include <code>node_modules</code>, <code>docs</code>, <code>.git</code>, source files, <code>.env</code>, screenshots, or development artifacts.</li>
+<li>Upload ZIP manually in Chrome Web Store Developer Dashboard.</li>
+</ul>
+<h2>Manual Browser Test</h2>
+<ul>
+<li>Install <code>dist</code> as an unpacked extension.</li>
+<li>First-run onboarding.</li>
+<li>Add group.</li>
+<li>Add link.</li>
+<li>Edit group.</li>
+<li>Edit link.</li>
+<li>Search.</li>
+<li>Query modifiers, if implemented in the current build.</li>
+<li>Keyboard shortcuts.</li>
+<li>Command Palette.</li>
+<li>Import from A Fine Start.</li>
+<li>JSON import.</li>
+<li>JSON export.</li>
+<li>Browser Bookmarks HTML export.</li>
+<li>Markdown export.</li>
+<li>CSV export.</li>
+<li>A Fine Start-compatible export.</li>
+<li>Restore Points Manager.</li>
+<li>Duplicate Finder.</li>
+<li>Remove demo data.</li>
+<li>Reset with restore point.</li>
+<li>Corrupted storage recovery if feasible.</li>
+<li>Optional Google Drive connect.</li>
+<li>Optional Google Drive disconnect/delete backup.</li>
+</ul>
+<h2>Chrome Web Store Manual Steps</h2>
+<ul>
+<li>Upload ZIP manually.</li>
+<li>Fill short description from <code>docs/STORE_LISTING.md</code>.</li>
+<li>Fill detailed description from <code>docs/STORE_LISTING.md</code>.</li>
+<li>Upload screenshots using <code>docs/SCREENSHOTS.md</code>.</li>
+<li>Set category.</li>
+<li>Set privacy practices.</li>
+<li>Add privacy policy URL from published GitHub Pages <code>docs/privacy-policy.html</code>.</li>
+<li>Add support URL.</li>
+<li>Add source code URL.</li>
+<li>Add reviewer notes from <code>docs/STORE_LISTING.md</code> or <code>STORE_SUBMISSION.md</code>.</li>
+<li>Submit for review manually.</li>
+</ul>
+<h2>Post-Launch</h2>
+<ul>
+<li>Verify the public listing text and screenshots.</li>
+<li>Test install from the Chrome Web Store listing.</li>
+<li>Confirm Google Drive OAuth works for the published extension ID.</li>
+<li>Collect feedback through GitHub Issues or the chosen support URL.</li>
+<li>Triage bugs, especially import/export, restore, duplicate deletion, and Drive sync.</li>
+<li>Prepare 1.2.1 if launch feedback finds release-blocking issues.</li>
+</ul>
+<h2>Release Blockers</h2>
+<ul>
+<li>TypeScript or production build failure.</li>
+<li>Store validation failure.</li>
+<li>Placeholder OAuth client ID in a release ZIP.</li>
+<li>Remote code, analytics, or tracking found in the build.</li>
+<li>Manifest permissions beyond the documented least-privilege set.</li>
+<li>Screenshots or listing text claiming features not present in the local build.</li>
+</ul>
+      </main>
+      <footer>Aura Start is independent and open-source under the MIT License.</footer>
+    </div>
+  </body>
+</html>

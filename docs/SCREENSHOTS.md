@@ -6,7 +6,9 @@ Recommended base sizes:
 
 - Chrome Web Store screenshots: 1280 x 800 or 1280 x 720 PNG
 - GitHub/social crops: 1600 x 900 PNG
-- Use real extension UI when possible; use `docs/screenshot-gallery.html` only for promotional staging or when a clean overlay is needed.
+- Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data.
+- Final publishable screenshots live in `Photo/`; GitHub Pages copies live in `docs/assets/screenshots/`.
+- `docs/screenshot-gallery.html` displays the real captured screenshots. It is not a mockup renderer.
 
 ## General Capture Rules
 
@@ -28,7 +30,7 @@ Recommended base sizes:
 - Manual verification: confirm groups open, links are visible, drag handles/edit controls are not distracting unless edit mode is intentionally shown.
 - Chrome Web Store-safe wording: "Clean groups of links" is factual and matches the product.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred; promotional mockup acceptable for a hero composite.
+- Capture source: real extension UI.
 - Trust message: Aura Start is organized, calm, and useful immediately.
 
 ## 2. Import from A Fine Start
@@ -42,7 +44,7 @@ Recommended base sizes:
 - Manual verification: confirm preview counts appear, Merge/Replace choices are visible, and invalid data does not apply changes.
 - Chrome Web Store-safe wording: include a small note if space allows: "Independent project, not affiliated with A Fine Start."
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred.
+- Capture source: real extension UI.
 - Trust message: users can migrate their own export code in a controlled way.
 
 ## 3. Export / Backup
@@ -56,7 +58,7 @@ Recommended base sizes:
 - Manual verification: confirm Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export are visible where supported.
 - Chrome Web Store-safe wording: export is local browser-generated backup/export, not a hosted service.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred.
+- Capture source: real extension UI.
 - Trust message: users are not locked in.
 
 ## 4. Restore Points
@@ -70,7 +72,7 @@ Recommended base sizes:
 - Manual verification: confirm Restore, Export restore point, Delete restore point, and Delete old restore points are visible if included in the UI.
 - Chrome Web Store-safe wording: restore points are local safety snapshots, not a guarantee against every browser/profile failure.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred.
+- Capture source: real extension UI.
 - Trust message: replace, restore, reset, and duplicate deletion are guarded.
 
 ## 5. Privacy Promise
@@ -84,7 +86,7 @@ Recommended base sizes:
 - Manual verification: confirm wording matches `PRIVACY.md`, `docs/privacy-policy.html`, and manifest permissions.
 - Chrome Web Store-safe wording: "No account. No analytics. No tracking." matches the local-first implementation and docs.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI or promotional mockup.
+- Capture source: real extension UI.
 - Trust message: Aura Start has no backend and does not monetize user data.
 
 ## 6. Command Palette
@@ -98,7 +100,7 @@ Recommended base sizes:
 - Manual verification: confirm Enter runs selected command, arrows move selection, and Esc closes the palette.
 - Chrome Web Store-safe wording: "move faster" is a workflow claim, not a performance guarantee.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred.
+- Capture source: real extension UI.
 - Trust message: Aura Start is efficient without adding tracking or heavy services.
 
 ## 7. Duplicate Finder
@@ -112,7 +114,7 @@ Recommended base sizes:
 - Manual verification: confirm scan is read-only, exact/possible duplicates are separated, and deletion requires selection, restore point, and confirmation.
 - Chrome Web Store-safe wording: "Find duplicate links" is accurate; do not claim automatic cleanup.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred.
+- Capture source: real extension UI.
 - Trust message: cleanup is visible, reversible where supported, and never automatic.
 
 ## 8. Optional Google Drive Backup
@@ -126,7 +128,7 @@ Recommended base sizes:
 - Manual verification: confirm Google Drive sync is optional/off by default and Drive access is limited to `drive.appdata`.
 - Chrome Web Store-safe wording: "Optional backup" and "appDataFolder" match the implemented permission model.
 - Recommended size: 1280 x 800.
-- Capture source: real extension UI preferred; promotional mockup acceptable if account data would be exposed.
+- Capture source: real extension UI. Hide account data if a connected account is used.
 - Trust message: cloud backup is opt-in and least-privilege.
 
 ## Publishing Checklist
