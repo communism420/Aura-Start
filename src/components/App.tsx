@@ -231,9 +231,11 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       const searchInputFocused = event.target === searchInputRef.current;
       const typingTarget = isTextInput(event.target);
       const key = event.key.toLowerCase();
+      const code = event.code;
       const modified = event.altKey || event.metaKey || event.ctrlKey;
+      const commandPaletteShortcut = (event.ctrlKey || event.metaKey) && (key === "k" || code === "KeyK");
 
-      if ((event.ctrlKey || event.metaKey) && key === "k") {
+      if (commandPaletteShortcut) {
         if (event.cancelable) {
           event.preventDefault();
         }
@@ -251,7 +253,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         return;
       }
 
-      if (event.key === "/" && !typingTarget) {
+      if ((event.key === "/" || code === "Slash") && !typingTarget) {
         event.preventDefault();
         setSearchOpen(true);
         return;
@@ -287,19 +289,19 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         return;
       }
 
-      if (key === "e") {
+      if (key === "e" || code === "KeyE") {
         event.preventDefault();
         setEditMode((value) => !value);
         return;
       }
 
-      if (key === "n") {
+      if (key === "n" || code === "KeyN") {
         event.preventDefault();
         openAddLink();
         return;
       }
 
-      if (key === "g") {
+      if (key === "g" || code === "KeyG") {
         event.preventDefault();
         openAddGroup();
       }
