@@ -9,7 +9,9 @@ type SortableLinkItemProps = {
   settings: AuraStartSettings;
   disabled: boolean;
   editMode: boolean;
+  highlightTerms?: string[];
   isDropPending: boolean;
+  selected?: boolean;
   onEdit: (groupId: string, link: AuraStartLink) => void;
   onDelete: (groupId: string, link: AuraStartLink) => void;
 };
@@ -20,7 +22,9 @@ export function SortableLinkItem({
   settings,
   disabled,
   editMode,
+  highlightTerms,
   isDropPending,
+  selected,
   onEdit,
   onDelete
 }: SortableLinkItemProps) {
@@ -47,7 +51,9 @@ export function SortableLinkItem({
         dragging={sortable.isDragging || isDropPending}
         editMode={editMode}
         groupId={groupId}
+        highlightTerms={highlightTerms}
         link={link}
+        selected={selected}
         settings={settings}
         onDelete={onDelete}
         onEdit={onEdit}

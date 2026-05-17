@@ -1,4 +1,14 @@
-import { Download, RotateCcw, Upload } from "lucide-react";
+import {
+  Database,
+  ExternalLink,
+  FileUp,
+  HelpCircle,
+  Keyboard,
+  RotateCcw,
+  SearchCheck,
+  ShieldCheck,
+  Upload
+} from "lucide-react";
 import { languageOptions, t } from "../i18n";
 import type {
   AuraStartData,
@@ -20,8 +30,13 @@ type SettingsDialogProps = {
   onClose: () => void;
   onUpdateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
   onOpenImport: () => void;
+  onOpenImportAFineStart: () => void;
+  onOpenDuplicateFinder: () => void;
   onOpenRestorePoints: () => void;
+  onOpenOnboarding: () => void;
   onReset: () => void;
+  hasDemoData: boolean;
+  onRemoveDemoData: () => void;
   onConnectGoogleDrive: () => Promise<void>;
   onDeleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   onResolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
@@ -29,6 +44,7 @@ type SettingsDialogProps = {
 };
 
 const columnOptions = ["auto", 1, 2, 3, 4, 5, 6] as const;
+const privacyPolicyUrl = "https://github.com/communism420/Aura-Start/blob/main/PRIVACY.md";
 
 export function SettingsDialog({
   open,
@@ -39,8 +55,13 @@ export function SettingsDialog({
   onClose,
   onUpdateSettings,
   onOpenImport,
+  onOpenImportAFineStart,
+  onOpenDuplicateFinder,
   onOpenRestorePoints,
+  onOpenOnboarding,
   onReset,
+  hasDemoData,
+  onRemoveDemoData,
   onConnectGoogleDrive,
   onDeleteGoogleDriveBackupAndDisconnect,
   onResolveSyncConflict,
@@ -48,6 +69,26 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const settings = data.settings;
   const language = settings.language;
+  const privacyPromises = [
+    t(language, "noAnalytics"),
+    t(language, "noTracking"),
+    t(language, "noAds"),
+    t(language, "noBackend"),
+    t(language, "noRequiredAccount"),
+    t(language, "noBrowserHistoryPermission"),
+    t(language, "noBrowserBookmarksPermission"),
+    t(language, "driveSyncOptionalOffByDefault"),
+    t(language, "driveSyncAppDataFolderOnly")
+  ];
+  const shortcuts = [
+    ["Ctrl/⌘ K", t(language, "shortcutOpenCommandPalette")],
+    ["/", t(language, "shortcutFocusSearch")],
+    ["Esc", t(language, "shortcutClearSearch")],
+    ["Enter", t(language, "shortcutOpenSelectedResult")],
+    ["E", t(language, "shortcutToggleEditMode")],
+    ["N", t(language, "shortcutCreateNewLink")],
+    ["G", t(language, "shortcutCreateNewGroup")]
+  ];
 
   function update(settingsPatch: Partial<AuraStartSettings>) {
     void onUpdateSettings(settingsPatch).catch((error: unknown) =>
@@ -118,22 +159,81 @@ export function SettingsDialog({
           <div className="surface-flat rounded-xl p-4">
             <h3 className="font-semibold">{t(language, "dataOwnership")}</h3>
             <p className="muted mt-1 text-sm leading-6">{t(language, "dataOwnershipDescription")}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+          </div>
+          <div className="surface-flat rounded-xl p-4">
+            <h3 className="font-semibold">{t(language, "tools")}</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button className="btn btn-secondary" type="button" onClick={onOpenDuplicateFinder}>
+                <SearchCheck size={17} />
+                {t(language, "duplicateFinder")}
+              </button>
               <ExportMenu data={data} onError={onError} />
               <button className="btn btn-secondary" type="button" onClick={onOpenImport}>
                 <Upload size={17} />
-                {t(language, "import")}
+                {t(language, "importBackup")}
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={onOpenImportAFineStart}>
+                <FileUp size={17} />
+                {t(language, "importFromAFineStart")}
+              </button>
+              <button className="btn btn-secondary" type="button" onClick={onOpenRestorePoints}>
+                <RotateCcw size={17} />
+                {t(language, "restorePoints")}
               </button>
             </div>
           </div>
-          <button className="btn btn-secondary w-full justify-start" type="button" onClick={onOpenRestorePoints}>
-            <RotateCcw size={17} />
-            {t(language, "restorePoints")}
+          <div className="surface-flat rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="text-[var(--accent)]" size={18} />
+              <h3 className="font-semibold">{t(language, "privacyPromise")}</h3>
+            </div>
+            <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+              {privacyPromises.map((promise) => (
+                <li className="flex items-start gap-2" key={promise}>
+                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
+                  <span>{promise}</span>
+                </li>
+              ))}
+            </ul>
+            <a
+              className="btn btn-secondary mt-4"
+              href={privacyPolicyUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLink size={16} />
+              {t(language, "privacyPolicy")}
+            </a>
+          </div>
+          <div className="surface-flat rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <Keyboard className="text-[var(--accent)]" size={18} />
+              <h3 className="font-semibold">{t(language, "keyboardShortcuts")}</h3>
+            </div>
+            <p className="muted mt-1 text-sm">{t(language, "searchShortcuts")}: {t(language, "pressSlashToSearch")} · {t(language, "pressEscToClear")}</p>
+            <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+              {shortcuts.map(([shortcut, label]) => (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] px-3 py-2" key={shortcut}>
+                  <span className="muted">{label}</span>
+                  <kbd className="shortcut-key">{shortcut}</kbd>
+                </div>
+              ))}
+            </div>
+            <div className="muted mt-3 text-sm">
+              <div className="font-semibold text-[var(--text)]">{t(language, "searchModifiers")}</div>
+              <div className="mt-1">{t(language, "searchModifiersExamples")}</div>
+            </div>
+          </div>
+          <button className="btn btn-secondary w-full justify-start" type="button" onClick={onOpenOnboarding}>
+            <HelpCircle size={17} />
+            {t(language, "openOnboardingHelpAgain")}
           </button>
-          <button className="btn btn-secondary w-full justify-start" type="button" onClick={onOpenImport}>
-            <Download size={17} />
-            {t(language, "importBackup")}
-          </button>
+          {hasDemoData ? (
+            <button className="btn btn-secondary w-full justify-start" type="button" onClick={onRemoveDemoData}>
+              <Database size={17} />
+              {t(language, "removeDemoData")}
+            </button>
+          ) : null}
           <button className="btn btn-danger w-full justify-start" type="button" onClick={onReset}>
             {t(language, "resetAllData")}
           </button>

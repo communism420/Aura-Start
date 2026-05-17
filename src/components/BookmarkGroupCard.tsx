@@ -3,7 +3,9 @@ import { useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, GripVertical, LinkIcon, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import type { AuraStartGroup, AuraStartLink, AuraStartSettings } from "../types";
+import { searchResultId } from "../utils/search";
 import { BookmarkLinkItem } from "./BookmarkLinkItem";
+import { HighlightedText } from "./HighlightedText";
 import { SortableLinkItem } from "./SortableLinkItem";
 
 type BookmarkGroupCardProps = {
@@ -12,6 +14,8 @@ type BookmarkGroupCardProps = {
   searchMode: boolean;
   editMode: boolean;
   activeLinkId?: string | null;
+  highlightTerms?: string[];
+  selectedSearchResultId?: string | null;
   sortable?: {
     setNodeRef: (node: HTMLElement | null) => void;
     attributes: React.HTMLAttributes<HTMLElement>;
@@ -35,6 +39,8 @@ export function BookmarkGroupCard({
   searchMode,
   editMode,
   activeLinkId,
+  highlightTerms = [],
+  selectedSearchResultId,
   sortable,
   onAddLink,
   onEditGroup,
@@ -95,7 +101,7 @@ export function BookmarkGroupCard({
           </button>
         )}
         <h2 className="group-name" title={t(language, "linksCount", { count: group.links.length })}>
-          {group.title}
+          <HighlightedText terms={highlightTerms} text={group.title} />
         </h2>
         {editMode ? (
           <>
@@ -140,6 +146,8 @@ export function BookmarkGroupCard({
                     editMode={editMode}
                     key={link.id}
                     link={link}
+                    highlightTerms={highlightTerms}
+                    selected={selectedSearchResultId === searchResultId(group.id, link.id)}
                     settings={settings}
                     onDelete={onDeleteLink}
                     onEdit={onEditLink}
@@ -155,8 +163,10 @@ export function BookmarkGroupCard({
                       disabled={searchMode || !editMode}
                       editMode={editMode}
                       groupId={group.id}
+                      highlightTerms={highlightTerms}
                       key={link.id}
                       link={link}
+                      selected={selectedSearchResultId === searchResultId(group.id, link.id)}
                       settings={settings}
                       onDelete={onDeleteLink}
                       onEdit={onEditLink}

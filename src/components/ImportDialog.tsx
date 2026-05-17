@@ -1,5 +1,5 @@
 import { Upload } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import type { AuraLanguage, AuraStartData, ImportMode } from "../types";
 import { parseAFineStartExportWithReport } from "../utils/importAFineStart";
@@ -9,21 +9,76 @@ import { Modal } from "./Modal";
 type ImportDialogProps = {
   language: AuraLanguage;
   open: boolean;
+  currentData: AuraStartData;
+  initialFormat?: ImportDialogFormat;
   onClose: () => void;
-  onImport: (data: AuraStartData, mode: ImportMode) => Promise<void>;
+  onImport: (data: AuraStartData, mode: ImportMode, source?: ImportDialogFormat) => Promise<void>;
   onError: (message: string) => void;
 };
 
-export function ImportDialog({ language, open, onClose, onImport, onError }: ImportDialogProps) {
-  const [format, setFormat] = useState<"aura_json" | "a_fine_start">("aura_json");
+export type ImportDialogFormat = "aura_json" | "a_fine_start";
+
+type ParsedImport = {
+  data: AuraStartData;
+  warnings: string[];
+  rejectedLinks: number;
+  sourceGroups: number;
+  sourceLinks: number;
+};
+
+function countLinks(data: AuraStartData): number {
+  return data.groups.reduce((count, group) => count + group.links.length, 0);
+}
+
+function countPotentialDuplicates(current: AuraStartData, imported: AuraStartData): { groups: number; links: number } {
+  const currentGroupTitles = new Set(current.groups.map((group) => group.title.trim().toLowerCase()).filter(Boolean));
+  const currentLinkUrls = new Set(
+    current.groups.flatMap((group) => group.links.map((link) => link.url.trim().toLowerCase())).filter(Boolean)
+  );
+
+  return {
+    groups: imported.groups.filter((group) => currentGroupTitles.has(group.title.trim().toLowerCase())).length,
+    links: imported.groups.flatMap((group) => group.links).filter((link) => currentLinkUrls.has(link.url.trim().toLowerCase())).length
+  };
+}
+
+function importErrorMessage(language: AuraLanguage, format: ImportDialogFormat, error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  if (format !== "a_fine_start") {
+    return message || t(language, "couldNotParseImportData");
+  }
+
+  if (/does not contain bookmarks|no valid links/i.test(message)) {
+    return t(language, "noValidLinksFound");
+  }
+
+  if (/json|valid A Fine Start|look like|array|unsupported/i.test(message)) {
+    return t(language, "invalidExportCode");
+  }
+
+  return message || t(language, "invalidExportCode");
+}
+
+export function ImportDialog({
+  language,
+  open,
+  currentData,
+  initialFormat = "aura_json",
+  onClose,
+  onImport,
+  onError
+}: ImportDialogProps) {
+  const [format, setFormat] = useState<ImportDialogFormat>(initialFormat);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [fileName, setFileName] = useState("");
   const [rawText, setRawText] = useState("");
   const [parsed, setParsed] = useState<AuraStartData | null>(null);
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [rejectedLinks, setRejectedLinks] = useState(0);
+  const [sourceCounts, setSourceCounts] = useState({ groups: 0, links: 0 });
   const [localError, setLocalError] = useState<string | null>(null);
 
-  function parseText(text: string, nextFormat = format): { data: AuraStartData; warnings: string[] } {
+  function parseText(text: string, nextFormat = format): ParsedImport {
     if (nextFormat === "a_fine_start") {
       const result = parseAFineStartExportWithReport(text);
       return {
@@ -38,23 +93,44 @@ export function ImportDialog({ language, open, onClose, onImport, onError }: Imp
       };
     }
 
-    return { data: parseJsonBackup(text), warnings: [] };
+    const data = parseJsonBackup(text);
+    return {
+      data,
+      warnings: [],
+      rejectedLinks: 0,
+      sourceGroups: data.groups.length,
+      sourceLinks: countLinks(data)
+    };
+  }
+
+  function setParsedResult(result: ParsedImport) {
+    setParsed(result.data);
+    setImportWarnings(result.warnings);
+    setRejectedLinks(result.rejectedLinks);
+    setSourceCounts({ groups: result.sourceGroups, links: result.sourceLinks });
   }
 
   function validateText(text: string, nextFormat = format) {
     setLocalError(null);
     setParsed(null);
     setImportWarnings([]);
+    setRejectedLinks(0);
+    setSourceCounts({ groups: 0, links: 0 });
     if (!text.trim()) return;
 
     try {
       const result = parseText(text, nextFormat);
-      setParsed(result.data);
-      setImportWarnings(result.warnings);
+      setParsedResult(result);
     } catch (error) {
-      setLocalError(error instanceof Error ? error.message : t(language, "couldNotParseImportData"));
+      setLocalError(importErrorMessage(language, nextFormat, error));
     }
   }
+
+  useEffect(() => {
+    if (!open) return;
+    setFormat(initialFormat);
+    validateText(rawText, initialFormat);
+  }, [initialFormat, open]);
 
   async function handleFile(file: File | undefined) {
     setLocalError(null);
@@ -66,18 +142,22 @@ export function ImportDialog({ language, open, onClose, onImport, onError }: Imp
       const text = await file.text();
       setRawText(text);
       const result = parseText(text);
-      setParsed(result.data);
-      setImportWarnings(result.warnings);
+      setParsedResult(result);
     } catch (error) {
       setImportWarnings([]);
-      setLocalError(error instanceof Error ? error.message : t(language, "couldNotReadImportFile"));
+      setRejectedLinks(0);
+      setSourceCounts({ groups: 0, links: 0 });
+      setLocalError(importErrorMessage(language, format, error));
     }
   }
+
+  const validLinkCount = parsed ? countLinks(parsed) : 0;
+  const potentialDuplicates = parsed ? countPotentialDuplicates(currentData, parsed) : { groups: 0, links: 0 };
 
   return (
     <Modal
       open={open}
-      title={t(language, "importBackup")}
+      title={format === "a_fine_start" ? t(language, "importFromAFineStart") : t(language, "importBackup")}
       description={t(language, "importBackupDescription")}
       closeLabel={t(language, "closeDialog")}
       onClose={onClose}
@@ -95,21 +175,35 @@ export function ImportDialog({ language, open, onClose, onImport, onError }: Imp
           try {
             const result = parseText(rawText);
             dataToImport = result.data;
-            setParsed(dataToImport);
-            setImportWarnings(result.warnings);
+            setParsedResult(result);
             setLocalError(null);
           } catch (error) {
             setParsed(null);
             setImportWarnings([]);
-            setLocalError(error instanceof Error ? error.message : t(language, "couldNotParseImportData"));
+            setRejectedLinks(0);
+            setSourceCounts({ groups: 0, links: 0 });
+            setLocalError(importErrorMessage(language, format, error));
             return;
           }
 
-          void onImport(dataToImport, mode)
+          void onImport(dataToImport, mode, format)
             .then(onClose)
             .catch((error: unknown) => onError(error instanceof Error ? error.message : t(language, "importFailed")));
         }}
       >
+        {format === "a_fine_start" ? (
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] p-4 text-sm">
+            <div className="font-semibold">{t(language, "aFineStartImportStepsTitle")}</div>
+            <ol className="muted mt-2 list-decimal space-y-1 pl-5">
+              <li>{t(language, "aFineStartImportStepOpen")}</li>
+              <li>{t(language, "aFineStartImportStepSettings")}</li>
+              <li>{t(language, "aFineStartImportStepCopy")}</li>
+              <li>{t(language, "aFineStartImportStepPaste")}</li>
+              <li>{t(language, "aFineStartImportStepMode")}</li>
+              <li>{t(language, "aFineStartImportStepReview")}</li>
+            </ol>
+          </div>
+        ) : null}
         <label className="block">
           <span className="mb-1 block text-sm font-semibold">{t(language, "importFormat")}</span>
           <select
@@ -160,10 +254,36 @@ export function ImportDialog({ language, open, onClose, onImport, onError }: Imp
         </label>
         {parsed ? (
           <div className="rounded-lg bg-[var(--accent-soft)] p-3 text-sm text-[var(--accent-strong)]">
-            {t(language, "validImport", {
-              groups: parsed.groups.length,
-              links: parsed.groups.reduce((count, group) => count + group.links.length, 0)
-            })}
+            <div className="font-semibold">{t(language, "reviewImport")}</div>
+            <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewPayload")}</dt>
+                <dd>{t(language, "importPreviewGroupsLinks", { groups: sourceCounts.groups, links: sourceCounts.links })}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewValid")}</dt>
+                <dd>{t(language, "importPreviewGroupsLinks", { groups: parsed.groups.length, links: validLinkCount })}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewMode")}</dt>
+                <dd>{mode === "merge" ? t(language, "merge") : t(language, "replace")}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewWillAdd")}</dt>
+                <dd>{t(language, "importPreviewGroupsLinks", { groups: parsed.groups.length, links: validLinkCount })}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewPotentialDuplicates")}</dt>
+                <dd>{t(language, "importPreviewGroupsLinks", { groups: potentialDuplicates.groups, links: potentialDuplicates.links })}</dd>
+              </div>
+              <div>
+                <dt className="text-xs uppercase tracking-wide opacity-75">{t(language, "importPreviewRejected")}</dt>
+                <dd>{t(language, "linksCount", { count: rejectedLinks })}</dd>
+              </div>
+            </dl>
+            {mode === "replace" ? (
+              <p className="mt-3 text-sm">{t(language, "exportBackupBeforeImport")}</p>
+            ) : null}
           </div>
         ) : null}
         {importWarnings.length ? (

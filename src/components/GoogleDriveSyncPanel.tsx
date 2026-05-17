@@ -110,20 +110,23 @@ export function GoogleDriveSyncPanel({
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <button className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={busy} type="button" onClick={() => run(onConnect)}>
-          <Cloud className="shrink-0" size={17} />
-          <span className="truncate">{hasGoogleConnection ? t(language, "googleDriveReconnect") : t(language, "googleDriveConnect")}</span>
-        </button>
-        <button
-          className="btn btn-danger h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
-          disabled={!canManageConnection}
-          type="button"
-          onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
-        >
-          <Trash2 className="shrink-0" size={17} />
-          <span className="truncate">{t(language, "googleDriveDeleteBackupAndDisconnect")}</span>
-        </button>
+      <div className="mt-4">
+        {!hasGoogleConnection ? (
+          <button className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={busy} type="button" onClick={() => run(onConnect)}>
+            <Cloud className="shrink-0" size={17} />
+            <span className="truncate">{t(language, "googleDriveConnect")}</span>
+          </button>
+        ) : (
+          <button
+            className="btn btn-danger h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
+            disabled={!canManageConnection}
+            type="button"
+            onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
+          >
+            <Trash2 className="shrink-0" size={17} />
+            <span className="truncate">{t(language, "googleDriveDeleteBackupAndDisconnect")}</span>
+          </button>
+        )}
       </div>
 
       {syncConflict ? (

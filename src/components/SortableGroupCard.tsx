@@ -7,7 +7,9 @@ type SortableGroupCardProps = {
   group: AuraStartGroup;
   editMode: boolean;
   activeLinkId?: string | null;
+  highlightTerms?: string[];
   isDropPending: boolean;
+  selectedSearchResultId?: string | null;
   settings: AuraStartSettings;
   searchMode: boolean;
   onAddLink: (groupId: string) => void;

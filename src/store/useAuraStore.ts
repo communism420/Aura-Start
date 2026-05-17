@@ -34,6 +34,7 @@ import { createId } from "../utils/ids";
 import { mergeImportedData } from "../utils/importJson";
 import { createEmptyData } from "../utils/sampleData";
 import { clearAuraData, loadAuraData, saveAuraData } from "../utils/storage";
+import { loadAuraUiState, saveAuraUiState, type DemoDataMarker } from "../utils/uiState";
 import { normalizeUrl, parseTags, validateTitle } from "../utils/validators";
 
 export type ToastMessage = {
@@ -52,10 +53,21 @@ type LinkInput = {
   tags?: string;
 };
 
+export type LinkDeleteTarget = {
+  groupId: string;
+  linkId: string;
+};
+
 type AuraStoreStatus = "idle" | "loading" | "ready" | "corrupt" | "error";
 type GoogleDriveBackupOptions = { silent?: boolean };
 type GoogleDriveSyncNowOptions = { silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
+type ImportBackupSource = "aura_json" | "a_fine_start";
+
+const EMPTY_DEMO_DATA: DemoDataMarker = {
+  groupIds: [],
+  linkIds: []
+};
 
 type AuraStore = {
   data: AuraStartData | null;
@@ -66,8 +78,11 @@ type AuraStore = {
   syncStatus: AuraSyncStatus;
   syncMessage: string | null;
   syncConflict: AuraSyncConflict | null;
+  onboardingCompleted: boolean;
+  demoData: DemoDataMarker;
   toasts: ToastMessage[];
   load: () => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   resetCorruptData: () => Promise<void>;
   updateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
   addGroup: (title: string) => Promise<string | undefined>;
@@ -77,13 +92,17 @@ type AuraStore = {
   addLink: (groupId: string, input: LinkInput) => Promise<void>;
   updateLink: (groupId: string, linkId: string, input: LinkInput) => Promise<void>;
   deleteLink: (groupId: string, linkId: string) => Promise<void>;
+  deleteLinksWithRestorePoint: (targets: LinkDeleteTarget[]) => Promise<void>;
   reorderGroups: (orderedGroupIds: string[]) => Promise<void>;
   moveLink: (linkId: string, targetGroupId: string, overLinkId?: string) => Promise<void>;
-  importBackup: (imported: AuraStartData, mode: ImportMode) => Promise<void>;
+  addDemoData: () => Promise<void>;
+  removeDemoData: () => Promise<void>;
+  importBackup: (imported: AuraStartData, mode: ImportMode, source?: ImportBackupSource) => Promise<void>;
   resetAllData: () => Promise<void>;
   createManualRestorePoint: (name: string) => Promise<void>;
   restoreRestorePoint: (restorePointId: string) => Promise<void>;
   deleteRestorePoint: (restorePointId: string) => Promise<void>;
+  deleteAllRestorePoints: () => Promise<void>;
   connectGoogleDrive: () => Promise<void>;
   disconnectGoogleDrive: () => Promise<void>;
   backupToGoogleDrive: (options?: GoogleDriveBackupOptions) => Promise<void>;
@@ -179,6 +198,79 @@ function createRestorePoint(
     reason,
     data: snapshot(data)
   };
+}
+
+function createDemoGroups(startOrder: number): { groups: AuraStartGroup[]; marker: DemoDataMarker } {
+  const createdAt = nowIso();
+  const specs = [
+    {
+      title: "Work",
+      links: [
+        ["GitHub", "https://github.com"],
+        ["Chrome Developers", "https://developer.chrome.com"]
+      ]
+    },
+    {
+      title: "Social",
+      links: [["Hacker News", "https://news.ycombinator.com"]]
+    },
+    {
+      title: "Tools",
+      links: [
+        ["MDN Web Docs", "https://developer.mozilla.org"],
+        ["web.dev", "https://web.dev"]
+      ]
+    },
+    {
+      title: "Reading",
+      links: [["Wikipedia", "https://wikipedia.org"]]
+    }
+  ];
+  const marker: DemoDataMarker = {
+    groupIds: [],
+    linkIds: []
+  };
+
+  const groups = specs.map((groupSpec, groupIndex): AuraStartGroup => {
+    const groupId = createId("demo_group");
+    marker.groupIds.push(groupId);
+
+    return {
+      id: groupId,
+      title: groupSpec.title,
+      collapsed: false,
+      order: startOrder + groupIndex,
+      links: groupSpec.links.map(([title, url], linkIndex): AuraStartLink => {
+        const linkId = createId("demo_link");
+        marker.linkIds.push(linkId);
+
+        return {
+          id: linkId,
+          title,
+          url,
+          order: linkIndex,
+          createdAt,
+          updatedAt: createdAt
+        };
+      })
+    };
+  });
+
+  return { groups, marker };
+}
+
+function mergeDemoDataMarker(current: DemoDataMarker, added: DemoDataMarker): DemoDataMarker {
+  return {
+    groupIds: Array.from(new Set([...current.groupIds, ...added.groupIds])),
+    linkIds: Array.from(new Set([...current.linkIds, ...added.linkIds]))
+  };
+}
+
+function hasMatchingDemoData(data: AuraStartData, marker: DemoDataMarker): boolean {
+  const groupIds = new Set(marker.groupIds);
+  const linkIds = new Set(marker.linkIds);
+
+  return data.groups.some((group) => groupIds.has(group.id) || group.links.some((link) => linkIds.has(link.id)));
 }
 
 function withRestorePoint(
@@ -399,11 +491,14 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   syncStatus: "idle",
   syncMessage: null,
   syncConflict: null,
+  onboardingCompleted: false,
+  demoData: EMPTY_DEMO_DATA,
   toasts: [],
 
   async load() {
     set({ status: "loading", error: null, corruptRaw: null });
     try {
+      const uiState = await loadAuraUiState();
       const result = await loadAuraData();
       if (result.status === "missing") {
         const empty = createEmptyData();
@@ -414,7 +509,9 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           usingFallbackStorage: result.fallback,
           syncStatus: "idle",
           syncMessage: null,
-          syncConflict: null
+          syncConflict: null,
+          onboardingCompleted: uiState.onboardingCompleted,
+          demoData: uiState.demoData
         });
         return;
       }
@@ -428,7 +525,9 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           usingFallbackStorage: result.fallback,
           syncStatus: "idle",
           syncMessage: null,
-          syncConflict: null
+          syncConflict: null,
+          onboardingCompleted: uiState.onboardingCompleted,
+          demoData: uiState.demoData
         });
         return;
       }
@@ -439,7 +538,9 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         usingFallbackStorage: result.fallback,
         syncStatus: syncStatusFromData(result.data),
         syncMessage: null,
-        syncConflict: null
+        syncConflict: null,
+        onboardingCompleted: uiState.onboardingCompleted,
+        demoData: uiState.demoData
       });
     } catch (caught) {
       set({
@@ -450,6 +551,15 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         syncConflict: null
       });
     }
+  },
+
+  async completeOnboarding() {
+    const next = {
+      onboardingCompleted: true,
+      demoData: get().demoData
+    };
+    await saveAuraUiState(next);
+    set({ onboardingCompleted: true });
   },
 
   async resetCorruptData() {
@@ -615,6 +725,49 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
+  async deleteLinksWithRestorePoint(targets) {
+    const data = get().data;
+    if (!data) return;
+    const uniqueTargets = Array.from(new Set(targets.map((target) => `${target.groupId}::${target.linkId}`)));
+    if (!uniqueTargets.length) {
+      throw new Error(text(data, "noDuplicateLinksSelected"));
+    }
+
+    const previous = cloneData(data);
+    const targetIds = new Set(uniqueTargets);
+    let deletedCount = 0;
+    const withSafety = withRestorePoint(data, "Before deleting duplicate links", "before_delete");
+    const groups = withSafety.groups.map((group) => ({
+      ...group,
+      links: group.links.filter((link) => {
+        const deleteLink = targetIds.has(`${group.id}::${link.id}`);
+        if (deleteLink) {
+          deletedCount += 1;
+        }
+        return !deleteLink;
+      })
+    }));
+
+    if (!deletedCount) {
+      throw new Error(text(data, "noDuplicateLinksSelected"));
+    }
+
+    await safeCommit(set, {
+      ...withSafety,
+      groups
+    });
+    get().addToast({
+      type: "info",
+      title: text(data, "duplicateLinksDeleted", { count: deletedCount }),
+      message: text(data, "restorePointCreatedBeforeDeletingDuplicates"),
+      actionLabel: text(data, "undo"),
+      onAction: async () => {
+        const current = get().data;
+        await safeCommit(set, current ? { ...previous, restorePoints: current.restorePoints } : previous);
+      }
+    });
+  },
+
   async reorderGroups(orderedGroupIds) {
     const data = get().data;
     if (!data) return;
@@ -676,7 +829,68 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
-  async importBackup(imported, mode) {
+  async addDemoData() {
+    const data = get().data;
+    if (!data) return;
+
+    const demo = createDemoGroups(data.groups.length);
+    const nextMarker = mergeDemoDataMarker(get().demoData, demo.marker);
+
+    await safeCommit(set, {
+      ...data,
+      groups: [...data.groups, ...demo.groups]
+    });
+    await saveAuraUiState({
+      onboardingCompleted: get().onboardingCompleted,
+      demoData: nextMarker
+    });
+    set({ demoData: nextMarker });
+  },
+
+  async removeDemoData() {
+    const data = get().data;
+    if (!data) return;
+
+    const marker = get().demoData;
+    const groupIds = new Set(marker.groupIds);
+    const linkIds = new Set(marker.linkIds);
+    if (!hasMatchingDemoData(data, marker)) {
+      await saveAuraUiState({
+        onboardingCompleted: get().onboardingCompleted,
+        demoData: EMPTY_DEMO_DATA
+      });
+      set({ demoData: EMPTY_DEMO_DATA });
+      return;
+    }
+
+    const withSafety = withRestorePoint(data, "Before removing demo data", "before_delete");
+    const nextGroups = withSafety.groups
+      .map((group): AuraStartGroup | null => {
+        const links = group.links.filter((link) => !linkIds.has(link.id));
+        if (groupIds.has(group.id) && links.length === 0) {
+          return null;
+        }
+
+        return { ...group, links };
+      })
+      .filter((group): group is AuraStartGroup => group !== null);
+    const nextMarker: DemoDataMarker = {
+      groupIds: nextGroups.filter((group) => groupIds.has(group.id)).map((group) => group.id),
+      linkIds: nextGroups.flatMap((group) => group.links.filter((link) => linkIds.has(link.id)).map((link) => link.id))
+    };
+
+    await safeCommit(set, {
+      ...withSafety,
+      groups: nextGroups
+    });
+    await saveAuraUiState({
+      onboardingCompleted: get().onboardingCompleted,
+      demoData: nextMarker
+    });
+    set({ demoData: nextMarker });
+  },
+
+  async importBackup(imported, mode, source = "aura_json") {
     const data = get().data;
     if (!data) return;
     const withSafety = withRestorePoint(data, "Before import", "before_import");
@@ -692,9 +906,15 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         : mergeImportedData(withSafety, imported);
 
     await safeCommit(set, next);
+    const importedLinkCount = imported.groups.reduce((count, group) => count + group.links.length, 0);
     get().addToast({
       type: "success",
-      title: mode === "replace" ? text(data, "backupImported") : text(data, "backupMerged"),
+      title:
+        source === "a_fine_start"
+          ? text(data, "aFineStartImported", { groups: imported.groups.length, links: importedLinkCount })
+          : mode === "replace"
+            ? text(data, "backupImported")
+            : text(data, "backupMerged"),
       message: text(data, "importRestorePointMessage")
     });
   },
@@ -724,9 +944,15 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       throw new Error(text(data, "restorePointNotFound"));
     }
 
+    const withSafety = withRestorePoint(data, "Before restore", "auto");
     await safeCommit(set, {
       ...point.data,
-      restorePoints: data.restorePoints
+      restorePoints: withSafety.restorePoints
+    });
+    get().addToast({
+      type: "success",
+      title: text(data, "restorePointRestored"),
+      message: text(data, "restoreCurrentDataFirst")
     });
   },
 
@@ -736,6 +962,19 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     await safeCommit(set, {
       ...data,
       restorePoints: data.restorePoints.filter((point) => point.id !== restorePointId)
+    });
+  },
+
+  async deleteAllRestorePoints() {
+    const data = get().data;
+    if (!data) return;
+    await safeCommit(set, {
+      ...data,
+      restorePoints: []
+    });
+    get().addToast({
+      type: "success",
+      title: text(data, "allRestorePointsDeleted")
     });
   },
 
@@ -1158,7 +1397,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       payload: {
         schemaVersion: 1,
         app: "Aura Start",
-        appVersion: "1.1.0",
+        appVersion: "1.2.0",
         updatedAt: conflict.cloudUpdatedAt,
         deviceId: conflict.cloudData.settings.sync.deviceId,
         data: conflict.cloudData

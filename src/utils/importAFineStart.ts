@@ -17,6 +17,9 @@ type AfsGroup = {
 export type AFineStartImportResult = {
   data: AuraStartData;
   warnings: string[];
+  rejectedLinks: number;
+  sourceGroups: number;
+  sourceLinks: number;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,9 +125,13 @@ export function parseAFineStartExportWithReport(text: string): AFineStartImportR
   const errors: string[] = [];
   const warnings: string[] = [];
   const groups: AuraStartGroup[] = [];
+  let rejectedLinks = 0;
+  let sourceGroups = 0;
+  let sourceLinks = 0;
 
   columns.forEach((column) => {
     column.forEach((afsGroup) => {
+      sourceGroups += 1;
       const title = afsGroup.name.trim();
       if (!title) {
         errors.push("A group has an empty name.");
@@ -133,6 +140,7 @@ export function parseAFineStartExportWithReport(text: string): AFineStartImportR
 
       const links: AuraStartLink[] = [];
       afsGroup.bookmarks.forEach((bookmark) => {
+        sourceLinks += 1;
         const linkTitle = bookmark.name.trim();
         if (!linkTitle) {
           errors.push(`A bookmark in "${title}" has an empty title.`);
@@ -145,6 +153,7 @@ export function parseAFineStartExportWithReport(text: string): AFineStartImportR
         }
 
         if (!normalizedUrl.url) {
+          rejectedLinks += 1;
           return;
         }
 
@@ -186,7 +195,10 @@ export function parseAFineStartExportWithReport(text: string): AFineStartImportR
       groups,
       restorePoints: []
     },
-    warnings
+    warnings,
+    rejectedLinks,
+    sourceGroups,
+    sourceLinks
   };
 }
 

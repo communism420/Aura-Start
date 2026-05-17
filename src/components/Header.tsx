@@ -74,7 +74,13 @@ export function Header({
         </div>
         <div className="aura-action-list">
           {data.settings.showSearch ? (
-            <button className="btn btn-ghost" type="button" aria-pressed={searchVisible} onClick={onOpenSearch}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              aria-pressed={searchVisible}
+              title={t(language, "pressSlashToSearch")}
+              onClick={onOpenSearch}
+            >
               <Search size={14} />
               {t(language, "search")}
             </button>
@@ -102,23 +108,25 @@ export function Header({
             <Upload size={17} />
             {t(language, "import")}
           </button>
-          <button className="btn btn-ghost" type="button" onClick={onOpenSettings} aria-label={t(language, "openSettings")}>
-            <Settings size={17} />
-            {t(language, "settings")}
-          </button>
-          {showSyncMarker ? (
-            <button
-              className={`sync-account-marker ${
-                syncStatus === "error" || syncStatus === "conflict" ? "sync-account-marker-error" : ""
-              } ${syncStatus === "syncing" ? "sync-account-marker-syncing" : ""}`}
-              title={syncMarkerTitle}
-              type="button"
-              onClick={onOpenSettings}
-            >
-              <SyncIcon size={14} />
-              <span>{syncMarkerLabel}</span>
+          <div className="aura-settings-cluster">
+            <button className="btn btn-ghost" type="button" onClick={onOpenSettings} aria-label={t(language, "openSettings")}>
+              <Settings size={17} />
+              {t(language, "settings")}
             </button>
-          ) : null}
+            {showSyncMarker ? (
+              <button
+                className={`sync-account-marker ${
+                  syncStatus === "error" || syncStatus === "conflict" ? "sync-account-marker-error" : ""
+                } ${syncStatus === "syncing" ? "sync-account-marker-syncing" : ""}`}
+                title={syncMarkerTitle}
+                type="button"
+                onClick={onOpenSettings}
+              >
+                <SyncIcon size={14} />
+                <span>{syncMarkerLabel}</span>
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       {searchVisible ? (
@@ -126,6 +134,7 @@ export function Header({
         <SearchBar
           ref={searchInputRef}
           language={language}
+          hint={search ? t(language, "pressEscToClear") : t(language, "searchModifiersHint")}
           value={search}
           visible={searchVisible}
           onChange={onSearchChange}

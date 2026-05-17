@@ -22,6 +22,28 @@ export function ExportMenu({ data, onError }: ExportMenuProps) {
   const markdownLabel = t(language, "markdown");
   const csvLabel = t(language, "csv");
   const aFineStartLabel = t(language, "aFineStartExportCode");
+  const exportOptions = [
+    {
+      label: htmlBookmarksLabel,
+      description: t(language, "exportHtmlDescription"),
+      action: exportHtmlBookmarks
+    },
+    {
+      label: markdownLabel,
+      description: t(language, "exportMarkdownDescription"),
+      action: exportMarkdown
+    },
+    {
+      label: csvLabel,
+      description: t(language, "exportCsvDescription"),
+      action: exportCsv
+    },
+    {
+      label: aFineStartLabel,
+      description: t(language, "exportAFineStartDescription"),
+      action: exportAFineStartCode
+    }
+  ];
 
   useEffect(() => {
     function handlePointerDown(event: PointerEvent) {
@@ -44,49 +66,44 @@ export function ExportMenu({ data, onError }: ExportMenuProps) {
   };
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="export-menu relative" ref={menuRef}>
       <button className="btn btn-secondary" type="button" onClick={() => setOpen((value) => !value)}>
         <Download size={17} />
         {t(language, "export")}
         <ChevronDown size={16} />
       </button>
       {open ? (
-        <div className="surface absolute right-0 top-12 z-20 w-64 rounded-xl p-2">
+        <div className="export-menu-popover surface absolute right-0 top-12 z-20 w-80 max-w-[calc(100vw-2rem)] rounded-xl p-3">
+          <div className="mb-3">
+            <div className="text-sm font-semibold">{t(language, "exportBackupTitle")}</div>
+            <p className="muted mt-1 text-xs leading-5">{t(language, "exportTrustMessage")}</p>
+          </div>
           <button
-            className="btn btn-ghost w-full justify-start"
+            className="btn btn-primary mb-2 h-auto w-full items-start justify-start px-3 py-2 text-left"
             type="button"
             onClick={() => runExport(fullBackupJsonLabel, exportJsonBackup)}
           >
-            {fullBackupJsonLabel}
+            <Download className="mt-0.5 shrink-0" size={16} />
+            <span>
+              <span className="block text-sm font-semibold">{t(language, "exportAllData")}</span>
+              <span className="block text-xs font-normal leading-5 opacity-90">
+                {fullBackupJsonLabel}: {t(language, "exportJsonDescription")}
+              </span>
+            </span>
           </button>
-          <button
-            className="btn btn-ghost w-full justify-start"
-            type="button"
-            onClick={() => runExport(htmlBookmarksLabel, exportHtmlBookmarks)}
-          >
-            {htmlBookmarksLabel}
-          </button>
-          <button
-            className="btn btn-ghost w-full justify-start"
-            type="button"
-            onClick={() => runExport(markdownLabel, exportMarkdown)}
-          >
-            {markdownLabel}
-          </button>
-          <button
-            className="btn btn-ghost w-full justify-start"
-            type="button"
-            onClick={() => runExport(csvLabel, exportCsv)}
-          >
-            {csvLabel}
-          </button>
-          <button
-            className="btn btn-ghost w-full justify-start"
-            type="button"
-            onClick={() => runExport(aFineStartLabel, exportAFineStartCode)}
-          >
-            {aFineStartLabel}
-          </button>
+          <div className="space-y-1">
+            {exportOptions.map((option) => (
+              <button
+                className="btn btn-ghost h-auto w-full flex-col items-start justify-start gap-1 px-3 py-2 text-left"
+                key={option.label}
+                type="button"
+                onClick={() => runExport(option.label, option.action)}
+              >
+                <span className="text-sm font-semibold">{option.label}</span>
+                <span className="muted text-xs leading-5">{option.description}</span>
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
     </div>

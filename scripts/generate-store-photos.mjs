@@ -32,7 +32,15 @@ const settings = {
   openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
-  autoRestorePoints: true
+  autoRestorePoints: true,
+  sync: {
+    mode: "auto",
+    deviceId: "screenshot-device",
+    connected: true,
+    accountName: "Google Drive",
+    lastSyncedAt: "2026-05-10T10:04:00.000Z",
+    lastCloudUpdatedAt: "2026-05-10T10:04:00.000Z"
+  }
 };
 
 const link = (id, title, url, order, description = "", tags = []) => ({
@@ -460,6 +468,13 @@ try {
     page,
     `document.body.innerText.includes("Settings") && document.body.innerText.includes("Data ownership") && document.body.innerText.includes("Language")`
   );
+  await evaluate(page, `(() => {
+    const scroller = document.querySelector('[role="presentation"]');
+    if (scroller instanceof HTMLElement) {
+      scroller.scrollTop = 280;
+    }
+  })()`);
+  await delay(250);
   await screenshot(page, "04-settings-1280x800.png");
 
   await navigateFresh(page);

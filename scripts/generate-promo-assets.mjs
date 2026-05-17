@@ -6,8 +6,9 @@ import { basename, join, resolve } from "node:path";
 const root = process.cwd();
 const photoDir = join(root, "Chrome Submit", "Photo");
 const outputDir = photoDir;
-const tempDir = join(process.env.TEMP ?? process.env.TMP ?? root, "aura-start-promo-assets");
-const profileDir = join(process.env.TEMP ?? process.env.TMP ?? root, "aura-start-promo-profile");
+const runId = `${Date.now()}-${process.pid}`;
+const tempDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-assets-${runId}`);
+const profileDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-profile-${runId}`);
 const debugPort = 9251;
 
 const assets = {
@@ -164,7 +165,7 @@ function featureMarkup() {
   return `
     <div class="feature-row">
       <span>Local-first</span>
-      <span>No account</span>
+      <span>Optional Drive sync</span>
       <span>Export anytime</span>
     </div>
   `;
@@ -181,7 +182,7 @@ function smallLayout(images) {
         <img alt="" class="screen-img" src="${images.overview}">
       </section>
       <div class="small-copy small-footer-copy">
-        <div class="small-subtitle">Private links. Clean groups. Your data.</div>
+        <div class="small-subtitle">Private links. Optional Drive backup. Your data.</div>
       </div>
     </main>
   `;
@@ -192,7 +193,7 @@ function largeLayout(images) {
     <main class="stage large-stage">
       <header class="large-header">
         ${brandMarkup(images.logo)}
-        <div class="large-title">All features of A Fine Start and even more - free and forever</div>
+        <div class="large-title">A private, local-first start page for your links - free, open-source, and easy to export</div>
       </header>
       <section class="browser-frame large-browser">
         <img alt="" class="screen-img" src="${images.overview}">
@@ -214,7 +215,7 @@ function marqueeLayout(images) {
       <section class="marquee-copy">
         ${brandMarkup(images.logo)}
         <h1>Local-first start page</h1>
-        <p>Groups, import, export, restore points, and full ownership of your links.</p>
+        <p>Compact groups, search, import/export, restore points, and optional Google Drive sync.</p>
         ${featureMarkup()}
       </section>
       <section class="browser-frame marquee-browser">

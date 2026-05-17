@@ -2,6 +2,7 @@ import type { AuraStartSettings } from "./types";
 
 export const DATA_VERSION = 1 as const;
 export const STORAGE_KEY = "aura-start-data-v1";
+export const UI_STATE_STORAGE_KEY = "aura-start-ui-state-v1";
 export const MAX_RESTORE_POINTS = 20;
 
 export const DEFAULT_SETTINGS: AuraStartSettings = {

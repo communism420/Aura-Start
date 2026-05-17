@@ -170,7 +170,13 @@ const benignUrlFragments = [
   "accounts.google.com/o/oauth2/v2/auth",
   "www.googleapis.com",
   "oauth2.googleapis.com",
-  "googleapis.com/auth/drive.appdata"
+  "googleapis.com/auth/drive.appdata",
+  "github.com",
+  "developer.chrome.com",
+  "news.ycombinator.com",
+  "developer.mozilla.org",
+  "web.dev",
+  "wikipedia.org"
 ];
 
 for (const file of codeFiles) {

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AddEditGroupDialog } from "./AddEditGroupDialog";
 import { AddEditLinkDialog, type EditingLink } from "./AddEditLinkDialog";
+import { CommandPalette, type CommandPaletteCommand } from "./CommandPalette";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { DuplicateFinderDialog } from "./DuplicateFinderDialog";
 import { EmptyState } from "./EmptyState";
 import { GroupGrid } from "./GroupGrid";
 import { Header } from "./Header";
-import { ImportDialog } from "./ImportDialog";
+import { ImportDialog, type ImportDialogFormat } from "./ImportDialog";
+import { OnboardingDialog } from "./OnboardingDialog";
 import { RecoveryScreen } from "./RecoveryScreen";
 import { RestorePointsDialog } from "./RestorePointsDialog";
 import { SettingsDialog } from "./SettingsDialog";
@@ -14,6 +17,16 @@ import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
 import { useAuraStore } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
+import { exportJsonBackup } from "../utils/exportJson";
+import {
+  filterGroupsForSearch,
+  flattenSearchResults,
+  parseSearchQuery,
+  searchHasQuery,
+  searchHighlightTerms,
+  searchResultId,
+  type SearchResult
+} from "../utils/search";
 
 type AppProps = {
   initialSettingsOpen?: boolean;
@@ -21,6 +34,8 @@ type AppProps = {
 
 type PendingDanger =
   | { type: "deleteGroup"; group: AuraStartGroup }
+  | { type: "deleteLink"; groupId: string; link: AuraStartLink }
+  | { type: "removeDemoData" }
   | { type: "resetAll" }
   | null;
 
@@ -30,9 +45,22 @@ function isTextInput(target: EventTarget | null): boolean {
   return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
 }
 
-function matchesSearch(link: AuraStartLink, query: string): boolean {
-  const haystack = [link.title, link.url, link.description ?? "", ...(link.tags ?? [])].join(" ").toLowerCase();
-  return haystack.includes(query);
+function isInteractiveControl(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest("button,a,[role='button'],[role='link']"));
+}
+
+function resultIdentity(result: SearchResult): string {
+  return searchResultId(result.groupId, result.link.id);
+}
+
+function scrollSearchResultIntoView(id: string): void {
+  window.requestAnimationFrame(() => {
+    const element = Array.from(document.querySelectorAll<HTMLElement>("[data-search-result-id]")).find(
+      (candidate) => candidate.dataset.searchResultId === id
+    );
+    element?.scrollIntoView({ block: "nearest" });
+  });
 }
 
 export function App({ initialSettingsOpen = false }: AppProps) {
@@ -45,7 +73,10 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     syncStatus,
     syncMessage,
     syncConflict,
+    onboardingCompleted,
+    demoData,
     load,
+    completeOnboarding,
     resetCorruptData,
     updateSettings,
     addGroup,
@@ -55,13 +86,17 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     addLink,
     updateLink,
     deleteLink,
+    deleteLinksWithRestorePoint,
     reorderGroups,
     moveLink,
+    addDemoData,
+    removeDemoData,
     importBackup,
     resetAllData,
     createManualRestorePoint,
     restoreRestorePoint,
     deleteRestorePoint,
+    deleteAllRestorePoints,
     connectGoogleDrive,
     deleteGoogleDriveBackupAndDisconnect,
     resolveSyncConflict,
@@ -70,6 +105,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedSearchResultId, setSelectedSearchResultId] = useState<string | null>(null);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<AuraStartGroup | null>(null);
@@ -78,14 +115,37 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [editingLink, setEditingLink] = useState<EditingLink | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(initialSettingsOpen);
   const [importOpen, setImportOpen] = useState(false);
+  const [importFormat, setImportFormat] = useState<ImportDialogFormat>("aura_json");
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const autoOnboardingCheckedRef = useRef(false);
   const fallbackLanguage = DEFAULT_SETTINGS.language;
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const hasUserGroupsOrLinks = Boolean(data && data.groups.length > 0);
+  const hasTrackedDemoData = useMemo(() => {
+    if (!data) return false;
+    const demoGroupIds = new Set(demoData.groupIds);
+    const demoLinkIds = new Set(demoData.linkIds);
+    return data.groups.some((group) => demoGroupIds.has(group.id) || group.links.some((link) => demoLinkIds.has(link.id)));
+  }, [data, demoData]);
+
+  useEffect(() => {
+    if (!data || onboardingCompleted || !hasUserGroupsOrLinks) return;
+    void completeOnboarding().catch(() => undefined);
+  }, [completeOnboarding, data, hasUserGroupsOrLinks, onboardingCompleted]);
+
+  useEffect(() => {
+    if (!data || autoOnboardingCheckedRef.current || onboardingCompleted || hasUserGroupsOrLinks) return;
+    autoOnboardingCheckedRef.current = true;
+    setOnboardingOpen(true);
+  }, [data, hasUserGroupsOrLinks, onboardingCompleted]);
 
   useEffect(() => {
     if (!data) return;
@@ -110,39 +170,155 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     }
   }, [searchOpen]);
 
+  const parsedSearch = useMemo(() => parseSearchQuery(search), [search]);
+  const searchMode = searchHasQuery(parsedSearch);
+  const searchTerms = useMemo(() => searchHighlightTerms(parsedSearch), [parsedSearch]);
+  const filteredGroups = useMemo(() => {
+    if (!data) return [];
+    const sortedGroups = data.groups.slice().sort((a, b) => a.order - b.order);
+    return filterGroupsForSearch(sortedGroups, parsedSearch);
+  }, [data, parsedSearch]);
+  const searchResults = useMemo(() => (searchMode ? flattenSearchResults(filteredGroups) : []), [filteredGroups, searchMode]);
+
+  useEffect(() => {
+    if (!searchMode || !searchResults.length) {
+      setSelectedSearchResultId(null);
+      return;
+    }
+
+    setSelectedSearchResultId((current) => {
+      if (current && searchResults.some((result) => resultIdentity(result) === current)) {
+        return current;
+      }
+
+      return resultIdentity(searchResults[0]);
+    });
+  }, [searchMode, searchResults]);
+
+  const openSearchResult = (result: SearchResult) => {
+    if (!data) return;
+    if (data.settings.openLinksInNewTab) {
+      window.open(result.link.url, "_blank", "noopener");
+      return;
+    }
+
+    window.location.assign(result.link.url);
+  };
+
+  const selectSearchResult = (offset: number) => {
+    if (!searchResults.length) return;
+    const currentIndex = selectedSearchResultId
+      ? searchResults.findIndex((result) => resultIdentity(result) === selectedSearchResultId)
+      : -1;
+    const nextIndex = currentIndex < 0 ? 0 : (currentIndex + offset + searchResults.length) % searchResults.length;
+    const nextId = resultIdentity(searchResults[nextIndex]);
+    setSelectedSearchResultId(nextId);
+    scrollSearchResultIntoView(nextId);
+  };
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      const modalOpen = groupDialogOpen || linkDialogOpen || settingsOpen || importOpen || restoreOpen || pendingDanger;
-      if ((event.key === "/" || (event.ctrlKey && event.key.toLowerCase() === "k")) && !isTextInput(event.target)) {
+      const modalOpen =
+        groupDialogOpen ||
+        linkDialogOpen ||
+        settingsOpen ||
+        importOpen ||
+        restoreOpen ||
+        duplicateFinderOpen ||
+        onboardingOpen ||
+        commandPaletteOpen ||
+        pendingDanger;
+      const searchInputFocused = event.target === searchInputRef.current;
+      const typingTarget = isTextInput(event.target);
+      const key = event.key.toLowerCase();
+      const modified = event.altKey || event.metaKey || event.ctrlKey;
+
+      if (event.defaultPrevented) return;
+
+      if ((event.ctrlKey || event.metaKey) && key === "k") {
+        if (!typingTarget && !modalOpen) {
+          event.preventDefault();
+          setCommandPaletteOpen(true);
+        }
+        return;
+      }
+
+      if (modalOpen) {
+        return;
+      }
+
+      if (event.key === "/" && !typingTarget) {
         event.preventDefault();
         setSearchOpen(true);
         return;
       }
 
-      if (event.key === "Escape" && search && !modalOpen) {
+      if (event.key === "Escape" && (search || searchOpen)) {
+        event.preventDefault();
         setSearch("");
         setSearchOpen(false);
+        return;
+      }
+
+      if (typingTarget && !searchInputFocused) {
+        return;
+      }
+
+      if (searchMode && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        selectSearchResult(event.key === "ArrowDown" ? 1 : -1);
+        return;
+      }
+
+      if (searchMode && event.key === "Enter" && selectedSearchResultId && (searchInputFocused || !isInteractiveControl(event.target))) {
+        const selected = searchResults.find((result) => resultIdentity(result) === selectedSearchResultId);
+        if (selected) {
+          event.preventDefault();
+          openSearchResult(selected);
+        }
+        return;
+      }
+
+      if (modified || typingTarget) {
+        return;
+      }
+
+      if (key === "e") {
+        event.preventDefault();
+        setEditMode((value) => !value);
+        return;
+      }
+
+      if (key === "n") {
+        event.preventDefault();
+        openAddLink();
+        return;
+      }
+
+      if (key === "g") {
+        event.preventDefault();
+        openAddGroup();
       }
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [groupDialogOpen, importOpen, linkDialogOpen, pendingDanger, restoreOpen, search, settingsOpen]);
-
-  const filteredGroups = useMemo(() => {
-    if (!data) return [];
-    const query = search.trim().toLowerCase();
-    const sortedGroups = data.groups.slice().sort((a, b) => a.order - b.order);
-    if (!query) return sortedGroups;
-
-    return sortedGroups
-      .map((group) => ({
-        ...group,
-        collapsed: false,
-        links: group.links.filter((link) => matchesSearch(link, query))
-      }))
-      .filter((group) => group.links.length > 0 || group.title.toLowerCase().includes(query));
-  }, [data, search]);
+  }, [
+    groupDialogOpen,
+    commandPaletteOpen,
+    duplicateFinderOpen,
+    importOpen,
+    linkDialogOpen,
+    onboardingOpen,
+    pendingDanger,
+    restoreOpen,
+    search,
+    searchMode,
+    searchOpen,
+    searchResults,
+    selectedSearchResultId,
+    settingsOpen
+  ]);
 
   const showError = (message: string) => {
     addToast({ type: "error", title: t(data?.settings.language ?? fallbackLanguage, "actionFailed"), message });
@@ -171,12 +347,27 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
   const closeSettingsAndOpenImport = () => {
     setSettingsOpen(false);
-    setImportOpen(true);
+    openImport("aura_json");
+  };
+
+  const closeSettingsAndOpenAFineStartImport = () => {
+    setSettingsOpen(false);
+    openImport("a_fine_start");
   };
 
   const closeSettingsAndOpenRestore = () => {
     setSettingsOpen(false);
     setRestoreOpen(true);
+  };
+
+  const closeSettingsAndOpenDuplicateFinder = () => {
+    setSettingsOpen(false);
+    setDuplicateFinderOpen(true);
+  };
+
+  const openImport = (format: ImportDialogFormat) => {
+    setImportFormat(format);
+    setImportOpen(true);
   };
 
   if (status === "loading" || status === "idle") {
@@ -208,8 +399,150 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   }
 
   const hasLinks = data.groups.some((group) => group.links.length > 0);
-  const searchMode = search.trim().length > 0;
   const language = data.settings.language;
+  const openSettingsSection = () => {
+    setSettingsOpen(true);
+  };
+  const commands: CommandPaletteCommand[] = [
+    {
+      id: "search",
+      title: t(language, "commandSearchLinks"),
+      description: t(language, "pressSlashToSearch"),
+      keywords: ["find", "links"],
+      action: () => setSearchOpen(true)
+    },
+    {
+      id: "new-group",
+      title: t(language, "commandCreateNewGroup"),
+      keywords: ["group", "create"],
+      action: openAddGroup
+    },
+    {
+      id: "new-link",
+      title: t(language, "commandCreateNewLink"),
+      keywords: ["link", "create"],
+      action: () => openAddLink()
+    },
+    {
+      id: "toggle-edit",
+      title: t(language, "commandToggleEditMode"),
+      keywords: ["edit"],
+      action: () => setEditMode((value) => !value)
+    },
+    {
+      id: "export-backup",
+      title: t(language, "commandExportBackup"),
+      description: t(language, "exportJsonDescription"),
+      keywords: ["backup", "json", "export"],
+      action: () => exportJsonBackup(data)
+    },
+    {
+      id: "import-backup",
+      title: t(language, "commandImportBackup"),
+      keywords: ["backup", "json", "import"],
+      action: () => openImport("aura_json")
+    },
+    {
+      id: "import-afs",
+      title: t(language, "commandImportFromAFineStart"),
+      keywords: ["a fine start", "migration"],
+      action: () => openImport("a_fine_start")
+    },
+    {
+      id: "settings",
+      title: t(language, "commandOpenSettings"),
+      keywords: ["settings"],
+      action: openSettingsSection
+    },
+    {
+      id: "theme",
+      title: t(language, "commandToggleTheme"),
+      keywords: ["theme", "dark", "light"],
+      action: async () => updateSettings({ theme: data.settings.theme === "dark" ? "light" : "dark" })
+    },
+    {
+      id: "restore-points",
+      title: t(language, "commandOpenRestorePoints"),
+      keywords: ["restore", "backup"],
+      action: () => setRestoreOpen(true)
+    },
+    {
+      id: "privacy",
+      title: t(language, "commandOpenPrivacyPromise"),
+      description: t(language, "commandOpensSettingsSection"),
+      keywords: ["privacy"],
+      action: openSettingsSection
+    },
+    {
+      id: "shortcuts",
+      title: t(language, "commandOpenKeyboardShortcuts"),
+      description: t(language, "commandOpensSettingsSection"),
+      keywords: ["keyboard", "shortcuts"],
+      action: openSettingsSection
+    },
+    {
+      id: "duplicates",
+      title: t(language, "commandOpenDuplicateFinder"),
+      keywords: ["duplicate", "cleanup"],
+      action: () => setDuplicateFinderOpen(true)
+    },
+    data.settings.sync.connected
+      ? {
+          id: "disconnect-drive",
+          title: t(language, "commandDisconnectGoogleDrive"),
+          description: t(language, "commandOpensSettingsSection"),
+          keywords: ["google", "drive", "disconnect"],
+          action: openSettingsSection
+        }
+      : {
+          id: "connect-drive",
+          title: t(language, "commandConnectGoogleDrive"),
+          keywords: ["google", "drive", "sync"],
+          action: connectGoogleDrive
+        }
+  ];
+  const dangerTitle = (() => {
+    switch (pendingDanger?.type) {
+      case "resetAll":
+        return t(language, "resetAuraStart");
+      case "removeDemoData":
+        return t(language, "removeDemoData");
+      case "deleteGroup":
+        return t(language, "deleteThisGroup");
+      case "deleteLink":
+        return t(language, "deleteThisLink");
+      default:
+        return "";
+    }
+  })();
+  const dangerMessage = (() => {
+    switch (pendingDanger?.type) {
+      case "resetAll":
+        return t(language, "resetAllDataMessage");
+      case "removeDemoData":
+        return t(language, "removeDemoDataMessage");
+      case "deleteGroup":
+        return t(language, "deleteThisGroupMessage", { title: pendingDanger.group.title });
+      case "deleteLink":
+        return t(language, "deleteThisLinkMessage", { title: pendingDanger.link.title });
+      default:
+        return "";
+    }
+  })();
+  const dangerConfirmLabel = (() => {
+    switch (pendingDanger?.type) {
+      case "resetAll":
+        return t(language, "resetAllData");
+      case "removeDemoData":
+        return t(language, "removeDemoData");
+      case "deleteLink":
+        return t(language, "delete");
+      case "deleteGroup":
+        return t(language, "deleteGroup");
+      default:
+        return t(language, "delete");
+    }
+  })();
 
   return (
     <div className={`afs-like ${data.settings.compactMode ? "compact" : ""}`}>
@@ -230,7 +563,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
             onAddGroup={openAddGroup}
             onAddLink={() => openAddLink()}
             onExportError={showError}
-            onOpenImport={() => setImportOpen(true)}
+            onOpenImport={() => openImport("aura_json")}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenSearch={toggleSearch}
             onToggleEditMode={() => setEditMode((value) => !value)}
@@ -247,14 +580,12 @@ export function App({ initialSettingsOpen = false }: AppProps) {
               data={data}
               editMode={editMode}
               groups={filteredGroups}
+              highlightTerms={searchTerms}
               searchMode={searchMode}
+              selectedSearchResultId={selectedSearchResultId}
               onAddLink={openAddLink}
               onDeleteGroup={(group) => setPendingDanger({ type: "deleteGroup", group })}
-              onDeleteLink={(groupId, link) => {
-                void deleteLink(groupId, link.id).catch((caught: unknown) =>
-                  showError(caught instanceof Error ? caught.message : t(language, "couldNotDeleteLink"))
-                );
-              }}
+              onDeleteLink={(groupId, link) => setPendingDanger({ type: "deleteLink", groupId, link })}
               onEditGroup={(group) => {
                 setEditingGroup(group);
                 setGroupDialogOpen(true);
@@ -284,8 +615,13 @@ export function App({ initialSettingsOpen = false }: AppProps) {
               mode={searchMode || hasLinks ? "search" : "empty"}
               language={language}
               onAddGroup={openAddGroup}
-              onAddLink={() => openAddLink()}
-              onImport={() => setImportOpen(true)}
+              onAddDemoData={() => {
+                void addDemoData().catch((caught: unknown) =>
+                  showError(caught instanceof Error ? caught.message : t(language, "couldNotCompleteAction"))
+                );
+              }}
+              onImportAFineStart={() => openImport("a_fine_start")}
+              onImportBackup={() => openImport("aura_json")}
             />
           )}
         </div>
@@ -327,18 +663,38 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onClose={() => setSettingsOpen(false)}
         onDeleteGoogleDriveBackupAndDisconnect={deleteGoogleDriveBackupAndDisconnect}
         onError={showError}
+        hasDemoData={hasTrackedDemoData}
+        onOpenDuplicateFinder={closeSettingsAndOpenDuplicateFinder}
         onOpenImport={closeSettingsAndOpenImport}
+        onOpenImportAFineStart={closeSettingsAndOpenAFineStartImport}
+        onOpenOnboarding={() => {
+          setSettingsOpen(false);
+          setOnboardingOpen(true);
+        }}
         onOpenRestorePoints={closeSettingsAndOpenRestore}
+        onRemoveDemoData={() => setPendingDanger({ type: "removeDemoData" })}
         onResolveSyncConflict={resolveSyncConflict}
         onReset={() => setPendingDanger({ type: "resetAll" })}
         onUpdateSettings={updateSettings}
       />
       <ImportDialog
+        currentData={data}
+        initialFormat={importFormat}
         language={language}
         open={importOpen}
         onClose={() => setImportOpen(false)}
         onError={showError}
         onImport={importBackup}
+      />
+      <OnboardingDialog
+        data={data}
+        open={onboardingOpen}
+        onClose={() => setOnboardingOpen(false)}
+        onComplete={completeOnboarding}
+        onError={showError}
+        onImportAFineStart={() => openImport("a_fine_start")}
+        onImportBackup={() => openImport("aura_json")}
+        onUpdateSettings={updateSettings}
       />
       <RestorePointsDialog
         language={language}
@@ -346,28 +702,46 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restorePoints={data.restorePoints}
         onClose={() => setRestoreOpen(false)}
         onCreate={createManualRestorePoint}
+        onDeleteAll={deleteAllRestorePoints}
         onDelete={deleteRestorePoint}
         onError={showError}
         onRestore={restoreRestorePoint}
       />
+      <DuplicateFinderDialog
+        data={data}
+        language={language}
+        open={duplicateFinderOpen}
+        onClose={() => setDuplicateFinderOpen(false)}
+        onDeleteSelected={deleteLinksWithRestorePoint}
+        onError={showError}
+      />
+      <CommandPalette
+        commands={commands}
+        language={language}
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onError={showError}
+      />
       <ConfirmDialog
         cancelLabel={t(language, "cancel")}
-        confirmLabel={pendingDanger?.type === "resetAll" ? t(language, "resetAllData") : t(language, "deleteGroup")}
-        message={
-          pendingDanger?.type === "resetAll"
-            ? t(language, "resetAllDataMessage")
-            : t(language, "deleteThisGroupMessage", { title: pendingDanger?.group.title ?? t(language, "deleteThisGroupFallback") })
-        }
+        confirmLabel={dangerConfirmLabel}
+        message={dangerMessage}
         open={pendingDanger !== null}
-        title={pendingDanger?.type === "resetAll" ? t(language, "resetAuraStart") : t(language, "deleteThisGroup")}
+        title={dangerTitle}
         onCancel={() => setPendingDanger(null)}
         onConfirm={async () => {
           try {
             if (pendingDanger?.type === "resetAll") {
               await resetAllData();
             }
+            if (pendingDanger?.type === "removeDemoData") {
+              await removeDemoData();
+            }
             if (pendingDanger?.type === "deleteGroup") {
               await deleteGroup(pendingDanger.group.id);
+            }
+            if (pendingDanger?.type === "deleteLink") {
+              await deleteLink(pendingDanger.groupId, pendingDanger.link.id);
             }
             setPendingDanger(null);
           } catch (caught) {

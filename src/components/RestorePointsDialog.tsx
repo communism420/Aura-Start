@@ -1,8 +1,10 @@
-import { RotateCcw, ShieldPlus, Trash2 } from "lucide-react";
+import { Download, RotateCcw, ShieldPlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
-import type { AuraLanguage, AuraRestorePoint } from "../types";
-import { formatDateTime } from "../utils/dates";
+import type { AuraLanguage, AuraRestorePoint, AuraStartData } from "../types";
+import { dateForFile, formatDateTime } from "../utils/dates";
+import { downloadTextFile } from "../utils/download";
+import { createJsonBackup } from "../utils/exportJson";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { Modal } from "./Modal";
 
@@ -14,12 +16,14 @@ type RestorePointsDialogProps = {
   onCreate: (name: string) => Promise<void>;
   onRestore: (id: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onDeleteAll: () => Promise<void>;
   onError: (message: string) => void;
 };
 
 type PendingAction =
   | { type: "restore"; point: AuraRestorePoint }
   | { type: "delete"; point: AuraRestorePoint }
+  | { type: "deleteAll" }
   | null;
 
 function restoreReasonLabel(language: AuraLanguage, reason: AuraRestorePoint["reason"]): string {
@@ -37,6 +41,17 @@ function restoreReasonLabel(language: AuraLanguage, reason: AuraRestorePoint["re
   }
 }
 
+function countLinks(point: AuraRestorePoint): number {
+  return point.data.groups.reduce((count, group) => count + group.links.length, 0);
+}
+
+function restorePointAsBackup(point: AuraRestorePoint): AuraStartData {
+  return {
+    ...point.data,
+    restorePoints: []
+  };
+}
+
 export function RestorePointsDialog({
   language,
   open,
@@ -45,10 +60,23 @@ export function RestorePointsDialog({
   onCreate,
   onRestore,
   onDelete,
+  onDeleteAll,
   onError
 }: RestorePointsDialogProps) {
   const [name, setName] = useState(t(language, "manualCheckpoint"));
   const [pending, setPending] = useState<PendingAction>(null);
+
+  function exportPoint(point: AuraRestorePoint) {
+    try {
+      downloadTextFile(
+        `aura-start-restore-point-${dateForFile(new Date(point.createdAt))}.json`,
+        createJsonBackup(restorePointAsBackup(point)),
+        "application/json;charset=utf-8"
+      );
+    } catch (error) {
+      onError(error instanceof Error ? error.message : t(language, "couldNotExportBackup"));
+    }
+  }
 
   return (
     <>
@@ -81,6 +109,14 @@ export function RestorePointsDialog({
           </button>
         </form>
         {restorePoints.length ? (
+          <div className="mb-4 flex justify-end">
+            <button className="btn btn-ghost text-[var(--danger)]" type="button" onClick={() => setPending({ type: "deleteAll" })}>
+              <Trash2 size={16} />
+              {t(language, "deleteAllOldRestorePoints")}
+            </button>
+          </div>
+        ) : null}
+        {restorePoints.length ? (
           <div className="space-y-2">
             {restorePoints.map((point) => (
               <div className="surface-flat flex flex-col gap-3 rounded-lg p-3 sm:flex-row sm:items-center" key={point.id}>
@@ -88,13 +124,18 @@ export function RestorePointsDialog({
                   <div className="truncate text-sm font-semibold">{point.name}</div>
                   <div className="muted text-xs">
                     {formatDateTime(point.createdAt)} · {restoreReasonLabel(language, point.reason)} ·{" "}
-                    {t(language, "groupsCount", { count: point.data.groups.length })}
+                    {t(language, "groupsCount", { count: point.data.groups.length })} ·{" "}
+                    {t(language, "linksCount", { count: countLinks(point) })}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button className="btn btn-secondary" type="button" onClick={() => setPending({ type: "restore", point })}>
                     <RotateCcw size={16} />
                     {t(language, "restore")}
+                  </button>
+                  <button className="btn btn-secondary" type="button" onClick={() => exportPoint(point)}>
+                    <Download size={16} />
+                    {t(language, "exportRestorePoint")}
                   </button>
                   <button
                     aria-label={t(language, "deleteRestorePointAria", { name: point.name })}
@@ -117,22 +158,38 @@ export function RestorePointsDialog({
       </Modal>
       <ConfirmDialog
         cancelLabel={t(language, "cancel")}
-        confirmLabel={pending?.type === "restore" ? t(language, "restore") : t(language, "delete")}
+        confirmLabel={
+          pending?.type === "restore"
+            ? t(language, "restore")
+            : pending?.type === "deleteAll"
+              ? t(language, "deleteAllOldRestorePoints")
+              : t(language, "delete")
+        }
         message={
           pending?.type === "restore"
             ? t(language, "restoreThisPointMessage")
-            : t(language, "deleteRestorePointMessage")
+            : pending?.type === "deleteAll"
+              ? t(language, "deleteAllRestorePointsMessage")
+              : t(language, "deleteRestorePointMessage")
         }
         open={pending !== null}
-        title={pending?.type === "restore" ? t(language, "restoreThisPoint") : t(language, "deleteRestorePoint")}
+        title={
+          pending?.type === "restore"
+            ? t(language, "restoreThisPoint")
+            : pending?.type === "deleteAll"
+              ? t(language, "deleteAllOldRestorePoints")
+              : t(language, "deleteRestorePoint")
+        }
         onCancel={() => setPending(null)}
         onConfirm={async () => {
           if (!pending) return;
           try {
             if (pending.type === "restore") {
               await onRestore(pending.point.id);
-            } else {
+            } else if (pending.type === "delete") {
               await onDelete(pending.point.id);
+            } else {
+              await onDeleteAll();
             }
             setPending(null);
           } catch (error) {

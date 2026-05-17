@@ -237,9 +237,9 @@ select.field {
 }
 
 .aura-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   min-height: 105px;
   padding-block: calc(2rem + 10px) 2rem;
@@ -251,15 +251,18 @@ select.field {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.2rem;
+  min-width: 0;
   color: var(--muted);
   font-size: 0.88rem;
 }
 
 .aura-brand-line {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.45rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .aura-logo {
@@ -276,7 +279,11 @@ select.field {
 }
 
 .aura-inspired {
+  min-width: 0;
+  overflow: hidden;
   opacity: 0.72;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .aura-inspired::before {
@@ -287,18 +294,34 @@ select.field {
 .aura-slogan {
   display: block;
   max-width: min(44rem, calc(100vw - 2rem));
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.25;
   opacity: 0.78;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .aura-action-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.55rem;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+.aura-action-list > .btn,
+.aura-action-list > .relative > .btn,
+.aura-settings-cluster > .btn {
+  flex: 0 0 auto;
+  gap: 0.35rem;
+  min-height: 32px;
+  padding: 0.42em 0.35em;
+  font-size: 0.92rem;
+  white-space: nowrap;
 }
 
 .aura-action-list .btn-secondary {
@@ -315,9 +338,34 @@ select.field {
   height: 14px;
 }
 
+.export-menu-popover {
+  display: flex;
+  width: min(18rem, calc(100vw - 2rem));
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: normal;
+}
+
+.export-menu-popover .btn {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+}
+
+.aura-settings-cluster {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.55rem;
+  white-space: nowrap;
+}
+
 .sync-account-marker {
   display: inline-flex;
-  min-height: 34px;
+  flex: 0 0 auto;
+  min-height: 32px;
   max-width: 14rem;
   align-items: center;
   justify-content: center;
@@ -327,7 +375,7 @@ select.field {
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  padding: 0.5em 0.7em;
+  padding: 0.42em 0.7em;
   font-size: 0.9rem;
   line-height: 1;
 }
@@ -365,6 +413,16 @@ select.field {
   gap: 0.75rem;
   margin: 0 auto 1rem;
   max-width: 36rem;
+}
+
+.search-control {
+  width: min(36rem, 100%);
+}
+
+.search-help-row {
+  margin: 0.35rem 0 0 1.65rem;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .search-mode-label {
@@ -600,6 +658,98 @@ select.field {
   background: var(--bookmark-hover);
 }
 
+.bookmark-row-selected .bookmark-row-inner {
+  background: var(--accent-soft);
+}
+
+.search-highlight {
+  border-radius: 0.15rem;
+  background: color-mix(in srgb, var(--warning) 34%, transparent);
+  color: inherit;
+  padding-inline: 0.05rem;
+}
+
+.dark .search-highlight {
+  background: color-mix(in srgb, var(--warning) 45%, transparent);
+}
+
+.shortcut-key {
+  display: inline-flex;
+  min-width: 1.7rem;
+  justify-content: center;
+  border-radius: 0.2rem;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 0.16rem 0.38rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.command-palette-input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0.65rem 0.25rem;
+}
+
+.command-palette-input:focus {
+  outline: none;
+}
+
+.command-palette-input::placeholder {
+  color: var(--muted);
+}
+
+.command-palette {
+  overflow: hidden;
+}
+
+.command-palette-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: var(--text);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.command-palette-item:hover,
+.command-palette-item-selected {
+  background: var(--accent-soft);
+}
+
+.command-palette-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.duplicate-row {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 0.25rem;
+  background: var(--accent-soft);
+  padding: 0.75rem;
+}
+
+.duplicate-row:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.duplicate-row input {
+  flex: 0 0 auto;
+}
+
 .bookmark-drag-zone {
   display: flex;
   align-items: stretch;
@@ -777,16 +927,46 @@ select.field {
   }
 
   .aura-actions {
+    grid-template-columns: 1fr;
     align-items: flex-start;
     min-height: 0;
     padding-block: 1.25rem;
   }
 
   .aura-action-list {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    gap: 0.35rem;
+    scrollbar-width: none;
+  }
+
+  .aura-action-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .aura-action-list > .btn,
+  .aura-action-list > .relative > .btn,
+  .aura-settings-cluster > .btn {
+    font-size: 0.88rem;
+  }
+
+  .aura-settings-cluster {
     gap: 0.35rem;
   }
 
   .aura-brand {
     padding-top: 0.5rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .duplicate-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .duplicate-row .btn {
+    align-self: flex-start;
   }
 }

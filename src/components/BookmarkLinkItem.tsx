@@ -1,6 +1,8 @@
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import type { AuraStartLink, AuraStartSettings } from "../types";
+import { searchResultId } from "../utils/search";
+import { HighlightedText } from "./HighlightedText";
 
 type BookmarkLinkItemProps = {
   link: AuraStartLink;
@@ -8,6 +10,8 @@ type BookmarkLinkItemProps = {
   settings: AuraStartSettings;
   editMode: boolean;
   dragging?: boolean;
+  highlightTerms?: string[];
+  selected?: boolean;
   dragAttributes?: React.HTMLAttributes<HTMLElement>;
   dragListeners?: React.HTMLAttributes<HTMLElement>;
   onEdit: (groupId: string, link: AuraStartLink) => void;
@@ -20,6 +24,8 @@ export function BookmarkLinkItem({
   settings,
   editMode,
   dragging = false,
+  highlightTerms = [],
+  selected = false,
   dragAttributes,
   dragListeners,
   onEdit,
@@ -32,16 +38,22 @@ export function BookmarkLinkItem({
 
   const content = (
     <>
-      <span className="bookmark-title">{link.title}</span>
-      <span className="bookmark-url">{link.url}</span>
+      <span className="bookmark-title">
+        <HighlightedText terms={highlightTerms} text={link.title} />
+      </span>
+      <span className="bookmark-url">
+        <HighlightedText terms={highlightTerms} text={link.url} />
+      </span>
       {settings.showDescriptions && link.description && !settings.compactMode ? (
-        <span className="bookmark-description">{link.description}</span>
+        <span className="bookmark-description">
+          <HighlightedText terms={highlightTerms} text={link.description} />
+        </span>
       ) : null}
       {link.tags?.length && !settings.compactMode ? (
         <span className="bookmark-tags">
           {link.tags.map((tag) => (
             <span className="bookmark-tag" key={tag}>
-              {tag}
+              <HighlightedText terms={highlightTerms} text={tag} />
             </span>
           ))}
         </span>
@@ -50,7 +62,10 @@ export function BookmarkLinkItem({
   );
 
   return (
-    <div className={`bookmark-row group ${editMode ? "bookmark-row-editing" : ""} ${dragging ? "dragging" : ""}`}>
+    <div
+      className={`bookmark-row group ${editMode ? "bookmark-row-editing" : ""} ${dragging ? "dragging" : ""} ${selected ? "bookmark-row-selected" : ""}`}
+      data-search-result-id={searchResultId(groupId, link.id)}
+    >
       <div className="bookmark-row-inner">
         {editMode ? (
           <div
@@ -70,6 +85,7 @@ export function BookmarkLinkItem({
           </div>
         ) : (
           <a
+            aria-current={selected ? "true" : undefined}
             className="bookmark-link"
             href={link.url}
           >

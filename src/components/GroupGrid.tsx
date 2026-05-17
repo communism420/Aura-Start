@@ -24,7 +24,9 @@ type GroupGridProps = {
   data: AuraStartData;
   editMode: boolean;
   groups: AuraStartGroup[];
+  highlightTerms?: string[];
   searchMode: boolean;
+  selectedSearchResultId?: string | null;
   onAddLink: (groupId?: string) => void;
   onEditGroup: (group: AuraStartGroup) => void;
   onDeleteGroup: (group: AuraStartGroup) => void;
@@ -145,7 +147,9 @@ export function GroupGrid({
   data,
   editMode,
   groups,
+  highlightTerms = [],
   searchMode,
+  selectedSearchResultId,
   onAddLink,
   onEditGroup,
   onDeleteGroup,
@@ -244,7 +248,9 @@ export function GroupGrid({
         {sortedGroups.map((group) => (
           <BookmarkGroupCard
             group={group}
+            highlightTerms={highlightTerms}
             key={group.id}
+            selectedSearchResultId={selectedSearchResultId}
             searchMode
             editMode={false}
             settings={data.settings}
@@ -269,7 +275,9 @@ export function GroupGrid({
         {sortedGroups.map((group) => (
           <BookmarkGroupCard
             group={group}
+            highlightTerms={highlightTerms}
             key={group.id}
+            selectedSearchResultId={selectedSearchResultId}
             searchMode={false}
             editMode={false}
             settings={data.settings}
@@ -302,8 +310,10 @@ export function GroupGrid({
           {sortedGroups.map((group) => (
             <SortableGroupCard
               group={group}
+              highlightTerms={highlightTerms}
               isDropPending={activeGroupId === group.id}
               key={group.id}
+              selectedSearchResultId={selectedSearchResultId}
               editMode={editMode}
               searchMode={false}
               settings={data.settings}
