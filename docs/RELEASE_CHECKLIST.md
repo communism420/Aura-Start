@@ -8,6 +8,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 ## Pre-Build
 
 - Run `npm install`.
+- Run `npm run test`.
 - Run `npm run typecheck`.
 - Run `npm run build`.
 - Run `npm run build:store`.
@@ -15,6 +16,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is required.
 - Inspect `dist/manifest.json`.
 - Confirm `manifest_version` is `3`.
+- Confirm `background.service_worker` and `commands` in `dist/manifest.json` match `public/manifest.json`.
 - Confirm no remote hosted code or remote scripts are present.
 - Confirm permissions are least-privilege.
 - Confirm there is no full Google Drive scope.
@@ -25,37 +27,30 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Confirm `dist/manifest.json`.
 - Create ZIP with the contents of `dist` at the archive root.
 - Verify `manifest.json` is at the ZIP root, not under `dist/`.
+- Verify `background.js` is present when `manifest.json` references it.
+- Verify `commands.toggle-command-palette` is present when the source manifest includes it.
 - Verify no source files or secrets are included.
 - Verify real OAuth client ID for release build.
 - Verify ZIP does not include `node_modules`, `docs`, `.git`, source files, `.env`, screenshots, or development artifacts.
+- Run `npm run validate:zip` against `Chrome Submit/aura-start-<version>-chrome-web-store.zip`.
 - Upload ZIP manually in Chrome Web Store Developer Dashboard.
 
-## Manual Browser Test
+## Installed Extension Test Matrix
 
-- Install `dist` as an unpacked extension.
-- First-run onboarding.
-- Add group.
-- Add link.
-- Edit group.
-- Edit link.
-- Search.
-- Query modifiers, if implemented in the current build.
-- Keyboard shortcuts.
-- Command Palette.
-- Import from A Fine Start.
-- JSON import.
-- JSON export.
-- Browser Bookmarks HTML export.
-- Markdown export.
-- CSV export.
-- A Fine Start-compatible export.
-- Restore Points Manager.
-- Duplicate Finder.
-- Remove demo data.
-- Reset with restore point.
-- Corrupted storage recovery if feasible.
-- Optional Google Drive connect.
-- Optional Google Drive disconnect/delete backup.
+Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md`](./INSTALLED_EXTENSION_TEST_MATRIX.md) against the same `dist`/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, and Google Drive connect/disconnect need browser verification.
+
+## Google Drive OAuth Release Verification
+
+- Create a Chrome Extension OAuth client for the final published extension ID.
+- Enable the Google Drive API for the Google Cloud project used by Aura Start.
+- Set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store`.
+- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is required.
+- Inspect `dist/manifest.json` and the final ZIP manifest after build.
+- Confirm the OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
+- Confirm there is no full Drive scope and no `drive.file` scope.
+- Install the final build as unpacked, then test connect, sync, restore, disconnect, and delete-backup flows.
+- Re-check `Chrome Submit/REVIEWER_NOTES.md` and the Chrome Web Store privacy form before submission.
+- If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.
 
 ## Chrome Web Store Manual Steps
 

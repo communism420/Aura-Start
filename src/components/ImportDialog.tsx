@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import type { AuraLanguage, AuraStartData, ImportMode } from "../types";
 import { parseAFineStartExportWithReport } from "../utils/importAFineStart";
 import { parseJsonBackup } from "../utils/importJson";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { Modal } from "./Modal";
 
 type ImportDialogProps = {
@@ -25,6 +26,11 @@ type ParsedImport = {
   sourceGroups: number;
   sourceLinks: number;
 };
+
+type PendingReplaceImport = {
+  data: AuraStartData;
+  format: ImportDialogFormat;
+} | null;
 
 function countLinks(data: AuraStartData): number {
   return data.groups.reduce((count, group) => count + group.links.length, 0);
@@ -77,6 +83,7 @@ export function ImportDialog({
   const [rejectedLinks, setRejectedLinks] = useState(0);
   const [sourceCounts, setSourceCounts] = useState({ groups: 0, links: 0 });
   const [localError, setLocalError] = useState<string | null>(null);
+  const [pendingReplace, setPendingReplace] = useState<PendingReplaceImport>(null);
 
   function parseText(text: string, nextFormat = format): ParsedImport {
     if (nextFormat === "a_fine_start") {
@@ -132,6 +139,12 @@ export function ImportDialog({
     validateText(rawText, initialFormat);
   }, [initialFormat, open]);
 
+  useEffect(() => {
+    if (!open) {
+      setPendingReplace(null);
+    }
+  }, [open]);
+
   async function handleFile(file: File | undefined) {
     setLocalError(null);
     setParsed(null);
@@ -155,43 +168,49 @@ export function ImportDialog({
   const potentialDuplicates = parsed ? countPotentialDuplicates(currentData, parsed) : { groups: 0, links: 0 };
 
   return (
-    <Modal
-      open={open}
-      title={format === "a_fine_start" ? t(language, "importFromAFineStart") : t(language, "importBackup")}
-      description={t(language, "importBackupDescription")}
-      closeLabel={t(language, "closeDialog")}
-      onClose={onClose}
-    >
-      <form
-        className="space-y-5"
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!rawText.trim()) {
-            setLocalError(t(language, "pickImportData"));
-            return;
-          }
-
-          let dataToImport: AuraStartData;
-          try {
-            const result = parseText(rawText);
-            dataToImport = result.data;
-            setParsedResult(result);
-            setLocalError(null);
-          } catch (error) {
-            setParsed(null);
-            setImportWarnings([]);
-            setRejectedLinks(0);
-            setSourceCounts({ groups: 0, links: 0 });
-            setLocalError(importErrorMessage(language, format, error));
-            return;
-          }
-
-          void onImport(dataToImport, mode, format)
-            .then(onClose)
-            .catch((error: unknown) => onError(error instanceof Error ? error.message : t(language, "importFailed")));
-        }}
+    <>
+      <Modal
+        open={open}
+        title={format === "a_fine_start" ? t(language, "importFromAFineStart") : t(language, "importBackup")}
+        description={t(language, "importBackupDescription")}
+        closeLabel={t(language, "closeDialog")}
+        onClose={onClose}
       >
-        {format === "a_fine_start" ? (
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!rawText.trim()) {
+              setLocalError(t(language, "pickImportData"));
+              return;
+            }
+
+            let dataToImport: AuraStartData;
+            try {
+              const result = parseText(rawText);
+              dataToImport = result.data;
+              setParsedResult(result);
+              setLocalError(null);
+            } catch (error) {
+              setParsed(null);
+              setImportWarnings([]);
+              setRejectedLinks(0);
+              setSourceCounts({ groups: 0, links: 0 });
+              setLocalError(importErrorMessage(language, format, error));
+              return;
+            }
+
+            if (mode === "replace") {
+              setPendingReplace({ data: dataToImport, format });
+              return;
+            }
+
+            void onImport(dataToImport, mode, format)
+              .then(onClose)
+              .catch((error: unknown) => onError(error instanceof Error ? error.message : t(language, "importFailed")));
+          }}
+        >
+          {format === "a_fine_start" ? (
           <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-strong)] p-4 text-sm">
             <div className="font-semibold">{t(language, "aFineStartImportStepsTitle")}</div>
             <ol className="muted mt-2 list-decimal space-y-1 pl-5">
@@ -333,15 +352,34 @@ export function ImportDialog({
             </span>
           </label>
         </fieldset>
-        <div className="flex justify-end gap-2">
-          <button className="btn btn-secondary" type="button" onClick={onClose}>
-            {t(language, "cancel")}
-          </button>
-          <button className="btn btn-primary" type="submit">
-            {t(language, "import")}
-          </button>
-        </div>
-      </form>
-    </Modal>
+          <div className="flex justify-end gap-2">
+            <button className="btn btn-secondary" type="button" onClick={onClose}>
+              {t(language, "cancel")}
+            </button>
+            <button className="btn btn-primary" type="submit">
+              {t(language, "import")}
+            </button>
+          </div>
+        </form>
+      </Modal>
+      <ConfirmDialog
+        cancelLabel={t(language, "cancel")}
+        confirmLabel={t(language, "importReplaceConfirmAction")}
+        message={t(language, "importReplaceConfirmMessage")}
+        open={pendingReplace !== null}
+        title={t(language, "importReplaceConfirmTitle")}
+        onCancel={() => setPendingReplace(null)}
+        onConfirm={async () => {
+          if (!pendingReplace) return;
+          try {
+            await onImport(pendingReplace.data, "replace", pendingReplace.format);
+            setPendingReplace(null);
+            onClose();
+          } catch (error) {
+            onError(error instanceof Error ? error.message : t(language, "importFailed"));
+          }
+        }}
+      />
+    </>
   );
 }

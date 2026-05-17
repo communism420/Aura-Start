@@ -95,7 +95,7 @@ Recommended base sizes:
 ## 6. Command Palette
 
 - Goal: show power-user navigation.
-- Screen: Command Palette opened with Ctrl+K or Cmd+K.
+- Screen: Command Palette opened from the UI or with Ctrl+K/Cmd+K when the browser has assigned the shortcut.
 - Demo data: populated groups so commands feel useful.
 - Overlay text: "Press Ctrl+K and move faster"
 - Theme recommendation: dark theme for contrast around the palette.

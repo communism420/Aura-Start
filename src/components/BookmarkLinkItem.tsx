@@ -88,6 +88,8 @@ export function BookmarkLinkItem({
             aria-current={selected ? "true" : undefined}
             className="bookmark-link"
             href={link.url}
+            rel={settings.openLinksInNewTab ? "noopener noreferrer" : undefined}
+            target={settings.openLinksInNewTab ? "_blank" : undefined}
           >
             {content}
           </a>

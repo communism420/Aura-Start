@@ -1,5 +1,6 @@
 import { Download, RotateCcw, ShieldPlus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { MAX_RESTORE_POINTS } from "../constants";
 import { t } from "../i18n";
 import type { AuraLanguage, AuraRestorePoint, AuraStartData } from "../types";
 import { dateForFile, formatDateTime } from "../utils/dates";
@@ -83,7 +84,7 @@ export function RestorePointsDialog({
       <Modal
         open={open}
         title={t(language, "restorePoints")}
-        description={t(language, "restorePointsDescription")}
+        description={t(language, "restorePointsDescription", { count: MAX_RESTORE_POINTS })}
         closeLabel={t(language, "closeDialog")}
         onClose={onClose}
         size="lg"

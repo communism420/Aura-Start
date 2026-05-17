@@ -263,7 +263,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       const modified = event.altKey || event.metaKey || event.ctrlKey;
       const commandPaletteShortcut = (event.ctrlKey || event.metaKey) && (key === "k" || code === "KeyK");
 
-      if (commandPaletteShortcut) {
+      if (commandPaletteShortcut && !typingTarget) {
         if (event.cancelable) {
           event.preventDefault();
         }
@@ -653,6 +653,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
             onAddGroup={openAddGroup}
             onAddLink={() => openAddLink()}
             onExportError={showError}
+            onOpenCommandPalette={() => setCommandPaletteOpen(true)}
             onOpenImport={() => openImport("aura_json")}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenSearch={toggleSearch}

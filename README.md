@@ -26,7 +26,7 @@ Positioning: A private, local-first start page for your links - free, open-sourc
 - Compact mode and configurable columns
 - Search across title, URL, description, and tags
 - First-run onboarding, empty-state actions, and opt-in demo groups
-- Command Palette for keyboard-first navigation
+- Command Palette for keyboard-first navigation, with a visible UI button and Ctrl+K/Cmd+K when the browser assigns that shortcut to Aura Start
 - Duplicate Finder that scans read-only and deletes only after user selection and confirmation
 - Explicit edit mode: drag-and-drop and inline edit controls stay disabled until you turn editing on
 - Drag and drop for groups and links, including moving links between groups
@@ -82,14 +82,16 @@ The extension overrides the Chromium new tab page with `newtab.html`.
 
 ```bash
 npm install
+npm run test
 npm run typecheck
 npm run build
 npm run build:store
+npm run validate:zip
 ```
 
 In Vite development mode, Aura Start falls back to `localStorage` when `chrome.storage.local` is not available. Production extension builds use `chrome.storage.local`.
 
-`npm run build:store` builds the extension and validates the generated `dist` package for Chrome Web Store review basics: Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, and no obvious remote-code patterns.
+`npm run build:store` builds the extension and validates the generated `dist` package for Chrome Web Store review basics: Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, and no obvious remote-code patterns. `npm run validate:zip` checks the tracked Chrome Submit ZIP against the current `dist` package after a fresh ZIP is created.
 
 ## Import And Recovery
 
@@ -98,7 +100,7 @@ Use Settings -> Import backup to import a Full Backup JSON file. Aura Start vali
 - Merge with current data
 - Replace current data
 
-Before import replace, restore, group deletion, reset, demo-data removal, duplicate deletion, and cloud restore actions, Aura Start creates a restore point. Restore points are kept locally and capped to avoid unbounded storage growth.
+Before import replace, restore, group deletion, reset, demo-data removal, duplicate deletion, and cloud restore actions, Aura Start creates a restore point. Restore points are kept locally and capped to 20 snapshots to avoid unbounded storage growth. Use Full Backup JSON for long-term backup history.
 
 If stored data is corrupted, Aura Start shows a recovery screen instead of overwriting it. You can export the raw stored payload before resetting.
 

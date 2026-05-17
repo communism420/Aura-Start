@@ -1,4 +1,4 @@
-import { AlertCircle, Cloud, FolderPlus, LinkIcon, Pencil, RefreshCw, Search, Settings, Upload } from "lucide-react";
+import { AlertCircle, Cloud, Command, FolderPlus, LinkIcon, Pencil, RefreshCw, Search, Settings, Upload } from "lucide-react";
 import type { RefObject } from "react";
 import { t } from "../i18n";
 import type { AuraStartData, AuraSyncStatus } from "../types";
@@ -17,6 +17,7 @@ type HeaderProps = {
   onSearchChange: (value: string) => void;
   onOpenSearch: () => void;
   onToggleEditMode: () => void;
+  onOpenCommandPalette: () => void;
   onAddGroup: () => void;
   onAddLink: () => void;
   onOpenSettings: () => void;
@@ -35,6 +36,7 @@ export function Header({
   onSearchChange,
   onOpenSearch,
   onToggleEditMode,
+  onOpenCommandPalette,
   onAddGroup,
   onAddLink,
   onOpenSettings,
@@ -85,6 +87,15 @@ export function Header({
               {t(language, "search")}
             </button>
           ) : null}
+          <button
+            className="btn btn-ghost"
+            title={t(language, "commandPaletteShortcutNote")}
+            type="button"
+            onClick={onOpenCommandPalette}
+          >
+            <Command size={17} />
+            {t(language, "commandPalette")}
+          </button>
           <button className="btn btn-ghost" type="button" onClick={onAddLink}>
             <LinkIcon size={17} />
             {t(language, "add")}

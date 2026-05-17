@@ -140,10 +140,15 @@ export function SettingsDialog({
               ["compactMode", t(language, "compactMode")],
               ["showDescriptions", t(language, "showDescriptions")],
               ["showSearch", t(language, "showSearch")],
-              ["autoRestorePoints", t(language, "updateAutomaticRestoreSafety")]
+              ["openLinksInNewTab", t(language, "openLinksInNewTab")]
             ].map(([key, label]) => (
               <label className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] p-3" key={key}>
-                <span className="text-sm font-semibold">{label}</span>
+                <span>
+                  <span className="block text-sm font-semibold">{label}</span>
+                  {key === "openLinksInNewTab" ? (
+                    <span className="muted block text-xs">{t(language, "openLinksInNewTabDescription")}</span>
+                  ) : null}
+                </span>
                 <input
                   checked={Boolean(settings[key as keyof AuraStartSettings])}
                   type="checkbox"
@@ -219,6 +224,7 @@ export function SettingsDialog({
                 </div>
               ))}
             </div>
+            <p className="muted mt-3 text-sm">{t(language, "commandPaletteShortcutNote")}</p>
             <div className="muted mt-3 text-sm">
               <div className="font-semibold text-[var(--text)]">{t(language, "searchModifiers")}</div>
               <div className="mt-1">{t(language, "searchModifiersExamples")}</div>

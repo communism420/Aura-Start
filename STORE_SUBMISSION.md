@@ -18,7 +18,7 @@ Suggested positioning:
 
 Suggested detailed description:
 
-> Aura Start replaces the Chromium new tab page with a clean local-first start page for groups of links. Create, search, and reorder link groups; import from Aura Start backups or A Fine Start export codes; export anytime as JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code; use restore points before destructive changes; and work faster with Command Palette, keyboard shortcuts, and Duplicate Finder. Aura Start requires no account, has no analytics or tracking, and has no backend. Optional Google Drive backup/sync uses only the hidden Google Drive appDataFolder file. Aura Start is open-source under the MIT License and is an independent project, not affiliated with A Fine Start.
+> Aura Start replaces the Chromium new tab page with a clean local-first start page for groups of links. Create, search, and reorder link groups; import from Aura Start backups or A Fine Start export codes; export anytime as JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code; use restore points before destructive changes; and work faster with Command Palette, browser-assigned shortcuts, and Duplicate Finder. Aura Start requires no account, has no analytics or tracking, and has no backend. Optional Google Drive backup/sync uses only the hidden Google Drive appDataFolder file. Aura Start is open-source under the MIT License and is an independent project, not affiliated with A Fine Start.
 
 ## Open Source Policy
 
@@ -39,6 +39,7 @@ npm run build:store
 - Screenshot staging gallery: `docs/screenshot-gallery.html`
 - Store asset checklist: `docs/assets/store/README.md`
 - Release checklist: `docs/RELEASE_CHECKLIST.md`
+- Installed-extension test matrix: `docs/INSTALLED_EXTENSION_TEST_MATRIX.md`
 - Promotion plan: `docs/PROMOTION_PLAN.md`
 - GitHub release draft: `docs/GITHUB_RELEASE_DRAFT.md`
 
@@ -59,7 +60,7 @@ Requested OAuth scope:
 
 - `https://www.googleapis.com/auth/drive.appdata`: lets Aura Start read and write only its own hidden Google Drive app data.
 
-Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive. If a Chromium-based browser cannot use that Chrome token flow, Aura Start can use `chrome.identity.launchWebAuthFlow` with a separately configured Web Application OAuth client and the extension redirect URI `https://pdhhhnmcammpmmklkbbfbmnijimgjiabi.chromiumapp.org/oauth2`. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. If the Web OAuth fallback is needed, also set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`. Placeholder or example IDs are rejected by the build because Google returns `invalid_client` for them. This does not add host permissions and does not grant access to normal Google Drive files.
+Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive. If a Chromium-based browser cannot use that Chrome token flow, Aura Start can use `chrome.identity.launchWebAuthFlow` with a separately configured Web Application OAuth client and the extension redirect URI `https://pdhhhnmcammpmmklkbbfbmnijimgjiabi.chromiumapp.org/oauth2`. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. If the Web OAuth fallback is needed, also set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`. Example IDs are rejected by validation; placeholder IDs produce a warning and are not publishable because Google returns `invalid_client` for them. This does not add host permissions and does not grant access to normal Google Drive files.
 
 The Google OAuth consent is used only to read, create, update, or delete Aura Start's hidden `aura-start-sync.json` app data file. Aura Start does not use Google authorization for analytics, tracking, advertising, account profiling, or access to visible Google Drive files.
 
@@ -106,9 +107,10 @@ Before packaging, run:
 
 ```bash
 npm run build:store
+npm run validate:zip
 ```
 
-This runs TypeScript, production build, and a Chrome Web Store validation pass over `dist`.
+This runs TypeScript, production build, a Chrome Web Store validation pass over `dist`, and a ZIP freshness/content check after the Chrome Submit ZIP is created.
 
 ## Store Package
 
@@ -127,12 +129,16 @@ Required generated files:
 - `dist/icons/icon-128.png`
 - `dist/_locales/*/messages.json`
 
+The final ZIP must include `manifest.json` at archive root, include `background.js` when the manifest references it, keep `commands.toggle-command-palette` in sync with the source manifest, and exclude `src`, `docs`, `Photo`, `Chrome Submit`, `node_modules`, `.git`, `.env`, source files, screenshots, and development artifacts.
+
 ## Manual Release Steps
 
 - Publish GitHub Pages from the `docs` folder and use the resulting `docs/privacy-policy.html` URL as the Chrome Web Store privacy policy URL.
 - Build the store package with a real `AURA_GOOGLE_OAUTH_CLIENT_ID`; set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is needed.
+- Verify the Google Cloud project has Google Drive API enabled and a Chrome Extension OAuth client for the final extension ID.
+- Inspect `dist/manifest.json` and the ZIP manifest after build; the only OAuth scope must be `https://www.googleapis.com/auth/drive.appdata`.
 - Capture fresh Chrome Web Store screenshots from the current local build.
-- Run a final installed-extension browser test for import, export, restore points, Duplicate Finder, Command Palette, and optional Google Drive sync.
+- Run `docs/INSTALLED_EXTENSION_TEST_MATRIX.md` against the exact ZIP/dist build for import, export, replace confirmation, restore points, Duplicate Finder, Command Palette UI/shortcut assignment, keyboard layout behavior, and optional Google Drive sync.
 
 ## Screenshots Checklist
 
@@ -150,4 +156,4 @@ Required generated files:
 
 Suggested note for reviewers:
 
-> Aura Start is a fully open-source, local-first new tab extension released under the MIT License. It uses `storage` to save user-created groups, links, settings, sync metadata, and restore points locally in `chrome.storage.local`. It uses `identity`, the `https://www.googleapis.com/auth/drive.appdata` OAuth scope, and the `https://www.googleapis.com/*` host permission only when the user explicitly enables optional Google Drive sync. The sync file is `aura-start-sync.json` in Google Drive `appDataFolder`, so Aura Start does not request full Drive access and does not touch visible Drive files. Aura Start has no content scripts, no browser bookmarks/history permissions, no analytics, no tracking, no backend, and no remotely hosted code. Aura Start can import/export A Fine Start-compatible export codes for migration, includes local restore points and a read-only Duplicate Finder scan before user-confirmed deletion, and is independent, not affiliated with A Fine Start.
+> Aura Start is a fully open-source, local-first new tab extension released under the MIT License. It uses `storage` to save user-created groups, links, settings, sync metadata, and restore points locally in `chrome.storage.local`. It uses `identity`, the `https://www.googleapis.com/auth/drive.appdata` OAuth scope, and the `https://www.googleapis.com/*` host permission only when the user explicitly enables optional Google Drive sync. The sync file is `aura-start-sync.json` in Google Drive `appDataFolder`, so Aura Start does not request full Drive access and does not touch visible Drive files. Aura Start has no content scripts, no browser bookmarks/history permissions, no analytics, no tracking, no backend, and no remotely hosted code. Aura Start can import/export A Fine Start-compatible export codes for migration, includes local restore points and a read-only Duplicate Finder scan before user-confirmed deletion, and is independent, not affiliated with A Fine Start. Command Palette is available from the UI; Ctrl+K/Cmd+K is registered as an extension command and may need browser assignment in `chrome://extensions/shortcuts`.

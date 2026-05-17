@@ -19,7 +19,7 @@ Create focused groups, add links with optional descriptions and tags, search acr
 
 Aura Start supports importing A Fine Start export codes for migration and can export an A Fine Start-compatible code if you want a basic grouped-link format again later. Aura Start is an independent project and is not affiliated with A Fine Start.
 
-For safety, Aura Start includes restore points before destructive actions, a Restore Points Manager, a read-only Duplicate Finder scan with user-confirmed deletion, and clear import preview flows. Power-user features include Command Palette, keyboard shortcuts, improved search, and a focused Settings area for Import, Export / Backup, Privacy Promise, Restore Points, and optional Google Drive sync.
+For safety, Aura Start includes restore points before destructive actions, a Restore Points Manager, a read-only Duplicate Finder scan with user-confirmed deletion, and clear import preview flows. Power-user features include Command Palette with a visible UI entry point, browser-assigned keyboard shortcuts, improved search, and a focused Settings area for Import, Export / Backup, Privacy Promise, Restore Points, and optional Google Drive sync.
 
 Aura Start has no required account, no analytics, no tracking, no ads, and no backend. Optional Google Drive backup/sync is off by default and uses only the hidden Google Drive `appDataFolder` scope for Aura Start's own `aura-start-sync.json` file. The extension does not request browser bookmarks, history, cookies, tabs, webRequest, scripting, or full Google Drive access.
 
@@ -32,7 +32,7 @@ Aura Start is open-source under the MIT License.
 - Import from A Fine Start export codes
 - Export JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible code
 - Restore points before destructive actions
-- Command Palette and keyboard shortcuts
+- Command Palette, visible UI access, and browser-assigned keyboard shortcuts
 - Duplicate Finder with read-only scan and user-confirmed deletion
 - Optional Google Drive `appDataFolder` backup/sync
 - No required account, no analytics, no tracking
