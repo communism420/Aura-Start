@@ -1,10 +1,20 @@
 # Aura Start
 
-Aura Start is a local-first Chromium new tab extension for clean groups of links. It is built for people who want a fast start page without accounts, tracking, forced cloud sync, or paid data access.
+Aura Start is a private, local-first Chromium new tab extension for clean groups of links. It is built for people who want a fast, exportable start page without accounts, analytics, tracking, forced cloud sync, or paid data access.
 
-Aura Start was inspired by the simplicity and bookmark-grouping idea of A Fine Start. It is an independent project, not affiliated with A Fine Start, and it focuses on local-first ownership, built-in export, and no required account or sync.
+Aura Start is an independent open-source project, not affiliated with A Fine Start. It is inspired by the simple grouped-link workflow and focuses on local-first data ownership, export, privacy, and migration.
 
-Slogan: All features of A Fine Start and even more - free and forever.
+Positioning: A private, local-first start page for your links - free, open-source, and easy to export.
+
+## Why Aura Start?
+
+- Free and open-source
+- No account required
+- No analytics or tracking
+- Your links stay local by default
+- Export anytime
+- Import from A Fine Start export codes
+- Optional Google Drive backup through the hidden Drive `appDataFolder`
 
 ## Features
 
@@ -15,13 +25,18 @@ Slogan: All features of A Fine Start and even more - free and forever.
 - Interface languages: English, Russian, Spanish, German, French, Portuguese, and Ukrainian
 - Compact mode and configurable columns
 - Search across title, URL, description, and tags
+- First-run onboarding, empty-state actions, and opt-in demo groups
+- Command Palette for keyboard-first navigation
+- Duplicate Finder that scans read-only and deletes only after user selection and confirmation
 - Explicit edit mode: drag-and-drop and inline edit controls stay disabled until you turn editing on
 - Drag and drop for groups and links, including moving links between groups
 - Optional Google Drive sync/backup through the hidden Drive `appDataFolder`
+- Visible Export / Backup hub and Restore Points Manager
 - JSON import with validation, merge, replace, and restore point protection
-- A Fine Start export-code import for migration from A Fine Start
-- A Fine Start export-code export for moving Aura Start links back into A Fine Start
-- Restore points before destructive actions
+- Import from A Fine Start export codes for migration
+- Export to an A Fine Start-compatible export code if you change your mind
+- Restore points before imports, group deletion, reset, and cloud restore actions
+- Privacy Promise and keyboard shortcuts help in Settings
 - Undo toast for deleting links and groups
 - Safe recovery screen for corrupted local data
 - Export through local Blob downloads only
@@ -83,7 +98,7 @@ Use Settings -> Import backup to import a Full Backup JSON file. Aura Start vali
 - Merge with current data
 - Replace current data
 
-Before import replace, group deletion, and reset actions, Aura Start creates a restore point. Restore points are kept locally and capped to avoid unbounded storage growth.
+Before import replace, restore, group deletion, reset, demo-data removal, duplicate deletion, and cloud restore actions, Aura Start creates a restore point. Restore points are kept locally and capped to avoid unbounded storage growth.
 
 If stored data is corrupted, Aura Start shows a recovery screen instead of overwriting it. You can export the raw stored payload before resetting.
 
@@ -135,13 +150,22 @@ If Google shows `invalid_client`, the generated `dist/manifest.json` contains a 
 
 If Google shows `invalid_request` with `Custom URI scheme is not supported on Chrome apps`, create the Web Application OAuth client above, set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`, rebuild, and reload the extension.
 
-## Migrating From A Fine Start
+## Migrate from A Fine Start
 
-In A Fine Start, open Settings -> Export bookmarks and copy the generated export code. In Aura Start, open Settings -> Import backup, choose A Fine Start export code, paste the code, then choose Merge or Replace.
+Aura Start can import A Fine Start export codes for migration. Aura Start is independent and not affiliated with A Fine Start.
 
-Aura Start converts A Fine Start groups and bookmarks into local Aura Start groups and links. It supports the current A Fine Start export shape and the older v2 export shape. Imported URLs are still validated by Aura Start, so unsupported or unsafe URL schemes are rejected instead of being saved.
+1. Open A Fine Start.
+2. Go to Settings.
+3. Export bookmarks and copy the export code.
+4. Open Aura Start.
+5. Choose Import from A Fine Start.
+6. Paste the code.
+7. Choose Merge or Replace.
+8. Done.
 
-To move from Aura Start back to A Fine Start, use Aura Start -> Export -> A Fine Start export code. Open A Fine Start -> Settings -> Import bookmarks, paste the generated code, and import it there. A Fine Start's format stores group names and bookmark `name`/`url` values only, so Aura Start descriptions and tags are not included in that export.
+Aura Start converts A Fine Start groups and bookmarks into local Aura Start groups and links. Imported URLs are still validated by Aura Start, so unsupported or unsafe URL schemes are rejected instead of being saved.
+
+You can export back to an A Fine Start-compatible export code from Aura Start if you change your mind. That compatibility format stores group names and bookmark `name`/`url` values only, so Aura Start-specific fields such as descriptions and tags are not included when exporting back to that format.
 
 ## Roadmap
 
@@ -151,7 +175,15 @@ To move from Aura Start back to A Fine Start, use Aura Start -> Export -> A Fine
 
 Aura Start has no backend, no analytics, no tracking scripts, no required sync, and no access to browser history or bookmarks. Optional Google Drive sync uses `identity`, `drive.appdata`, and Google API host access only when the user enables it, and only for Aura Start's hidden Google Drive app data file.
 
-See [PRIVACY.md](./PRIVACY.md) for the privacy policy text and [STORE_SUBMISSION.md](./STORE_SUBMISSION.md) for Chrome Web Store submission notes.
+## More Docs
+
+- [Aura Start vs A Fine Start](./docs/AURA_START_VS_A_FINE_START.md)
+- [Migrate from A Fine Start](./docs/MIGRATE_FROM_A_FINE_START.md)
+- [GitHub Pages landing page](./docs/index.html)
+- [GitHub Pages privacy policy page](./docs/privacy-policy.html)
+- [Changelog](./CHANGELOG.md)
+- [Privacy Policy](./PRIVACY.md)
+- [Chrome Web Store submission notes](./STORE_SUBMISSION.md)
 
 ## License
 

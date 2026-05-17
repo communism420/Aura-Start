@@ -7,7 +7,6 @@
       name="description"
       content="Privacy Policy for Aura Start, a local-first Chromium new tab extension with optional Google Drive app data sync."
     >
-    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/communism420/Aura-Start/main/public/logo.png">
     <title>Aura Start Privacy Policy</title>
     <style>
       :root {
@@ -127,13 +126,28 @@
         color: var(--muted);
         font-size: 0.95rem;
       }
+
+      .top-link {
+        display: inline-flex;
+        margin-bottom: 18px;
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .top-link:focus-visible,
+      a:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
     </style>
   </head>
   <body>
     <main>
+      <a class="top-link" href="index.html">Back to Aura Start</a>
       <article>
         <h1>Aura Start Privacy Policy</h1>
-        <p class="meta">Effective date: May 16, 2026</p>
+        <p class="meta">Effective date: May 17, 2026</p>
 
         <section class="summary" aria-label="Privacy summary">
           <p>
@@ -349,7 +363,9 @@
         <p>
           For privacy or security questions, use the support contact listed on the
           Chrome Web Store listing or the project repository where Aura Start is
-          published.
+          published. Until the Chrome Web Store listing is public, use the project
+          repository at
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">github.com/communism420/Aura-Start</a>.
         </p>
 
         <p class="footer-note">
