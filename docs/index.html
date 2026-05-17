@@ -7,6 +7,7 @@
       name="description"
       content="Aura Start is a private, local-first Chromium new tab extension for clean groups of links, exportable backups, A Fine Start migration, and optional Google Drive appDataFolder sync."
     >
+    <link rel="icon" type="image/png" href="logo.png">
     <title>Aura Start — Private Local-First New Tab</title>
     <style>
       :root {
@@ -84,15 +85,11 @@
         text-decoration: none;
       }
 
-      .mark {
-        display: inline-grid;
+      .brand-logo {
+        display: block;
         width: 38px;
         height: 38px;
-        place-items: center;
-        border-radius: 10px;
-        background: var(--accent-soft);
-        color: var(--accent-strong);
-        font-weight: 900;
+        object-fit: contain;
       }
 
       nav {
@@ -114,6 +111,14 @@
         background: var(--panel);
         padding: clamp(28px, 6vw, 56px);
         box-shadow: var(--shadow);
+      }
+
+      .hero-logo {
+        display: block;
+        width: 84px;
+        height: 84px;
+        margin-bottom: 18px;
+        object-fit: contain;
       }
 
       .eyebrow {
@@ -279,7 +284,7 @@
     <div class="page">
       <header>
         <a class="brand" href="index.html" aria-label="Aura Start home">
-          <span class="mark" aria-hidden="true">A</span>
+          <img class="brand-logo" src="logo.png" alt="" width="38" height="38">
           <span>Aura Start</span>
         </a>
         <nav aria-label="Primary links">
@@ -292,6 +297,7 @@
       <main>
         <section class="hero" aria-labelledby="hero-title">
           <div>
+            <img class="hero-logo" src="logo.png" alt="Aura Start logo" width="84" height="84">
             <span class="eyebrow">Open-source Chromium new tab extension</span>
             <h1 id="hero-title">A private, local-first start page for your links — free, open-source, and easy to export.</h1>
             <p class="lead">

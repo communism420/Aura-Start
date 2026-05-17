@@ -7,6 +7,7 @@
       name="description"
       content="Privacy Policy for Aura Start, a local-first Chromium new tab extension with optional Google Drive app data sync."
     >
+    <link rel="icon" type="image/png" href="logo.png">
     <title>Aura Start Privacy Policy</title>
     <style>
       :root {
@@ -127,6 +128,21 @@
         font-size: 0.95rem;
       }
 
+      .policy-header {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 8px;
+      }
+
+      .policy-logo {
+        display: block;
+        width: 56px;
+        height: 56px;
+        flex: 0 0 auto;
+        object-fit: contain;
+      }
+
       .top-link {
         display: inline-flex;
         margin-bottom: 18px;
@@ -146,7 +162,10 @@
     <main>
       <a class="top-link" href="index.html">Back to Aura Start</a>
       <article>
-        <h1>Aura Start Privacy Policy</h1>
+        <div class="policy-header">
+          <img class="policy-logo" src="logo.png" alt="Aura Start logo" width="56" height="56">
+          <h1>Aura Start Privacy Policy</h1>
+        </div>
         <p class="meta">Effective date: May 17, 2026</p>
 
         <section class="summary" aria-label="Privacy summary">
