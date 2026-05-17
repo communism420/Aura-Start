@@ -3,108 +3,121 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Aura Start documentation index for GitHub Pages.">
+    <meta
+      name="description"
+      content="Readable Aura Start documentation for GitHub Pages, Chrome Web Store release preparation, migration, screenshots, and launch materials."
+    >
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Documentation — Aura Start</title>
-    <style>
-      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
-      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
-      * { box-sizing: border-box; }
-      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
-      a { color:var(--accent-strong); }
-      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
-      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
-      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
-      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
-      .brand img { width:38px; height:38px; object-fit:contain; }
-      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
-      nav a { text-decoration:none; }
-      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
-      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
-      h1,h2,h3,h4 { line-height:1.2; }
-      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
-      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
-      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
-      p,li { color:var(--muted); }
-      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
-      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
-      pre code { background:transparent; padding:0; color:var(--text); }
-      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
-      .table-wrap { overflow-x:auto; margin:1rem 0; }
-      table { width:100%; border-collapse:collapse; font-size:.95rem; }
-      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
-      th { background:var(--accent-soft); color:var(--text); }
-      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
-      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
-      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
-      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
-</style>
+    <link rel="stylesheet" href="assets/site.css">
+    <title>Documentation - Aura Start</title>
   </head>
   <body>
-    <div class="page">
-      <header>
-        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
-        <nav aria-label="Documentation links">
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
+          <span>Aura Start</span>
+        </a>
+        <nav class="site-nav" aria-label="Documentation navigation">
           <a href="index.html">Home</a>
-          <a href="documentation.html">Documentation</a>
           <a href="screenshot-gallery.html">Screenshots</a>
-          <a href="privacy-policy.html">Privacy Policy</a>
-          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+          <a href="documentation.html" aria-current="page">Documentation</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>
-      <main class="doc">
-        <div class="kicker">Aura Start Docs</div>
 
-        <h1>Documentation</h1>
-        <p>Readable HTML versions of the Aura Start documentation. The source Markdown files remain in the repository, and these pages are generated for GitHub Pages visitors.</p>
-        <div class="cards">
-          <article class="card">
-            <h2><a href="aura-start-vs-a-fine-start.html">Aura Start vs A Fine Start</a></h2>
-            <p>Honest comparison and migration-focused positioning.</p>
-          </article>
+      <main>
+        <section class="hero" aria-labelledby="docs-title">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <span class="eyebrow">Aura Start Docs</span>
+              <h1 id="docs-title">Documentation that is readable on GitHub Pages.</h1>
+              <p class="lead">
+                Store listing copy, screenshot plans, migration guides, release checklists,
+                and launch notes are available as HTML pages that match the public site.
+              </p>
+            </div>
+            <div class="subtle-callout">
+              <h2>Source and site stay together.</h2>
+              <p>
+                The Markdown files remain in the repository. These HTML versions make the
+                same materials easy to read from the static GitHub Pages site without a
+                remote Markdown renderer.
+              </p>
+            </div>
+          </div>
+        </section>
 
-          <article class="card">
-            <h2><a href="migrate-from-a-fine-start.html">Migrate from A Fine Start</a></h2>
-            <p>Step-by-step migration guide with safety notes.</p>
-          </article>
+        <section class="section-panel section" aria-labelledby="primary-docs">
+          <div class="section-heading">
+            <span class="kicker">Primary documents</span>
+            <h2 id="primary-docs">Chrome Web Store and release preparation</h2>
+            <p>Start here when preparing screenshots, listing copy, or manual release steps.</p>
+          </div>
+          <div class="cards">
+            <article class="doc-card">
+              <h3><a href="store-listing.html">Chrome Web Store Listing</a></h3>
+              <p>Prepared listing copy, feature bullets, privacy disclosure, and permission justification.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="screenshots.html">Screenshot Plan</a></h3>
+              <p>Chrome Web Store screenshot checklist and capture notes.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="release-checklist.html">Release Checklist</a></h3>
+              <p>Manual release, build, ZIP inspection, and Chrome Web Store upload checklist.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="github-release-draft.html">GitHub Release Draft</a></h3>
+              <p>Draft release notes for Aura Start 1.2.0.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="promotion-plan.html">Promotion Plan</a></h3>
+              <p>Launch communication plan without spam or competitor attacks.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="store-assets.html">Store Asset Checklist</a></h3>
+              <p>Store screenshot filenames and capture rules.</p>
+            </article>
+          </div>
+        </section>
 
-          <article class="card">
-            <h2><a href="store-listing.html">Chrome Web Store Listing</a></h2>
-            <p>Prepared listing copy and permission justification.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="screenshots.html">Screenshot Plan</a></h2>
-            <p>Chrome Web Store screenshot checklist and capture notes.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="screenshot-demo-data.html">Screenshot Demo Data</a></h2>
-            <p>Non-personal demo data used for screenshot setup.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="release-checklist.html">Release Checklist</a></h2>
-            <p>Manual release and Chrome Web Store upload checklist.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="promotion-plan.html">Promotion Plan</a></h2>
-            <p>Launch communication plan without spam or competitor attacks.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="github-release-draft.html">GitHub Release Draft</a></h2>
-            <p>Draft GitHub release notes for Aura Start 1.2.0.</p>
-          </article>
-
-          <article class="card">
-            <h2><a href="store-assets.html">Store Asset Checklist</a></h2>
-            <p>Store screenshot filenames and capture rules.</p>
-          </article>
-        </div>
+        <section class="section-panel section" aria-labelledby="migration-docs">
+          <div class="section-heading">
+            <span class="kicker">Migration and screenshots</span>
+            <h2 id="migration-docs">Guides for users and reviewers</h2>
+          </div>
+          <div class="cards">
+            <article class="doc-card">
+              <h3><a href="migrate-from-a-fine-start.html">Migrate from A Fine Start</a></h3>
+              <p>Step-by-step migration guide with backup and restore point safety notes.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="aura-start-vs-a-fine-start.html">Aura Start vs A Fine Start</a></h3>
+              <p>Honest comparison and migration-focused positioning.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="screenshot-demo-data.html">Screenshot Demo Data</a></h3>
+              <p>Non-personal demo data used for screenshot setup.</p>
+            </article>
+            <article class="doc-card">
+              <h3><a href="screenshot-gallery.html">Screenshot Gallery</a></h3>
+              <p>Public gallery of the real Aura Start UI screenshots.</p>
+            </article>
+          </div>
+        </section>
       </main>
-      <footer>Aura Start is independent and open-source under the MIT License.</footer>
+
+      <footer class="site-footer">
+        <p>Aura Start is independent and open-source under the MIT License.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="index.html">Home</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </footer>
     </div>
   </body>
 </html>

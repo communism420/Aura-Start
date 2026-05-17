@@ -8,420 +8,230 @@
       content="Aura Start is a private, local-first Chromium new tab extension for clean groups of links, exportable backups, A Fine Start migration, and optional Google Drive appDataFolder sync."
     >
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start — Private Local-First New Tab</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-        --bg: #f7f7f5;
-        --panel: #ffffff;
-        --text: #1f2328;
-        --muted: #667085;
-        --border: #d9dde3;
-        --accent: #0f766e;
-        --accent-strong: #0a5f59;
-        --accent-soft: #e6f4f1;
-        --shadow: 0 24px 80px rgba(15, 23, 42, 0.08);
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #1f2021;
-          --panel: #262728;
-          --text: #f2f4f7;
-          --muted: #a6adbb;
-          --border: #44484f;
-          --accent: #79d7d0;
-          --accent-strong: #a3ece6;
-          --accent-soft: #183735;
-          --shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
-        }
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family:
-          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        line-height: 1.6;
-      }
-
-      a {
-        color: var(--accent-strong);
-      }
-
-      a:focus-visible,
-      .button:focus-visible {
-        outline: 3px solid var(--accent);
-        outline-offset: 3px;
-      }
-
-      .page {
-        width: min(100% - 32px, 1120px);
-        margin: 0 auto;
-        padding: 28px 0 48px;
-      }
-
-      header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
-        padding: 8px 0 32px;
-      }
-
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--text);
-        font-weight: 800;
-        text-decoration: none;
-      }
-
-      .brand-logo {
-        display: block;
-        width: 38px;
-        height: 38px;
-        object-fit: contain;
-      }
-
-      nav {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        font-size: 0.95rem;
-      }
-
-      nav a {
-        text-decoration: none;
-      }
-
-      .hero {
-        display: grid;
-        gap: 30px;
-        border: 1px solid var(--border);
-        border-radius: 22px;
-        background: var(--panel);
-        padding: clamp(28px, 6vw, 56px);
-        box-shadow: var(--shadow);
-      }
-
-      .hero-logo {
-        display: block;
-        width: 84px;
-        height: 84px;
-        margin-bottom: 18px;
-        object-fit: contain;
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        width: fit-content;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent-strong);
-        padding: 6px 12px;
-        font-size: 0.88rem;
-        font-weight: 700;
-      }
-
-      h1,
-      h2,
-      h3 {
-        line-height: 1.15;
-      }
-
-      h1 {
-        max-width: 820px;
-        margin: 16px 0 18px;
-        font-size: clamp(2.35rem, 7vw, 5rem);
-        letter-spacing: 0;
-      }
-
-      h2 {
-        margin: 0 0 12px;
-        font-size: clamp(1.65rem, 4vw, 2.4rem);
-      }
-
-      h3 {
-        margin: 0 0 8px;
-        font-size: 1.05rem;
-      }
-
-      p {
-        margin: 0;
-      }
-
-      .lead {
-        max-width: 720px;
-        color: var(--muted);
-        font-size: clamp(1.05rem, 2vw, 1.25rem);
-      }
-
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 26px;
-      }
-
-      .button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 44px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 16px;
-        color: var(--text);
-        font-weight: 700;
-        text-decoration: none;
-      }
-
-      .button.primary {
-        border-color: var(--accent);
-        background: var(--accent);
-        color: #ffffff;
-      }
-
-      .button.secondary {
-        background: var(--panel);
-      }
-
-      .button:hover {
-        transform: translateY(-1px);
-      }
-
-      .status {
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 22px;
-      }
-
-      .card,
-      .section {
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        background: var(--panel);
-        padding: 20px;
-      }
-
-      .card p,
-      .section p,
-      .section li {
-        color: var(--muted);
-      }
-
-      .section {
-        margin-top: 24px;
-      }
-
-      .split {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 18px;
-      }
-
-      ul {
-        margin: 12px 0 0;
-        padding-left: 1.25rem;
-      }
-
-      li {
-        margin: 6px 0;
-      }
-
-      .notice {
-        margin-top: 18px;
-        color: var(--muted);
-        font-size: 0.94rem;
-      }
-
-      footer {
-        padding-top: 32px;
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
-
-      @media (max-width: 820px) {
-        .grid,
-        .split {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 520px) {
-        .page {
-          width: min(100% - 24px, 1120px);
-        }
-
-        .hero,
-        .section {
-          border-radius: 16px;
-        }
-
-        .button {
-          width: 100%;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="assets/site.css">
+    <title>Aura Start - Private Local-First New Tab</title>
   </head>
   <body>
-    <div class="page">
-      <header>
+    <div class="site-shell">
+      <header class="site-header">
         <a class="brand" href="index.html" aria-label="Aura Start home">
-          <img class="brand-logo" src="logo.png" alt="" width="38" height="38">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
           <span>Aura Start</span>
         </a>
-        <nav aria-label="Primary links">
-          <a href="privacy-policy.html">Privacy Policy</a>
-          <a href="documentation.html">Documentation</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="#features">Features</a>
           <a href="screenshot-gallery.html">Screenshots</a>
-          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
-          <a href="https://github.com/communism420/Aura-Start/blob/main/README.md" rel="noopener noreferrer">README</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>
 
       <main>
         <section class="hero" aria-labelledby="hero-title">
-          <div>
-            <img class="hero-logo" src="logo.png" alt="Aura Start logo" width="84" height="84">
-            <span class="eyebrow">Open-source Chromium new tab extension</span>
-            <h1 id="hero-title">A private, local-first start page for your links — free, open-source, and easy to export.</h1>
-            <p class="lead">
-              Aura Start keeps clean groups of links on your Chromium new tab page,
-              with local storage by default, no required account, no analytics, and
-              export-first data ownership.
-            </p>
-            <div class="actions" aria-label="Aura Start calls to action">
-              <a class="button primary" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">View source on GitHub</a>
-              <a class="button secondary" href="privacy-policy.html">Read privacy policy</a>
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <span class="eyebrow">Open-source Chromium new tab extension</span>
+              <h1 id="hero-title">A private, local-first start page for your links.</h1>
+              <p class="lead">
+                Aura Start replaces your Chromium new tab with clean groups of links,
+                local-first storage, exportable backups, A Fine Start migration, and
+                optional Google Drive appDataFolder sync.
+              </p>
+              <div class="actions" aria-label="Aura Start calls to action">
+                <a class="button primary" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">View source on GitHub</a>
+                <a class="button secondary" href="screenshot-gallery.html">View screenshots</a>
+                <a class="button secondary" href="privacy-policy.html">Read privacy policy</a>
+              </div>
+              <p class="status">Chrome Web Store listing coming soon. Developer-mode builds are available from the repository.</p>
             </div>
-            <p class="status">Chrome Web Store listing coming soon. Developer-mode builds are available from the repository.</p>
+
+            <div class="hero-preview" aria-label="Aura Start new tab preview">
+              <div class="browser-bar" aria-hidden="true">
+                <span class="browser-dot"></span>
+                <span class="browser-dot"></span>
+                <span class="browser-dot"></span>
+                <span class="browser-path">Aura Start new tab</span>
+              </div>
+              <img
+                class="preview-image"
+                src="assets/screenshots/01-main-new-tab.png"
+                alt="Aura Start new tab with clean groups of links"
+                width="1280"
+                height="800"
+              >
+            </div>
           </div>
         </section>
 
-        <section class="section" aria-labelledby="why-title">
-          <h2 id="why-title">Why Aura Start?</h2>
-          <div class="grid">
-            <div class="card">
-              <h3>Local-first by default</h3>
-              <p>Your groups, links, settings, and restore points live in local extension storage unless you choose optional Google Drive sync.</p>
-            </div>
-            <div class="card">
-              <h3>Export anytime</h3>
+        <section class="trust-strip" aria-label="Trust highlights">
+          <div class="trust-grid">
+            <div class="trust-item"><span class="trust-dot"></span>No account required</div>
+            <div class="trust-item"><span class="trust-dot"></span>No analytics or tracking</div>
+            <div class="trust-item"><span class="trust-dot"></span>Export anytime</div>
+            <div class="trust-item"><span class="trust-dot"></span>Open-source under MIT</div>
+          </div>
+        </section>
+
+        <section id="features" class="section-panel section" aria-labelledby="features-title">
+          <div class="section-heading">
+            <span class="kicker">Product</span>
+            <h2 id="features-title">Everything important stays visible and recoverable.</h2>
+            <p>
+              Aura Start is built for people who want a calm new tab, clear data ownership,
+              and practical recovery tools instead of account lock-in.
+            </p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-icon">01</span>
+              <h3>Clean link groups</h3>
+              <p>Organize links into readable groups with descriptions, tags, search, themes, compact mode, and configurable columns.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">02</span>
+              <h3>Import from A Fine Start</h3>
+              <p>Import A Fine Start export codes for migration. Aura Start is independent and not affiliated with A Fine Start.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">03</span>
+              <h3>Export / Backup</h3>
               <p>Export Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code.</p>
-            </div>
-            <div class="card">
-              <h3>No required account</h3>
-              <p>Aura Start has no backend, no ads, no analytics, and no tracking. Google Drive sync is optional and off by default.</p>
-            </div>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">04</span>
+              <h3>Restore Points</h3>
+              <p>Review and restore local safety snapshots created before destructive changes where available.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">05</span>
+              <h3>Command Palette</h3>
+              <p>Open common actions quickly with keyboard-first navigation and a focused command workflow.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">06</span>
+              <h3>Duplicate Finder</h3>
+              <p>Scan for exact and possible duplicate links. Deletion remains user-selected and confirmed.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">07</span>
+              <h3>Optional Drive backup</h3>
+              <p>Google Drive sync is optional, off by default, and uses only the hidden appDataFolder scope.</p>
+            </article>
+            <article class="feature-card">
+              <span class="feature-icon">08</span>
+              <h3>Privacy Promise</h3>
+              <p>No ads, no backend, no telemetry, no browser history permission, and no browser bookmarks permission.</p>
+            </article>
           </div>
         </section>
 
-        <section class="section split" aria-label="Feature highlights">
-          <div>
-            <h2>Built for clean link groups</h2>
-            <ul>
-              <li>Custom groups and links with descriptions and tags.</li>
-              <li>Search across title, URL, description, tags, and supported query modifiers.</li>
-              <li>Light, dark, and system themes with compact mode and configurable columns.</li>
-              <li>Drag-and-drop reordering in explicit edit mode.</li>
-              <li>Command Palette and keyboard shortcuts for faster navigation.</li>
-            </ul>
-          </div>
-          <div>
-            <h2>Designed around recovery</h2>
-            <ul>
-              <li>First-run onboarding and useful empty states.</li>
-              <li>Optional demo groups added only after user action.</li>
-              <li>Export / Backup hub for local file backups.</li>
-              <li>Restore Points Manager for local safety history.</li>
-              <li>Duplicate Finder scans read-only and deletes only after selection and confirmation.</li>
-            </ul>
-          </div>
-        </section>
-
-        <section class="section split" aria-label="Migration and privacy">
-          <div>
-            <h2>Import from A Fine Start</h2>
+        <section class="section split" aria-label="Data ownership and migration">
+          <div class="callout">
+            <span class="kicker">Data ownership</span>
+            <h2>Your links belong to you.</h2>
             <p>
-              Aura Start supports importing A Fine Start export codes and exporting
-              an A Fine Start-compatible code if you want a basic grouped-link format
-              again later.
-            </p>
-            <p class="notice">
-              Aura Start is independent and not affiliated with A Fine Start. A Fine
-              Start is mentioned only for inspiration, migration, and compatibility.
+              Aura Start stores your groups, links, settings, and restore points locally by
+              default. Exports are created locally in your browser, so you can keep your own
+              backups and move your data when you need to.
             </p>
           </div>
-          <div>
-            <h2>Optional Google Drive backup</h2>
+          <div class="subtle-callout">
+            <span class="kicker">Migration</span>
+            <h2>A careful path from A Fine Start.</h2>
             <p>
-              When enabled, Google Drive sync uses Chrome identity and only the
-              <code>drive.appdata</code> scope to store one hidden
-              <code>aura-start-sync.json</code> file in Google Drive
-              <code>appDataFolder</code>.
+              Aura Start supports importing A Fine Start export codes and exporting an
+              A Fine Start-compatible code for the basic grouped-link format. It does not
+              claim affiliation with A Fine Start.
             </p>
-            <p class="notice">Aura Start does not request full Drive access and does not read visible Drive files.</p>
           </div>
         </section>
 
-        <section class="section" aria-labelledby="privacy-title">
-          <h2 id="privacy-title">Privacy Promise</h2>
-          <div class="grid">
-            <div class="card">
-              <h3>No analytics or tracking</h3>
-              <p>No telemetry, behavioral profiling, ads, affiliate replacement, or hidden data collection.</p>
+        <section class="section split" aria-label="Privacy and backup">
+          <div class="section-panel">
+            <span class="kicker">Privacy-first</span>
+            <h2>No account, no analytics, no tracking.</h2>
+            <p>
+              Aura Start has no backend and does not request browser history, bookmarks,
+              cookies, tabs, webRequest, scripting, or full Google Drive access.
+            </p>
+            <div class="actions">
+              <a class="button secondary" href="privacy-policy.html">Read the policy</a>
             </div>
-            <div class="card">
-              <h3>Least-privilege permissions</h3>
-              <p>No bookmarks, history, cookies, tabs, webRequest, scripting, or full Google Drive permission.</p>
-            </div>
-            <div class="card">
-              <h3>Open-source under MIT</h3>
-              <p>The source, docs, and build scripts are intended to be public and auditable.</p>
-            </div>
+          </div>
+          <div class="section-panel">
+            <span class="kicker">Optional backup</span>
+            <h2>Google Drive sync only when you choose it.</h2>
+            <p>
+              When enabled, Drive sync uses Chrome identity and the
+              <code>drive.appdata</code> scope to store Aura Start's hidden
+              <code>aura-start-sync.json</code> file.
+            </p>
           </div>
         </section>
 
-        <section class="section" aria-labelledby="release-title">
-          <h2 id="release-title">Store and release materials</h2>
-          <p>
-            Aura Start's public release materials are kept in the repository so
-            users and reviewers can compare listing text, screenshots, privacy
-            claims, and release steps against the source code.
-          </p>
-          <div class="actions" aria-label="Release material links">
-            <a class="button secondary" href="screenshot-gallery.html">Screenshot gallery</a>
-            <a class="button secondary" href="documentation.html">Documentation</a>
-            <a class="button secondary" href="screenshots.html">Screenshot plan</a>
+        <section class="section-panel section" aria-labelledby="screenshots-title">
+          <div class="section-heading">
+            <span class="kicker">Screenshots</span>
+            <h2 id="screenshots-title">See the real extension UI.</h2>
+            <p>
+              The gallery uses screenshots captured from the current Aura Start 1.2.0 UI
+              with non-personal demo data.
+            </p>
+          </div>
+          <div class="screenshot-preview-grid">
+            <a class="card screenshot-preview" href="screenshot-gallery.html">
+              <img src="assets/screenshots/03-export-backup.png" alt="Aura Start Export and Backup screen" width="1280" height="800" loading="lazy">
+              <div>
+                <h3>Export / Backup</h3>
+                <p>Local export formats and migration-friendly backups.</p>
+              </div>
+            </a>
+            <a class="card screenshot-preview" href="screenshot-gallery.html">
+              <img src="assets/screenshots/06-command-palette.png" alt="Aura Start Command Palette" width="1280" height="800" loading="lazy">
+              <div>
+                <h3>Command Palette</h3>
+                <p>Keyboard-first access to common actions.</p>
+              </div>
+            </a>
+            <a class="card screenshot-preview" href="screenshot-gallery.html">
+              <img src="assets/screenshots/07-duplicate-finder.png" alt="Aura Start Duplicate Finder" width="1280" height="800" loading="lazy">
+              <div>
+                <h3>Duplicate Finder</h3>
+                <p>Read-only scans with confirmed cleanup.</p>
+              </div>
+            </a>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="screenshot-gallery.html">Open screenshot gallery</a>
+          </div>
+        </section>
+
+        <section class="section-panel section" aria-labelledby="docs-title">
+          <div class="section-heading">
+            <span class="kicker">Documentation</span>
+            <h2 id="docs-title">Release materials are public and reviewable.</h2>
+            <p>
+              Store listing drafts, screenshot notes, migration docs, and release checklists
+              are available as readable GitHub Pages documents.
+            </p>
+          </div>
+          <div class="actions">
+            <a class="button primary" href="documentation.html">Read documentation</a>
             <a class="button secondary" href="store-listing.html">Store listing draft</a>
             <a class="button secondary" href="release-checklist.html">Release checklist</a>
           </div>
         </section>
       </main>
 
-      <footer>
-        <p>
-          Aura Start is an independent project. Review the
-          <a href="privacy-policy.html">Privacy Policy</a> or the
-          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub repository</a>.
-        </p>
+      <footer class="site-footer">
+        <p>Aura Start is an independent open-source project under the MIT License.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </div>
       </footer>
     </div>
   </body>

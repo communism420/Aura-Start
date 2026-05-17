@@ -3,136 +3,141 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Real Aura Start screenshots prepared for Chrome Web Store and GitHub Pages.">
+    <meta
+      name="description"
+      content="Real Aura Start screenshots prepared for Chrome Web Store and GitHub Pages."
+    >
     <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="assets/site.css">
     <title>Aura Start Screenshots</title>
-    <style>
-      :root { color-scheme: light dark; --bg:#f7f7f5; --panel:#fff; --text:#1f2328; --muted:#667085; --border:#d9dde3; --accent:#0f766e; --accent-strong:#0a5f59; --accent-soft:#e6f4f1; --shadow:0 18px 60px rgba(15,23,42,.08); }
-      @media (prefers-color-scheme: dark) { :root { --bg:#1f2021; --panel:#262728; --text:#f2f4f7; --muted:#a6adbb; --border:#44484f; --accent:#79d7d0; --accent-strong:#a3ece6; --accent-soft:#183735; --shadow:0 18px 60px rgba(0,0,0,.28); } }
-      * { box-sizing: border-box; }
-      body { margin:0; background:var(--bg); color:var(--text); font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; line-height:1.65; }
-      a { color:var(--accent-strong); }
-      a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
-      .page { width:min(100% - 32px, 1080px); margin:0 auto; padding:28px 0 56px; }
-      header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:28px; }
-      .brand { display:inline-flex; align-items:center; gap:10px; color:var(--text); font-weight:800; text-decoration:none; }
-      .brand img { width:38px; height:38px; object-fit:contain; }
-      nav { display:flex; flex-wrap:wrap; gap:12px; font-size:.95rem; }
-      nav a { text-decoration:none; }
-      .doc { border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,48px); box-shadow:var(--shadow); }
-      .kicker { color:var(--accent-strong); font-weight:800; font-size:.9rem; }
-      h1,h2,h3,h4 { line-height:1.2; }
-      h1 { margin:.4rem 0 1rem; font-size:clamp(2rem,5vw,3.6rem); }
-      h2 { margin:2rem 0 .75rem; font-size:1.65rem; }
-      h3 { margin:1.5rem 0 .5rem; font-size:1.15rem; }
-      p,li { color:var(--muted); }
-      code { border-radius:6px; background:var(--accent-soft); color:var(--accent-strong); padding:.12rem .32rem; }
-      pre { overflow:auto; border:1px solid var(--border); border-radius:12px; background:var(--accent-soft); padding:16px; }
-      pre code { background:transparent; padding:0; color:var(--text); }
-      blockquote { margin:1rem 0; border-left:4px solid var(--accent); padding:.5rem 1rem; background:var(--accent-soft); color:var(--text); }
-      .table-wrap { overflow-x:auto; margin:1rem 0; }
-      table { width:100%; border-collapse:collapse; font-size:.95rem; }
-      th,td { border:1px solid var(--border); padding:.75rem; text-align:left; vertical-align:top; }
-      th { background:var(--accent-soft); color:var(--text); }
-      .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:20px; }
-      .card { border:1px solid var(--border); border-radius:14px; background:var(--panel); padding:18px; box-shadow:var(--shadow); }
-      .card h2 { margin:0 0 .5rem; font-size:1.1rem; }
-      footer { margin-top:28px; color:var(--muted); font-size:.95rem; }
-
-      .gallery { display:grid; gap:24px; }
-      .shot { border:1px solid var(--border); border-radius:18px; background:var(--panel); overflow:hidden; box-shadow:var(--shadow); }
-      .shot img { display:block; width:100%; height:auto; background:var(--bg); }
-      .caption { padding:18px 20px 22px; }
-      .caption h2 { margin:0 0 .35rem; font-size:1.25rem; }
-      .caption p { margin:0; }
-      .hero { margin-bottom:24px; border:1px solid var(--border); border-radius:20px; background:var(--panel); padding:clamp(24px,5vw,44px); box-shadow:var(--shadow); }
-      .hero h1 { margin:0 0 .75rem; }
-</style>
   </head>
   <body>
-    <div class="page">
-      <header>
-        <a class="brand" href="index.html" aria-label="Aura Start home"><img src="logo.png" alt="" width="38" height="38"><span>Aura Start</span></a>
-        <nav aria-label="Screenshot gallery links">
+    <div class="site-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
+          <span>Aura Start</span>
+        </a>
+        <nav class="site-nav" aria-label="Screenshot gallery navigation">
           <a href="index.html">Home</a>
+          <a href="screenshot-gallery.html" aria-current="page">Screenshots</a>
           <a href="documentation.html">Documentation</a>
-          <a href="privacy-policy.html">Privacy Policy</a>
-          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>
+
       <main>
-        <section class="hero">
-          <div class="kicker">Chrome Web Store Screenshots</div>
-          <h1>Real Aura Start UI screenshots</h1>
-          <p>These images are captured from the current Aura Start 1.2.0 extension UI with non-personal demo data. They are not drawn mockups and do not use external scripts, analytics, tracking, or remote assets.</p>
+        <section class="hero" aria-labelledby="gallery-title">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <span class="eyebrow">Chrome Web Store screenshots</span>
+              <h1 id="gallery-title">Aura Start screenshots</h1>
+              <p class="lead">
+                A closer look at the local-first new tab, export tools, restore points,
+                Command Palette, Duplicate Finder, and privacy-first workflow.
+              </p>
+              <p class="status">
+                These images are captured from the current Aura Start 1.2.0 extension UI
+                with non-personal demo data. They are not drawn mockups.
+              </p>
+            </div>
+            <div class="hero-preview">
+              <img
+                class="preview-image"
+                src="assets/screenshots/01-main-new-tab.png"
+                alt="Aura Start main new tab screenshot"
+                width="1280"
+                height="800"
+              >
+            </div>
+          </div>
         </section>
-        <section class="gallery" aria-label="Aura Start screenshots">
+
+        <section class="section gallery" aria-label="Aura Start screenshot gallery">
           <article class="shot">
-            <img src="assets/screenshots/01-main-new-tab.png" alt="Aura Start screenshot: Main New Tab" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/01-main-new-tab.png" alt="Aura Start main new tab with clean grouped links" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">New tab</span>
               <h2>Main New Tab</h2>
               <p>Clean groups of links on the real Aura Start new tab page.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/02-import-from-a-fine-start.png" alt="Aura Start screenshot: Import from A Fine Start" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/02-import-from-a-fine-start.png" alt="Aura Start import flow with A Fine Start format selected" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Migration</span>
               <h2>Import from A Fine Start</h2>
               <p>The real import flow with A Fine Start format selected and preview validation visible.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/03-export-backup.png" alt="Aura Start screenshot: Export / Backup" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/03-export-backup.png" alt="Aura Start Export and Backup menu" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Export / Backup</span>
               <h2>Export / Backup</h2>
               <p>The real Export menu with JSON, HTML bookmarks, Markdown, CSV, and A Fine Start-compatible export options.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/04-restore-points.png" alt="Aura Start screenshot: Restore Points" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/04-restore-points.png" alt="Aura Start Restore Points Manager" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Recovery</span>
               <h2>Restore Points</h2>
               <p>The real Restore Points Manager showing local safety snapshots before destructive changes.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/05-privacy-promise.png" alt="Aura Start screenshot: Privacy Promise" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/05-privacy-promise.png" alt="Aura Start Privacy Promise settings" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Privacy</span>
               <h2>Privacy Promise</h2>
               <p>The real Settings screen with no-account, no-analytics, no-tracking privacy promises.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/06-command-palette.png" alt="Aura Start screenshot: Command Palette" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/06-command-palette.png" alt="Aura Start Command Palette over the new tab page" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Keyboard UX</span>
               <h2>Command Palette</h2>
               <p>The real Ctrl+K Command Palette over the Aura Start page.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/07-duplicate-finder.png" alt="Aura Start screenshot: Duplicate Finder" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/07-duplicate-finder.png" alt="Aura Start Duplicate Finder showing duplicate link groups" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Tools</span>
               <h2>Duplicate Finder</h2>
               <p>The real Duplicate Finder showing read-only duplicate groups and user-controlled deletion.</p>
             </div>
           </article>
 
           <article class="shot">
-            <img src="assets/screenshots/08-google-drive-backup.png" alt="Aura Start screenshot: Optional Google Drive Backup" width="1280" height="800" loading="lazy">
+            <img src="assets/screenshots/08-google-drive-backup.png" alt="Aura Start optional Google Drive backup settings" width="1280" height="800" loading="lazy">
             <div class="caption">
+              <span class="tag">Optional sync</span>
               <h2>Optional Google Drive Backup</h2>
               <p>The real Google Drive sync settings showing optional appDataFolder backup.</p>
             </div>
           </article>
         </section>
       </main>
-      <footer>Final PNG files are stored in <code>Photo/</code>; GitHub Pages copies are stored in <code>docs/assets/screenshots/</code>.</footer>
+
+      <footer class="site-footer">
+        <p>Final PNG files are stored in <code>Photo/</code>; GitHub Pages copies are stored in <code>docs/assets/screenshots/</code>.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="index.html">Home</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </footer>
     </div>
   </body>
 </html>
