@@ -7,6 +7,19 @@
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "commands": {
+    "toggle-command-palette": {
+      "suggested_key": {
+        "default": "Ctrl+K",
+        "mac": "Command+K"
+      },
+      "description": "Toggle Aura Start command palette"
+    }
+  },
   "permissions": ["storage", "identity"],
   "host_permissions": [
     "https://www.googleapis.com/*"

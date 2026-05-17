@@ -71,9 +71,13 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         input: {
+          background: resolve(__dirname, "src/background.ts"),
           newtab: resolve(__dirname, "newtab.html"),
           popup: resolve(__dirname, "popup.html"),
           options: resolve(__dirname, "options.html")
+        },
+        output: {
+          entryFileNames: (chunk) => (chunk.name === "background" ? "background.js" : "assets/[name]-[hash].js")
         }
       },
       minify: false,

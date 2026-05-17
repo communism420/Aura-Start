@@ -32,6 +32,8 @@ type AppProps = {
   initialSettingsOpen?: boolean;
 };
 
+const TOGGLE_COMMAND_PALETTE_MESSAGE = "aura-start:toggle-command-palette";
+
 type PendingDanger =
   | { type: "deleteGroup"; group: AuraStartGroup }
   | { type: "deleteLink"; groupId: string; link: AuraStartLink }
@@ -349,6 +351,42 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     searchOpen,
     searchResults,
     selectedSearchResultId,
+    settingsOpen
+  ]);
+
+  useEffect(() => {
+    if (typeof chrome === "undefined" || !chrome.runtime?.onMessage) return;
+
+    const blockingModalOpen = Boolean(
+      groupDialogOpen ||
+        linkDialogOpen ||
+        settingsOpen ||
+        importOpen ||
+        restoreOpen ||
+        duplicateFinderOpen ||
+        onboardingOpen ||
+        pendingDanger
+    );
+
+    const handleRuntimeMessage = (message: unknown) => {
+      if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== TOGGLE_COMMAND_PALETTE_MESSAGE) {
+        return;
+      }
+      if (document.visibilityState !== "visible") return;
+
+      setCommandPaletteOpen((open) => (open ? false : !blockingModalOpen));
+    };
+
+    chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+    return () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
+  }, [
+    duplicateFinderOpen,
+    groupDialogOpen,
+    importOpen,
+    linkDialogOpen,
+    onboardingOpen,
+    pendingDanger,
+    restoreOpen,
     settingsOpen
   ]);
 
