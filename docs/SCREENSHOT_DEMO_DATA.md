@@ -1,5 +1,8 @@
 # Screenshot Demo Data
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 This data is for manual screenshot setup, staging mockups, and local testing only. It must not be injected automatically for production users and must not change Aura Start's user data behavior.
 
 ## Groups And Links

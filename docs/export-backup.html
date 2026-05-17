@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Aura Start export and backup guide for JSON, browser bookmarks HTML, Markdown, CSV, and A Fine Start-compatible codes."
+    >
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="assets/site.css">
+    <title>Export / Backup - Aura Start</title>
+  </head>
+  <body>
+    <div class="doc-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
+          <span>Aura Start</span>
+        </a>
+        <nav class="site-nav" aria-label="Export guide navigation">
+          <a href="index.html">Home</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+
+      <main class="doc">
+        <span class="kicker">User guide</span>
+        <h1>Export / Backup</h1>
+        <p>
+          Aura Start is export-first. Exports are created locally in your browser and
+          are not uploaded to an Aura Start server.
+        </p>
+
+        <h2>Available formats</h2>
+        <ul>
+          <li><strong>Full Backup JSON:</strong> best for restoring Aura Start data later.</li>
+          <li><strong>Browser Bookmarks HTML:</strong> useful for importing into browser bookmark managers.</li>
+          <li><strong>Markdown:</strong> readable grouped lists for notes or documentation.</li>
+          <li><strong>CSV:</strong> spreadsheet-friendly archive format.</li>
+          <li><strong>A Fine Start-compatible export code:</strong> useful if you want a basic grouped-link format again later.</li>
+        </ul>
+
+        <h2>When to use Full Backup JSON</h2>
+        <p>
+          Use Full Backup JSON before major imports, resets, duplicate cleanup, or any
+          change where you want an independent file backup. It is the format designed
+          for restoring Aura Start's own data.
+        </p>
+
+        <h2>A Fine Start-compatible export</h2>
+        <p>
+          The compatibility format is intentionally basic. It can preserve grouped link
+          names and URLs, but Aura Start-specific fields such as descriptions and tags
+          may not be included if the compatibility format does not support them.
+        </p>
+
+        <h2>Empty or partial data</h2>
+        <p>
+          Export works even when your start page is empty. If data is incomplete or
+          corrupted, use the recovery screen or restore points before replacing your
+          current local data.
+        </p>
+      </main>
+
+      <footer class="site-footer">
+        <p>Exports are local files. Keep backups somewhere you control.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="restore-points.html">Restore Points</a>
+          <a href="google-drive-sync.html">Google Drive Sync</a>
+          <a href="documentation.html">Documentation</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

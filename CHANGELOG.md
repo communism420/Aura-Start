@@ -13,5 +13,5 @@
 - Added Command Palette
 - Added Duplicate Finder
 - Added migration and comparison docs
-- Improved Chrome Web Store submission notes
+- Improved user-facing migration and privacy documentation
 - Improved data-loss protection for destructive actions

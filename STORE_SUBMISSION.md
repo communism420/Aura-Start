@@ -1,5 +1,7 @@
 # Chrome Web Store Submission Notes
 
+> Maintainer-only document. This file is for Chrome Web Store release preparation and is not needed for normal Aura Start users.
+
 These notes are for preparing Aura Start for Chrome Web Store review. They do not guarantee approval, but they keep the submission aligned with the current Chrome Web Store review themes: single purpose, least privilege, no remote hosted code, and clear privacy disclosures.
 
 ## Single Purpose

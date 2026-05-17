@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Aura Start restore points guide: recover from imports, resets, restores, and confirmed cleanup actions."
+    >
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="assets/site.css">
+    <title>Restore Points - Aura Start</title>
+  </head>
+  <body>
+    <div class="doc-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
+          <span>Aura Start</span>
+        </a>
+        <nav class="site-nav" aria-label="Restore points navigation">
+          <a href="index.html">Home</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+
+      <main class="doc">
+        <span class="kicker">User guide</span>
+        <h1>Restore Points</h1>
+        <p>
+          Restore points are local safety snapshots. Aura Start uses them to make
+          destructive changes easier to recover from.
+        </p>
+
+        <h2>When restore points are useful</h2>
+        <ul>
+          <li>Before replacing data during import.</li>
+          <li>Before restoring from Google Drive during connection.</li>
+          <li>Before reset or destructive cleanup actions where supported.</li>
+          <li>Before duplicate deletion when you confirm selected items.</li>
+        </ul>
+
+        <h2>Restore Points Manager</h2>
+        <p>
+          The Restore Points Manager shows local snapshots with their reason, date,
+          and data counts when available. You can restore a snapshot or export it as a
+          JSON backup.
+        </p>
+
+        <h2>Before restoring</h2>
+        <p>
+          Restoring changes your current local Aura Start data. Aura Start creates a
+          new restore point for the current state before restore where possible, so
+          you have a way back if the restored snapshot is not the one you wanted.
+        </p>
+
+        <h2>Good habits</h2>
+        <p>
+          Restore points are helpful, but they are still local browser data. Keep a
+          Full Backup JSON file somewhere safe before very large changes.
+        </p>
+      </main>
+
+      <footer class="site-footer">
+        <p>For file backups, use <a href="export-backup.html">Export / Backup</a>.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

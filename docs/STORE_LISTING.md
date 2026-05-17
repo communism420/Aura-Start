@@ -1,5 +1,8 @@
 # Chrome Web Store Listing Draft
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 ## Extension Name
 
 Aura Start

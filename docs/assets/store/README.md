@@ -1,5 +1,8 @@
 # Store Asset Checklist
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 This folder tracks the Chrome Web Store and promotional screenshot set. The final PNG files are captured from the real Aura Start 1.2.0 UI and stored in `Photo/`, with GitHub Pages copies in `docs/assets/screenshots/`.
 
 Final filenames:

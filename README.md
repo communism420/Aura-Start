@@ -53,7 +53,7 @@ Your data belongs to you. Export it whenever you want and keep backups in normal
 
 ## Open Source
 
-Aura Start is fully open-source under the MIT License. The extension code, build scripts, validation scripts, documentation, and store-submission notes are intended to be public and auditable.
+Aura Start is fully open-source under the MIT License. The extension code, build scripts, validation scripts, and documentation are intended to be public and auditable.
 
 There is no proprietary server component, hidden backend, paid data lock-in, or closed sync service required for Aura Start to work. You can inspect the source, build it yourself, fork it, modify it, and redistribute it under the terms of the MIT License.
 
@@ -117,38 +117,7 @@ Before restoring from Google Drive during connection, Aura Start creates a local
 
 When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
 
-Connect Google Drive uses Chrome's built-in `chrome.identity.getAuthToken` OAuth flow and may open a Google authorization prompt when Chrome needs explicit sign-in or consent. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. The OAuth client ID identifies the Aura Start app package to Google; it is not a user tracking ID, not a user secret, and not entered by users in Aura Start settings. Google requires an OAuth client ID for Drive authorization, so there is no Client-ID-free Google Drive API flow.
-
-Google Drive sync can use either Chrome's built-in token flow or a Web OAuth fallback. For Google Chrome Web Store builds, create a Chrome Extension OAuth client. For Brave, Edge, or profiles where `chrome.identity.getAuthToken` opens a `Custom URI scheme is not supported on Chrome apps` error, also create a Web Application OAuth client and add this authorized redirect URI:
-
-```text
-https://pdhhhnmcammpmmklkbbfbmnijimgjiabi.chromiumapp.org/oauth2
-```
-
-For release builds, do not edit `public/manifest.json` manually. Create a real OAuth client for the Aura Start extension in Google Cloud Console, enable the Google Drive API for that project, then set `AURA_GOOGLE_OAUTH_CLIENT_ID` before running the build. Vite will inject it into `dist/manifest.json`.
-
-Do not copy the placeholder below as-is. Google will reject placeholder or example values with `invalid_client`.
-
-```bash
-AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store
-```
-
-On PowerShell:
-
-```powershell
-$env:AURA_GOOGLE_OAUTH_CLIENT_ID="PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com"; npm run build:store
-```
-
-For repeat local builds, put the value in `.env.local`:
-
-```env
-AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com
-AURA_GOOGLE_WEB_OAUTH_CLIENT_ID=PASTE_REAL_WEB_CLIENT_ID_HERE.apps.googleusercontent.com
-```
-
-If Google shows `invalid_client`, the generated `dist/manifest.json` contains a Client ID that Google does not recognize. Recreate the OAuth client in Google Cloud Console, make sure it belongs to the same extension/app setup, rebuild with `AURA_GOOGLE_OAUTH_CLIENT_ID`, and reload the extension from `dist`.
-
-If Google shows `invalid_request` with `Custom URI scheme is not supported on Chrome apps`, create the Web Application OAuth client above, set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`, rebuild, and reload the extension.
+Connect Google Drive uses Chrome's built-in OAuth flow and may open a Google authorization prompt when Chrome needs explicit sign-in or consent. The consent screen requests only the minimal `drive.appdata` permission and no full Drive scope. Users do not enter OAuth client IDs in Aura Start settings.
 
 ## Migrate from A Fine Start
 
@@ -179,18 +148,12 @@ Aura Start has no backend, no analytics, no tracking scripts, no required sync, 
 
 - [Aura Start vs A Fine Start](./docs/AURA_START_VS_A_FINE_START.md)
 - [Migrate from A Fine Start](./docs/MIGRATE_FROM_A_FINE_START.md)
-- [Chrome Web Store listing draft](./docs/STORE_LISTING.md)
-- [Screenshot plan](./docs/SCREENSHOTS.md)
-- [Screenshot demo data](./docs/SCREENSHOT_DEMO_DATA.md)
-- [Screenshot staging gallery](./docs/screenshot-gallery.html)
-- [Release checklist](./docs/RELEASE_CHECKLIST.md)
-- [Promotion plan](./docs/PROMOTION_PLAN.md)
-- [GitHub release draft](./docs/GITHUB_RELEASE_DRAFT.md)
 - [GitHub Pages landing page](./docs/index.html)
 - [GitHub Pages privacy policy page](./docs/privacy-policy.html)
+- [GitHub Pages user documentation](./docs/documentation.html)
+- [Screenshot gallery](./docs/screenshot-gallery.html)
 - [Changelog](./CHANGELOG.md)
 - [Privacy Policy](./PRIVACY.md)
-- [Chrome Web Store submission notes](./STORE_SUBMISSION.md)
 
 ## License
 

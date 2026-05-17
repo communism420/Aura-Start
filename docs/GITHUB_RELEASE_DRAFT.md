@@ -1,5 +1,8 @@
 # Aura Start 1.2.0 — Migration & Data Ownership Release
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 Aura Start 1.2.0 focuses on migration, local-first data ownership, safer recovery, and faster power-user workflows.
 
 ## Highlights

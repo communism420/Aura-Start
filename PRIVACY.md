@@ -79,4 +79,4 @@ Aura Start bundles its extension code with the extension package and does not ex
 
 ## Contact
 
-For privacy or security questions, use the support contact listed on the Chrome Web Store listing or the project repository.
+For privacy or security questions, use the project repository where Aura Start is published.

@@ -1,5 +1,8 @@
 # Aura Start Screenshot Plan
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 This plan prepares Chrome Web Store and GitHub screenshots from the current Aura Start 1.2.0 feature set. It avoids unsupported claims, fake statistics, competitor criticism, and visual use of third-party brands beyond plain text references needed for migration.
 
 Recommended base sizes:

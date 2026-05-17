@@ -1,5 +1,8 @@
 # Aura Start Release Checklist
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 Use this checklist before preparing a Chrome Web Store upload. Do not publish from automation; upload manually through the Chrome Web Store Developer Dashboard.
 
 ## Pre-Build

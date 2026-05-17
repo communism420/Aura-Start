@@ -1,5 +1,8 @@
 # Aura Start Promotion Plan
 
+> Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
+
+
 This plan supports launch communication after publication without spam, fake reviews, or aggressive competitor language.
 
 ## 1. Positioning

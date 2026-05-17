@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Aura Start Google Drive sync guide: optional appDataFolder backup, local-first storage, disconnect, and delete backup."
+    >
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="stylesheet" href="assets/site.css">
+    <title>Google Drive Sync - Aura Start</title>
+  </head>
+  <body>
+    <div class="doc-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <span class="brand-mark"><img class="brand-logo" src="logo.png" alt="" width="40" height="40"></span>
+          <span>Aura Start</span>
+        </a>
+        <nav class="site-nav" aria-label="Google Drive sync navigation">
+          <a href="index.html">Home</a>
+          <a href="screenshot-gallery.html">Screenshots</a>
+          <a href="documentation.html">Documentation</a>
+          <a href="privacy-policy.html">Privacy</a>
+          <a class="nav-cta" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">GitHub</a>
+        </nav>
+      </header>
+
+      <main class="doc">
+        <span class="kicker">User guide</span>
+        <h1>Google Drive Sync</h1>
+        <p>
+          Google Drive sync is optional and off by default. Aura Start remains usable
+          as a local-only extension without connecting a Google account.
+        </p>
+
+        <h2>What sync stores</h2>
+        <p>
+          When you connect Google Drive, Aura Start stores one hidden sync file named
+          <code>aura-start-sync.json</code> in Google Drive <code>appDataFolder</code>.
+          This file can include your Aura Start groups, links, settings, restore
+          points, and sync metadata needed to keep the backup current.
+        </p>
+
+        <h2>What Aura Start does not access</h2>
+        <ul>
+          <li>No full Google Drive access.</li>
+          <li>No reading or scanning normal visible Drive files.</li>
+          <li>No visible Drive backup folder.</li>
+          <li>No Google account use for analytics, tracking, advertising, or profiling.</li>
+        </ul>
+
+        <h2>Connection behavior</h2>
+        <p>
+          If a hidden Aura Start sync file already exists, Aura Start can restore it
+          after creating a local restore point. If no sync file exists, Aura Start can
+          create one from your current local data.
+        </p>
+
+        <h2>Disconnect and delete backup</h2>
+        <p>
+          Aura Start provides a confirmed action to delete the hidden Drive sync file
+          and disconnect the Google account. This does not delete local Aura Start
+          data and does not touch normal Drive files.
+        </p>
+
+        <h2>Use local backups too</h2>
+        <p>
+          Google Drive sync is convenient, but Full Backup JSON is still the clearest
+          portable backup format. Keep local file backups for important data.
+        </p>
+      </main>
+
+      <footer class="site-footer">
+        <p>For the full privacy details, read the <a href="privacy-policy.html">Privacy Policy</a>.</p>
+        <div class="footer-links" aria-label="Footer links">
+          <a href="export-backup.html">Export / Backup</a>
+          <a href="restore-points.html">Restore Points</a>
+          <a href="documentation.html">Documentation</a>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>
