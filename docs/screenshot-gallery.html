@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Aura Start screenshot staging gallery for Chrome Web Store and GitHub promotional assets."
+    >
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Aura Start Screenshot Gallery</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f5;
+        --paper: #ffffff;
+        --ink: #1f2328;
+        --muted: #667085;
+        --line: #d9dde3;
+        --teal: #0f766e;
+        --teal-strong: #0a5f59;
+        --teal-soft: #e6f4f1;
+        --blue: #2563eb;
+        --amber: #b45309;
+        --red: #b42318;
+        --shadow: 0 28px 80px rgba(15, 23, 42, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      a {
+        color: var(--teal-strong);
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--teal);
+        outline-offset: 3px;
+      }
+
+      .page {
+        width: min(100% - 32px, 1180px);
+        margin: 0 auto;
+        padding: 28px 0 56px;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .brand img {
+        width: 40px;
+        height: 40px;
+      }
+
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.95rem;
+      }
+
+      nav a {
+        text-decoration: none;
+      }
+
+      .hero {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--paper);
+        padding: clamp(26px, 5vw, 52px);
+        box-shadow: var(--shadow);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+
+      h1 {
+        max-width: 900px;
+        font-size: clamp(2.2rem, 5vw, 4.4rem);
+      }
+
+      .lead {
+        max-width: 760px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.7;
+      }
+
+      .note {
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .gallery {
+        display: grid;
+        gap: 28px;
+        margin-top: 30px;
+      }
+
+      .shot {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--paper);
+        padding: clamp(18px, 3vw, 30px);
+        box-shadow: var(--shadow);
+      }
+
+      .shot-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .shot-meta p {
+        max-width: 700px;
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        border-radius: 999px;
+        background: var(--teal-soft);
+        color: var(--teal-strong);
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 800;
+      }
+
+      .canvas {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 16 / 10;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: linear-gradient(135deg, #f8fafc, #eef7f4);
+      }
+
+      .canvas.dark {
+        background: linear-gradient(135deg, #17191c, #223532);
+        color: #f3f4f6;
+        --paper: #24282d;
+        --ink: #f3f4f6;
+        --muted: #aeb6c2;
+        --line: #3a4149;
+        --teal-soft: #173b37;
+        --teal-strong: #8fe7df;
+      }
+
+      .overlay {
+        position: absolute;
+        left: clamp(24px, 4vw, 54px);
+        top: clamp(24px, 4vw, 52px);
+        z-index: 3;
+        max-width: 540px;
+        color: var(--ink);
+      }
+
+      .canvas.dark .overlay {
+        color: #ffffff;
+      }
+
+      .overlay small {
+        display: inline-flex;
+        margin-bottom: 10px;
+        border-radius: 999px;
+        background: var(--teal);
+        color: #ffffff;
+        padding: 5px 10px;
+        font-weight: 800;
+      }
+
+      .overlay h3 {
+        max-width: 620px;
+        font-size: clamp(1.65rem, 4vw, 3.4rem);
+        text-wrap: balance;
+      }
+
+      .browser {
+        position: absolute;
+        inset: 110px 34px 34px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        box-shadow: 0 18px 50px rgba(15, 23, 42, 0.14);
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        height: 48px;
+        border-bottom: 1px solid var(--line);
+        padding: 0 16px;
+      }
+
+      .dots {
+        display: flex;
+        gap: 7px;
+      }
+
+      .dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #d0d5dd;
+      }
+
+      .url {
+        flex: 1;
+        max-width: 470px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #667085;
+        padding: 7px 14px;
+        font-size: 0.82rem;
+      }
+
+      .app {
+        padding: 20px;
+      }
+
+      .app-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .app-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 900;
+      }
+
+      .app-title img {
+        width: 30px;
+        height: 30px;
+      }
+
+      .search {
+        width: min(40%, 330px);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--muted);
+        padding: 10px 12px;
+        font-size: 0.86rem;
+      }
+
+      .groups {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+
+      .group {
+        min-height: 124px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fbfcfd;
+        padding: 14px;
+      }
+
+      .canvas.dark .group,
+      .canvas.dark .panel,
+      .canvas.dark .modal,
+      .canvas.dark .command {
+        background: #24282d;
+      }
+
+      .group h4,
+      .panel h4 {
+        margin: 0 0 10px;
+        font-size: 0.95rem;
+      }
+
+      .link-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 8px 0;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #344054;
+        padding: 8px 10px;
+        font-size: 0.82rem;
+      }
+
+      .canvas.dark .link-row {
+        background: #1d2126;
+        color: #d0d5dd;
+      }
+
+      .pill {
+        display: inline-flex;
+        border-radius: 999px;
+        background: var(--teal-soft);
+        color: var(--teal-strong);
+        padding: 4px 8px;
+        font-size: 0.74rem;
+        font-weight: 800;
+      }
+
+      .modal {
+        position: absolute;
+        left: 50%;
+        top: 52%;
+        width: min(70%, 690px);
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        padding: 22px;
+        box-shadow: 0 22px 70px rgba(15, 23, 42, 0.22);
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fbfcfd;
+        padding: 14px;
+      }
+
+      .panel p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+      .formats,
+      .restore-list,
+      .privacy-grid,
+      .duplicate-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .format,
+      .restore,
+      .privacy-item,
+      .duplicate {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fbfcfd;
+        padding: 12px;
+      }
+
+      .canvas.dark .format,
+      .canvas.dark .restore,
+      .canvas.dark .privacy-item,
+      .canvas.dark .duplicate {
+        background: #1d2126;
+      }
+
+      .command {
+        position: absolute;
+        left: 50%;
+        top: 53%;
+        width: min(72%, 720px);
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--paper);
+        padding: 14px;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+      }
+
+      .command-input {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--muted);
+        padding: 13px 14px;
+        font-weight: 700;
+      }
+
+      .command-item {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        border-radius: 10px;
+        padding: 11px 12px;
+      }
+
+      .command-item.active {
+        background: var(--teal-soft);
+        color: var(--teal-strong);
+        font-weight: 900;
+      }
+
+      .warning {
+        color: var(--amber);
+        font-weight: 800;
+      }
+
+      .danger {
+        color: var(--red);
+        font-weight: 800;
+      }
+
+      footer {
+        margin-top: 32px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      @media (max-width: 860px) {
+        .canvas {
+          aspect-ratio: auto;
+          min-height: 760px;
+        }
+
+        .browser {
+          inset: 150px 16px 20px;
+        }
+
+        .groups,
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        .search {
+          width: 100%;
+        }
+
+        .overlay {
+          left: 22px;
+          right: 22px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Screenshot staging page only; this is not extension runtime UI. -->
+    <div class="page">
+      <header>
+        <a class="brand" href="index.html" aria-label="Aura Start home">
+          <img src="logo.png" alt="" width="40" height="40">
+          <span>Aura Start</span>
+        </a>
+        <nav aria-label="Screenshot resources">
+          <a href="SCREENSHOTS.md">Screenshot plan</a>
+          <a href="SCREENSHOT_DEMO_DATA.md">Demo data</a>
+          <a href="STORE_LISTING.md">Store listing</a>
+          <a href="privacy-policy.html">Privacy Policy</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="title">
+          <h1 id="title">Aura Start screenshot staging gallery</h1>
+          <p class="lead">
+            Static promotional mockups for Chrome Web Store and GitHub assets. Use real extension UI for final product screenshots whenever possible; use this page for clean overlays and layout direction.
+          </p>
+          <p class="note">No external scripts, analytics, tracking, or remote assets are used on this page.</p>
+        </section>
+
+        <div class="gallery">
+          <section class="shot" aria-labelledby="shot-main">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">01 Main New Tab</span>
+                <h2 id="shot-main">Clean grouped links</h2>
+                <p>Core product screenshot for the Chrome Web Store carousel.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Aura Start</small>
+                <h3>Clean groups of links on every new tab</h3>
+              </div>
+              <div class="browser">
+                <div class="bar">
+                  <div class="dots"><span></span><span></span><span></span></div>
+                  <div class="url">chrome://newtab</div>
+                </div>
+                <div class="app">
+                  <div class="app-head">
+                    <div class="app-title"><img src="logo.png" alt=""> Aura Start</div>
+                    <div class="search">Press / to search</div>
+                  </div>
+                  <div class="groups">
+                    <div class="group">
+                      <h4>Work</h4>
+                      <div class="link-row">Project Dashboard <span class="pill">GitHub</span></div>
+                      <div class="link-row">Calendar</div>
+                      <div class="link-row">Notes</div>
+                    </div>
+                    <div class="group">
+                      <h4>Development</h4>
+                      <div class="link-row">Chrome Developers</div>
+                      <div class="link-row">MDN Web Docs</div>
+                      <div class="link-row">web.dev</div>
+                    </div>
+                    <div class="group">
+                      <h4>Research</h4>
+                      <div class="link-row">Wikipedia</div>
+                      <div class="link-row">Hacker News</div>
+                      <div class="link-row">Documentation</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-import">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">02 Migration</span>
+                <h2 id="shot-import">Import from A Fine Start</h2>
+                <p>Use only factual compatibility wording and include the independence note in listing copy.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Migration</small>
+                <h3>Import from A Fine Start in seconds</h3>
+              </div>
+              <div class="modal">
+                <h4>Import from A Fine Start</h4>
+                <div class="steps">
+                  <div class="panel">
+                    <h4>1. Paste export code</h4>
+                    <p>Use your own export code from A Fine Start settings.</p>
+                  </div>
+                  <div class="panel">
+                    <h4>2. Review preview</h4>
+                    <p>4 groups, 18 links, 1 possible duplicate, 0 unsafe URLs.</p>
+                  </div>
+                  <div class="panel">
+                    <h4>3. Choose mode</h4>
+                    <p><span class="pill">Merge</span> or Replace with restore point.</p>
+                  </div>
+                  <div class="panel">
+                    <h4>4. Import</h4>
+                    <p>Apply only after validation succeeds.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-export">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">03 Export / Backup</span>
+                <h2 id="shot-export">Data ownership</h2>
+                <p>Show local export formats without implying server upload.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Export / Backup</small>
+                <h3>Export anytime: JSON, HTML, Markdown, CSV</h3>
+              </div>
+              <div class="modal">
+                <h4>Export all data</h4>
+                <div class="formats">
+                  <div class="format"><strong>Full Backup JSON</strong><span>restore/migration</span></div>
+                  <div class="format"><strong>Browser Bookmarks HTML</strong><span>browser import</span></div>
+                  <div class="format"><strong>Markdown</strong><span>readable archive</span></div>
+                  <div class="format"><strong>CSV</strong><span>spreadsheet format</span></div>
+                  <div class="format"><strong>A Fine Start-compatible code</strong><span>basic grouped links</span></div>
+                </div>
+                <p class="note">Exports are created locally in your browser.</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-restore">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">04 Restore Points</span>
+                <h2 id="shot-restore">Safer changes</h2>
+                <p>Make destructive-action protection visible.</p>
+              </div>
+            </div>
+            <div class="canvas dark">
+              <div class="overlay">
+                <small>Recovery</small>
+                <h3>Restore points before destructive changes</h3>
+              </div>
+              <div class="modal">
+                <h4>Restore Points</h4>
+                <div class="restore-list">
+                  <div class="restore"><strong>Before import replace</strong><span>6 groups / 24 links</span></div>
+                  <div class="restore"><strong>Before duplicate cleanup</strong><span>6 groups / 27 links</span></div>
+                  <div class="restore"><strong>Before Google Drive restore</strong><span>5 groups / 21 links</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-privacy">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">05 Privacy Promise</span>
+                <h2 id="shot-privacy">Trust and privacy</h2>
+                <p>Use claims that match the manifest and privacy policy.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Privacy Promise</small>
+                <h3>No account. No analytics. No tracking.</h3>
+              </div>
+              <div class="modal">
+                <h4>Privacy Promise</h4>
+                <div class="privacy-grid">
+                  <div class="privacy-item"><strong>No backend</strong><span>local-first storage</span></div>
+                  <div class="privacy-item"><strong>No ads</strong><span>no profiling</span></div>
+                  <div class="privacy-item"><strong>No browser history permission</strong><span>least privilege</span></div>
+                  <div class="privacy-item"><strong>Optional Drive backup</strong><span>appDataFolder only</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-command">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">06 Command Palette</span>
+                <h2 id="shot-command">Keyboard-first workflow</h2>
+                <p>Feature visible without adding fake actions.</p>
+              </div>
+            </div>
+            <div class="canvas dark">
+              <div class="overlay">
+                <small>Power user</small>
+                <h3>Press Ctrl+K and move faster</h3>
+              </div>
+              <div class="command" role="presentation">
+                <div class="command-input">Type a command</div>
+                <div class="command-item active"><span>Search links</span><span>Enter</span></div>
+                <div class="command-item"><span>Create new link</span><span>N</span></div>
+                <div class="command-item"><span>Export backup</span><span></span></div>
+                <div class="command-item"><span>Open Restore Points</span><span></span></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-duplicates">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">07 Duplicate Finder</span>
+                <h2 id="shot-duplicates">Read-only scan first</h2>
+                <p>Make user-confirmed deletion clear.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Tools</small>
+                <h3>Find duplicate links before they become a mess</h3>
+              </div>
+              <div class="modal">
+                <h4>Duplicate Finder</h4>
+                <div class="duplicate-list">
+                  <div class="duplicate"><strong>Exact duplicates</strong><span>github.com, github.com/</span></div>
+                  <div class="duplicate"><strong>Possible duplicates</strong><span>http/https variants</span></div>
+                  <div class="duplicate"><strong>Delete selected?</strong><span class="warning">restore point first</span></div>
+                  <div class="duplicate"><strong>All copies selected</strong><span class="danger">requires warning</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="shot" aria-labelledby="shot-drive">
+            <div class="shot-meta">
+              <div>
+                <span class="badge">08 Optional Backup</span>
+                <h2 id="shot-drive">Google Drive appDataFolder</h2>
+                <p>Explain optional sync without implying full Drive access.</p>
+              </div>
+            </div>
+            <div class="canvas">
+              <div class="overlay">
+                <small>Optional sync</small>
+                <h3>Optional backup through Google Drive appDataFolder</h3>
+              </div>
+              <div class="modal">
+                <h4>Google Drive sync</h4>
+                <div class="privacy-grid">
+                  <div class="privacy-item"><strong>Off by default</strong><span>connect only after user action</span></div>
+                  <div class="privacy-item"><strong>drive.appdata scope</strong><span>hidden app data file</span></div>
+                  <div class="privacy-item"><strong>aura-start-sync.json</strong><span>Aura Start data only</span></div>
+                  <div class="privacy-item"><strong>No full Drive access</strong><span>no visible Drive files</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+
+      <footer>
+        <p>
+          For final Chrome Web Store assets, verify every screenshot against the current local build and follow
+          <a href="SCREENSHOTS.md">docs/SCREENSHOTS.md</a>.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

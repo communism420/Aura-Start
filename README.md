@@ -179,6 +179,13 @@ Aura Start has no backend, no analytics, no tracking scripts, no required sync, 
 
 - [Aura Start vs A Fine Start](./docs/AURA_START_VS_A_FINE_START.md)
 - [Migrate from A Fine Start](./docs/MIGRATE_FROM_A_FINE_START.md)
+- [Chrome Web Store listing draft](./docs/STORE_LISTING.md)
+- [Screenshot plan](./docs/SCREENSHOTS.md)
+- [Screenshot demo data](./docs/SCREENSHOT_DEMO_DATA.md)
+- [Screenshot staging gallery](./docs/screenshot-gallery.html)
+- [Release checklist](./docs/RELEASE_CHECKLIST.md)
+- [Promotion plan](./docs/PROMOTION_PLAN.md)
+- [GitHub release draft](./docs/GITHUB_RELEASE_DRAFT.md)
 - [GitHub Pages landing page](./docs/index.html)
 - [GitHub Pages privacy policy page](./docs/privacy-policy.html)
 - [Changelog](./CHANGELOG.md)

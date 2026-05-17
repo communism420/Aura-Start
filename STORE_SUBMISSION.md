@@ -29,6 +29,19 @@ npm install
 npm run build:store
 ```
 
+## Prepared Release Materials
+
+- Store listing draft: `docs/STORE_LISTING.md`
+- Screenshot plan: `docs/SCREENSHOTS.md`
+- Screenshot demo data: `docs/SCREENSHOT_DEMO_DATA.md`
+- Screenshot staging gallery: `docs/screenshot-gallery.html`
+- Store asset checklist: `docs/assets/store/README.md`
+- Release checklist: `docs/RELEASE_CHECKLIST.md`
+- Promotion plan: `docs/PROMOTION_PLAN.md`
+- GitHub release draft: `docs/GITHUB_RELEASE_DRAFT.md`
+
+These files are preparation material only. They do not publish Aura Start to the Chrome Web Store and should be checked against the current local build before submission.
+
 ## Permission Justification
 
 Requested permissions:

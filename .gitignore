@@ -4,3 +4,4 @@ dist/
 Chrome Submit/
 *.local
 *.log
+release-artifacts/
