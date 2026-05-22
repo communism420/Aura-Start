@@ -247,7 +247,7 @@ select.field {
   column-gap: 1rem;
   row-gap: 0.15rem;
   min-height: 105px;
-  padding-block: calc(2rem + 10px) 2rem;
+  padding-block: calc(0.5rem + 10px) 3.5rem;
   padding-inline-end: calc(12px - 0.5rem);
 }
 
