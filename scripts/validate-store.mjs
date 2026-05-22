@@ -22,9 +22,13 @@ const allowedHostPermissions = new Set([
   "https://www.googleapis.com/*"
 ]);
 const expectedLocaleDirs = new Set(["de", "en", "es", "fr", "pt_BR", "ru", "uk"]);
+const oauthClientIdPattern = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
 const exampleOAuthClientIds = new Set([
   "123-example.apps.googleusercontent.com",
   "1234567890-abcdef.apps.googleusercontent.com"
+]);
+const forbiddenWebOAuthClientIds = new Set([
+  "391557451047-rdtft86g9hcbst7mcs38h6t2jgkvrnm3.apps.googleusercontent.com"
 ]);
 const hardFailures = [];
 const warnings = [];
@@ -58,6 +62,16 @@ function fail(message) {
 
 function warn(message) {
   warnings.push(message);
+}
+
+function looksLikeExampleOAuthClientId(clientId) {
+  const normalized = String(clientId).toLowerCase();
+  return exampleOAuthClientIds.has(normalized)
+    || normalized.includes("your_google_oauth_client_id")
+    || normalized.includes("your-real-client-id")
+    || normalized.includes("paste_real_client_id_here")
+    || normalized.includes("placeholder")
+    || normalized.includes("example");
 }
 
 for (const file of requiredFiles) {
@@ -124,13 +138,14 @@ if (await exists(manifestPath)) {
     fail("Do not request bookmarks, history, or tabs permissions for this local-first bookmark database.");
   }
 
+  const oauthClientId = typeof manifest.oauth2?.client_id === "string" ? manifest.oauth2.client_id.trim() : "";
   const oauthScopes = Array.isArray(manifest.oauth2?.scopes) ? manifest.oauth2.scopes : [];
-  if (!manifest.oauth2?.client_id) {
+  if (!oauthClientId) {
     fail("oauth2.client_id is required for optional Google Drive sync.");
-  } else if (manifest.oauth2.client_id.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {
-    warn("oauth2.client_id still contains the source placeholder. Set AURA_GOOGLE_OAUTH_CLIENT_ID before npm run build:store for a publishable package.");
-  } else if (exampleOAuthClientIds.has(String(manifest.oauth2.client_id).toLowerCase())) {
-    fail("oauth2.client_id is an example value. Set AURA_GOOGLE_OAUTH_CLIENT_ID to a real Google OAuth Client ID before building the store package.");
+  } else if (oauthClientId.includes("YOUR_GOOGLE_OAUTH_CLIENT_ID") || looksLikeExampleOAuthClientId(oauthClientId)) {
+    fail("oauth2.client_id is a placeholder, example, or demo value. Set AURA_GOOGLE_OAUTH_CLIENT_ID to a real Chrome Extension OAuth Client ID before building the store package.");
+  } else if (!oauthClientIdPattern.test(oauthClientId)) {
+    fail("oauth2.client_id must be a Google OAuth Client ID ending with .apps.googleusercontent.com.");
   }
   if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
     fail("Google Drive sync must request only the drive.appdata OAuth scope.");
@@ -182,9 +197,27 @@ const benignUrlFragments = [
 for (const file of codeFiles) {
   const text = await readFile(file, "utf8");
   const displayPath = relative(root, file);
+  const isManifest = displayPath.replaceAll("\\", "/") === "dist/manifest.json";
   for (const { pattern, label } of remoteCodePatterns) {
     if (pattern.test(text)) {
       fail(`${displayPath} contains ${label}.`);
+    }
+  }
+
+  if (!isManifest) {
+    for (const forbiddenClientId of forbiddenWebOAuthClientIds) {
+      if (text.includes(forbiddenClientId)) {
+        fail(`${displayPath} contains forbidden Web OAuth Client ID ${forbiddenClientId}. Store builds must use manifest oauth2 with chrome.identity.getAuthToken.`);
+      }
+    }
+
+    const bundledOAuthClientIds = text.match(/\b[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com\b/gi) ?? [];
+    if (bundledOAuthClientIds.length) {
+      fail(`${displayPath} contains bundled OAuth Client ID(s): ${Array.from(new Set(bundledOAuthClientIds)).join(", ")}. Store runtime code must not embed a Web OAuth client that can bypass manifest oauth2.`);
+    }
+
+    if (text.includes("accounts.google.com/o/oauth2/v2/auth") && bundledOAuthClientIds.length) {
+      fail(`${displayPath} contains manual Google OAuth URL construction with a bundled OAuth Client ID.`);
     }
   }
 

@@ -21,4 +21,4 @@ Codex cannot publish this extension for you. The final Chrome Web Store upload m
 17. Complete the installed-extension test matrix in `docs/INSTALLED_EXTENSION_TEST_MATRIX.md` against the exact ZIP build.
 18. Submit for review manually.
 
-Before upload, verify that the ZIP was built with the real `AURA_GOOGLE_OAUTH_CLIENT_ID` for the release extension. If the optional Web OAuth fallback is used, also verify `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`. Confirm the final ZIP requests only `https://www.googleapis.com/auth/drive.appdata`, not full Drive or `drive.file`.
+Before upload, verify that the ZIP was built with the real Chrome Extension `AURA_GOOGLE_OAUTH_CLIENT_ID` for the published extension ID. Do not use `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` for the Chrome Web Store ZIP. Confirm the final ZIP requests only `https://www.googleapis.com/auth/drive.appdata`, not full Drive or `drive.file`, and does not contain a bundled Web OAuth client ID.

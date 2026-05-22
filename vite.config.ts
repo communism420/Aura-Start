@@ -52,7 +52,8 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const googleOAuthClientId = env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
-  const googleWebOAuthClientId = env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+  const webOAuthFallbackEnabled = mode === "development" && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK === "true";
+  const googleWebOAuthClientId = webOAuthFallbackEnabled ? env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "" : "";
 
   if (googleWebOAuthClientId) {
     if (!OAUTH_CLIENT_ID_PATTERN.test(googleWebOAuthClientId)) {

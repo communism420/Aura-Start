@@ -1,0 +1,125 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+import { describe, expect, it } from "vitest";
+
+const VALID_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
+const FORBIDDEN_WEB_CLIENT_ID = "391557451047-rdtft86g9hcbst7mcs38h6t2jgkvrnm3.apps.googleusercontent.com";
+const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const VALID_MANIFEST = {
+  manifest_version: 3,
+  name: "__MSG_extensionName__",
+  description: "__MSG_extensionDescription__",
+  version: "1.2.0",
+  default_locale: "en",
+  chrome_url_overrides: { newtab: "newtab.html" },
+  permissions: ["storage", "identity"],
+  host_permissions: ["https://www.googleapis.com/*"],
+  oauth2: {
+    client_id: VALID_CLIENT_ID,
+    scopes: [DRIVE_APPDATA_SCOPE]
+  },
+  content_security_policy: {
+    extension_pages: "script-src 'self'; object-src 'none'; base-uri 'none'"
+  }
+};
+
+async function writeFixtureDist(manifest: unknown, js = "console.log('ok');"): Promise<string> {
+  const root = await mkdtemp(join(tmpdir(), "aura-start-store-validation-"));
+  const dist = join(root, "dist");
+  const requiredFiles = [
+    "manifest.json",
+    "newtab.html",
+    "options.html",
+    "popup.html",
+    "logo.png",
+    "icons/icon-16.png",
+    "icons/icon-32.png",
+    "icons/icon-48.png",
+    "icons/icon-128.png",
+    "_locales/en/messages.json",
+    "_locales/de/messages.json",
+    "_locales/es/messages.json",
+    "_locales/fr/messages.json",
+    "_locales/pt_BR/messages.json",
+    "_locales/ru/messages.json",
+    "_locales/uk/messages.json",
+    "assets/app.js"
+  ];
+
+  await Promise.all(requiredFiles.map((file) => mkdir(join(dist, file, ".."), { recursive: true })));
+  await writeFile(join(dist, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+  await Promise.all(
+    requiredFiles
+      .filter((file) => file !== "manifest.json" && file !== "assets/app.js")
+      .map((file) => writeFile(join(dist, file), file.endsWith(".json") ? "{}" : "", "utf8"))
+  );
+  await writeFile(join(dist, "assets/app.js"), js, "utf8");
+  return root;
+}
+
+async function runValidateStore(manifest: unknown, js?: string) {
+  const root = await writeFixtureDist(manifest, js);
+  try {
+    return spawnSync(process.execPath, [join(process.cwd(), "scripts/validate-store.mjs")], {
+      cwd: root,
+      encoding: "utf8"
+    });
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}
+
+describe("Chrome Web Store validation OAuth guards", () => {
+  it("passes a valid least-privilege OAuth manifest", async () => {
+    const result = await runValidateStore(VALID_MANIFEST);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
+  });
+
+  it("fails on placeholder OAuth client IDs", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      oauth2: { ...VALID_MANIFEST.oauth2, client_id: "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com" }
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("placeholder");
+  });
+
+  it("fails on OAuth client IDs without the Google suffix", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      oauth2: { ...VALID_MANIFEST.oauth2, client_id: "not-a-google-client" }
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(".apps.googleusercontent.com");
+  });
+
+  it("fails unless the only OAuth scope is drive.appdata", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      oauth2: {
+        ...VALID_MANIFEST.oauth2,
+        scopes: [DRIVE_APPDATA_SCOPE, "https://www.googleapis.com/auth/drive.file"]
+      }
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("drive.appdata");
+    expect(result.stderr).toContain("drive.file");
+  });
+
+  it("fails when a Web OAuth client ID is bundled into runtime code", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const webClient = "${FORBIDDEN_WEB_CLIENT_ID}";`
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("forbidden Web OAuth Client ID");
+  });
+});

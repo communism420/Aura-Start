@@ -13,7 +13,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Run `npm run build`.
 - Run `npm run build:store`.
 - Set a real `AURA_GOOGLE_OAUTH_CLIENT_ID` for release builds.
-- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is required.
+- Do not set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` for Chrome Web Store packages; store builds must use manifest OAuth through `chrome.identity.getAuthToken`.
 - Inspect `dist/manifest.json`.
 - Confirm `manifest_version` is `3`.
 - Confirm `background.service_worker` and `commands` in `dist/manifest.json` match `public/manifest.json`.
@@ -44,7 +44,7 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Create a Chrome Extension OAuth client for the final published extension ID.
 - Enable the Google Drive API for the Google Cloud project used by Aura Start.
 - Set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store`.
-- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is required.
+- Leave `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` unset for Chrome Web Store packages.
 - Inspect `dist/manifest.json` and the final ZIP manifest after build.
 - Confirm the OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
 - Confirm there is no full Drive scope and no `drive.file` scope.

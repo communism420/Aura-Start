@@ -60,7 +60,7 @@ Requested OAuth scope:
 
 - `https://www.googleapis.com/auth/drive.appdata`: lets Aura Start read and write only its own hidden Google Drive app data.
 
-Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive. If a Chromium-based browser cannot use that Chrome token flow, Aura Start can use `chrome.identity.launchWebAuthFlow` with a separately configured Web Application OAuth client and the extension redirect URI `https://pdhhhnmcammpmmklkbbfbmnijimgjiabi.chromiumapp.org/oauth2`. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. If the Web OAuth fallback is needed, also set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`. Example IDs are rejected by validation; placeholder IDs produce a warning and are not publishable because Google returns `invalid_client` for them. This does not add host permissions and does not grant access to normal Google Drive files.
+Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive. The Chrome Web Store build must use the Chrome Extension OAuth client configured in `manifest.oauth2`; it must not use a manual `launchWebAuthFlow` URL as the primary auth path. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. Store builds intentionally ignore `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID`, and validation fails if an active Web OAuth client ID is bundled into runtime code. Example and placeholder IDs are rejected by validation because Google returns `invalid_client` for them. This does not add host permissions and does not grant access to normal Google Drive files.
 
 The Google OAuth consent is used only to read, create, update, or delete Aura Start's hidden `aura-start-sync.json` app data file. Aura Start does not use Google authorization for analytics, tracking, advertising, account profiling, or access to visible Google Drive files.
 
@@ -134,7 +134,7 @@ The final ZIP must include `manifest.json` at archive root, include `background.
 ## Manual Release Steps
 
 - Publish GitHub Pages from the `docs` folder and use the resulting `docs/privacy-policy.html` URL as the Chrome Web Store privacy policy URL.
-- Build the store package with a real `AURA_GOOGLE_OAUTH_CLIENT_ID`; set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is needed.
+- Build the store package with a real Chrome Extension `AURA_GOOGLE_OAUTH_CLIENT_ID` for the final published extension ID. Do not use `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` for Chrome Web Store packages.
 - Verify the Google Cloud project has Google Drive API enabled and a Chrome Extension OAuth client for the final extension ID.
 - Inspect `dist/manifest.json` and the ZIP manifest after build; the only OAuth scope must be `https://www.googleapis.com/auth/drive.appdata`.
 - Capture fresh Chrome Web Store screenshots from the current local build.

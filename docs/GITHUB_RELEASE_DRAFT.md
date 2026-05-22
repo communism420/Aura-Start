@@ -62,7 +62,7 @@ For release builds with Google Drive sync, build with a real Chrome Extension OA
 AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store
 ```
 
-Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` too if the Web OAuth fallback is needed. Do not publish a package containing placeholder OAuth values.
+Do not set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` for Chrome Web Store packages. The store build should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. Do not publish a package containing placeholder OAuth values or a bundled Web OAuth client ID.
 
 ## Fresh Chrome Web Store ZIP
 
