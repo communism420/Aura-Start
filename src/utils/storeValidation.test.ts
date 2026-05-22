@@ -5,7 +5,8 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const VALID_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
-const FORBIDDEN_WEB_CLIENT_ID = "391557451047-rdtft86g9hcbst7mcs38h6t2jgkvrnm3.apps.googleusercontent.com";
+const BUNDLED_WEB_CLIENT_ID = "391557451047-rdtft86g9hcbst7mcs38h6t2jgkvrnm3.apps.googleusercontent.com";
+const VALID_WEB_CLIENT_ID = "391557451047-safewebfallbackclient.apps.googleusercontent.com";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const VALID_MANIFEST = {
   manifest_version: 3,
@@ -59,12 +60,13 @@ async function writeFixtureDist(manifest: unknown, js = "console.log('ok');"): P
   return root;
 }
 
-async function runValidateStore(manifest: unknown, js?: string) {
+async function runValidateStore(manifest: unknown, js?: string, env?: NodeJS.ProcessEnv) {
   const root = await writeFixtureDist(manifest, js);
   try {
     return spawnSync(process.execPath, [join(process.cwd(), "scripts/validate-store.mjs")], {
       cwd: root,
-      encoding: "utf8"
+      encoding: "utf8",
+      env: { ...process.env, ...env }
     });
   } finally {
     await rm(root, { force: true, recursive: true });
@@ -113,13 +115,27 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stderr).toContain("drive.file");
   });
 
-  it("fails when a Web OAuth client ID is bundled into runtime code", async () => {
+  it("fails when a Web OAuth client ID is bundled into runtime code without explicit fallback", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
-      `const webClient = "${FORBIDDEN_WEB_CLIENT_ID}";`
+      `const webClient = "${BUNDLED_WEB_CLIENT_ID}";`
     );
 
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("forbidden Web OAuth Client ID");
+    expect(result.stderr).toContain("unexpected bundled OAuth Client ID");
+  });
+
+  it("allows an explicitly configured Web OAuth fallback client", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const webClient = "${VALID_WEB_CLIENT_ID}"; const url = "https://accounts.google.com/o/oauth2/v2/auth";`,
+      {
+        AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK: "true",
+        AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: VALID_WEB_CLIENT_ID
+      }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 });

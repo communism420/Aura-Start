@@ -33,7 +33,8 @@
 <li>Run <code>npm run build</code>.</li>
 <li>Run <code>npm run build:store</code>.</li>
 <li>Set a real <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> for release builds.</li>
-<li>Do not set <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> for Chrome Web Store packages; store builds must use manifest OAuth through <code>chrome.identity.getAuthToken</code>.</li>
+<li>Store builds must use manifest OAuth through <code>chrome.identity.getAuthToken</code> in Google Chrome.</li>
+<li>Set <code>AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true</code> and <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> only when intentionally testing Brave/Chromium fallback support with a Web OAuth client whose authorized redirect URI is <code>https://&lt;extension-id&gt;.chromiumapp.org/oauth2</code>.</li>
 <li>Inspect <code>dist/manifest.json</code>.</li>
 <li>Confirm <code>manifest_version</code> is <code>3</code>.</li>
 <li>Confirm <code>background.service_worker</code> and <code>commands</code> in <code>dist/manifest.json</code> match <code>public/manifest.json</code>.</li>
@@ -62,7 +63,8 @@
 <li>Create a Chrome Extension OAuth client for the final published extension ID.</li>
 <li>Enable the Google Drive API for the Google Cloud project used by Aura Start.</li>
 <li>Set <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> before <code>npm run build:store</code>.</li>
-<li>Leave <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> unset for Chrome Web Store packages.</li>
+<li>Leave <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> unset unless the release intentionally includes Brave/Chromium Web OAuth fallback support.</li>
+<li>If Web OAuth fallback is enabled, confirm the Web OAuth client has the final extension redirect URI <code>https://&lt;extension-id&gt;.chromiumapp.org/oauth2</code> and that Google Chrome still uses manifest OAuth first.</li>
 <li>Inspect <code>dist/manifest.json</code> and the final ZIP manifest after build.</li>
 <li>Confirm the OAuth scope is only <code>https://www.googleapis.com/auth/drive.appdata</code>.</li>
 <li>Confirm there is no full Drive scope and no <code>drive.file</code> scope.</li>

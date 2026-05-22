@@ -51,6 +51,19 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
+  it("allows explicit Web OAuth fallback when chrome.identity is known to be unsupported", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        preferWebOAuth: true,
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("web_oauth");
+  });
+
   it("rejects manifest OAuth with a placeholder client or wrong scopes", () => {
     expect(
       selectGoogleDriveAuthFlow({

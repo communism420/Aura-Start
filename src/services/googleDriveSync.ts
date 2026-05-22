@@ -36,6 +36,7 @@ export type GoogleDriveAuthFlowInput = {
   hasGetAuthToken: boolean;
   manifestClientId?: string;
   manifestScopes?: string[];
+  preferWebOAuth?: boolean;
   webOAuthClientId?: string;
 };
 
@@ -158,6 +159,10 @@ function hasExactDriveAppDataScope(scopes: string[] | undefined): boolean {
 }
 
 export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): GoogleDriveAuthFlow {
+  if (input.preferWebOAuth) {
+    return isUsableOAuthClientId(input.webOAuthClientId) ? "web_oauth" : "unavailable";
+  }
+
   if (input.hasIdentityApi && input.hasGetAuthToken) {
     return isUsableOAuthClientId(input.manifestClientId) && hasExactDriveAppDataScope(input.manifestScopes)
       ? "chrome_identity"
@@ -165,6 +170,34 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
   }
 
   return isUsableOAuthClientId(input.webOAuthClientId) ? "web_oauth" : "unavailable";
+}
+
+type NavigatorWithBrave = Navigator & {
+  brave?: {
+    isBrave?: () => Promise<boolean>;
+  };
+};
+
+async function isBraveBrowser(): Promise<boolean> {
+  const brave = (globalThis.navigator as NavigatorWithBrave | undefined)?.brave;
+  if (typeof brave?.isBrave !== "function") {
+    return false;
+  }
+
+  return await brave.isBrave().catch(() => false);
+}
+
+async function shouldPreferWebOAuthFallback(interactive: boolean): Promise<boolean> {
+  if (!interactive) {
+    return false;
+  }
+
+  if (await isBraveBrowser()) {
+    return true;
+  }
+
+  const userAgent = globalThis.navigator?.userAgent ?? "";
+  return /\bEdg\//.test(userAgent) || /\bOPR\//.test(userAgent);
 }
 
 function oauthClientConfigurationError(clientId: string | undefined): string {
@@ -286,6 +319,11 @@ async function getCachedWebAuthToken(): Promise<string | undefined> {
 }
 
 async function getNonInteractiveCachedToken(): Promise<string | undefined> {
+  const cachedWebToken = await getCachedWebAuthToken();
+  if (cachedWebToken) {
+    return cachedWebToken;
+  }
+
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const flow = selectGoogleDriveAuthFlow({
@@ -333,6 +371,14 @@ function authResultToken(value: unknown): string | undefined {
 function isBrowserSigninDisabledError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   return message.includes("browser signin") || message.includes("browser sign-in");
+}
+
+function isChromeIdentityUnsupportedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return isBrowserSigninDisabledError(error)
+    || message.includes("custom uri scheme")
+    || message.includes("not supported on chrome apps")
+    || message.includes("oauth2 request failed: invalid_request");
 }
 
 async function getChromeAuthToken(interactive: boolean): Promise<string> {
@@ -586,21 +632,29 @@ function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
 export async function getAuthToken(interactive: boolean): Promise<string> {
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
+  const webOAuthClientId = configuredWebOAuthClientId();
+  const preferWebOAuth = await shouldPreferWebOAuthFallback(interactive);
   const flow = selectGoogleDriveAuthFlow({
     hasIdentityApi: Boolean(identity),
     hasGetAuthToken: typeof identity?.getAuthToken === "function",
     manifestClientId: manifestConfig.clientId,
     manifestScopes: manifestConfig.scopes,
-    webOAuthClientId: configuredWebOAuthClientId()
+    preferWebOAuth,
+    webOAuthClientId
   });
 
   if (flow === "chrome_identity") {
     console.debug?.("Aura Start Google Drive sync: using chrome.identity.getAuthToken.");
     return await getChromeAuthToken(interactive).catch(async (error) => {
-      if (isBrowserSigninDisabledError(error)) {
+      if (isChromeIdentityUnsupportedError(error) && webOAuthClientId) {
+        console.debug?.("Aura Start Google Drive sync: chrome.identity.getAuthToken is unsupported here; using Web OAuth fallback.");
+        return await launchGoogleWebAuthFlow(interactive);
+      }
+
+      if (isChromeIdentityUnsupportedError(error)) {
         throw new GoogleDriveSyncError(
-          "auth_cancelled",
-          "Google Drive sync requires Chrome's built-in Google sign-in through chrome.identity. Sign in to Chrome with a Google account, or test this Chrome Web Store build in Google Chrome."
+          "identity_unavailable",
+          "This browser rejected Chrome's built-in Google sign-in for Drive sync. Use Google Chrome, or rebuild Aura Start with the explicit Web OAuth fallback enabled for Chromium browsers that do not support chrome.identity.getAuthToken."
         );
       }
 
@@ -611,6 +665,13 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   if (flow === "web_oauth") {
     console.debug?.("Aura Start Google Drive sync: using development Web OAuth fallback.");
     return await launchGoogleWebAuthFlow(interactive);
+  }
+
+  if (preferWebOAuth && !webOAuthClientId) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "This browser does not support Chrome's built-in Google sign-in for Drive sync. Rebuild Aura Start with AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true and a Web OAuth client authorized for chrome.identity.getRedirectURL('oauth2'), or use Google Chrome."
+    );
   }
 
   throw new GoogleDriveSyncError("identity_unavailable", manifestOAuthConfigurationError(manifestConfig));

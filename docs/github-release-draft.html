@@ -62,7 +62,7 @@ npm run build</code></pre>
 <h2>Google Drive OAuth Setup</h2>
 <p>For release builds with Google Drive sync, build with a real Chrome Extension OAuth client ID:</p>
 <pre><code class="language-bash">AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store</code></pre>
-<p>Do not set <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> for Chrome Web Store packages. The store build should use the Chrome Extension OAuth client in <code>manifest.oauth2</code> through <code>chrome.identity.getAuthToken</code>. Do not publish a package containing placeholder OAuth values or a bundled Web OAuth client ID.</p>
+<p>Google Chrome should use the Chrome Extension OAuth client in <code>manifest.oauth2</code> through <code>chrome.identity.getAuthToken</code>. If Brave/Chromium fallback support is included, set <code>AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true</code> with a real <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> whose authorized redirect URI is <code>https://&lt;extension-id&gt;.chromiumapp.org/oauth2</code>. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.</p>
 <h2>Fresh Chrome Web Store ZIP</h2>
 <p>Create the Chrome Web Store ZIP from the contents of <code>dist</code> after <code>npm run build:store</code>. The archive root should contain <code>manifest.json</code>, <code>newtab.html</code>, <code>options.html</code>, <code>popup.html</code>, <code>logo.png</code>, <code>_locales/</code>, <code>icons/</code>, and <code>assets/</code>.</p>
 <h2>Checks Run</h2>
