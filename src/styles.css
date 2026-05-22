@@ -237,7 +237,7 @@ select.field {
 }
 
 .aura-actions {
-  --aura-brand-shift: max(1rem, calc((100vw - 83rem) * 0.5 - 0.75rem));
+  --aura-brand-shift: max(1rem, calc((100vw - 83rem) * 0.5 - 1rem));
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
