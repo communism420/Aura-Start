@@ -237,6 +237,7 @@ select.field {
 }
 
 .aura-actions {
+  --aura-brand-shift: 1rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
@@ -253,8 +254,8 @@ select.field {
 .aura-brand {
   display: flex;
   grid-area: brand;
-  width: 100%;
-  margin-inline-start: -0.25rem;
+  width: calc(100% + var(--aura-brand-shift));
+  margin-inline-start: calc(-1 * var(--aura-brand-shift));
   overflow: hidden;
   flex-direction: column;
   align-items: flex-start;
@@ -302,8 +303,9 @@ select.field {
 .aura-slogan {
   display: block;
   grid-area: slogan;
-  max-width: calc(100% + 0.25rem);
-  margin-inline-start: -0.25rem;
+  width: calc(100% + var(--aura-brand-shift));
+  max-width: calc(100% + var(--aura-brand-shift));
+  margin-inline-start: calc(-1 * var(--aura-brand-shift));
   overflow: visible;
   color: var(--muted);
   font-size: 0.78rem;
