@@ -72,7 +72,6 @@ export function Header({
             <span>Aura Start</span>
             <span className="aura-inspired">{t(language, "inspiredBy")}</span>
           </div>
-          <span className="aura-slogan">{t(language, "brandSlogan")}</span>
         </div>
         <div className="aura-action-list">
           {data.settings.showSearch ? (
@@ -139,6 +138,7 @@ export function Header({
             ) : null}
           </div>
         </div>
+        <span className="aura-slogan">{t(language, "brandSlogan")}</span>
       </div>
       {searchVisible ? (
       <div className="aura-search-row">
