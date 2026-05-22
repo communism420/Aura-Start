@@ -14,7 +14,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Run `npm run build:store`.
 - Set a real `AURA_GOOGLE_OAUTH_CLIENT_ID` for release builds.
 - Store builds must use manifest OAuth through `chrome.identity.getAuthToken` in Google Chrome.
-- Set `AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true` and `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` only when intentionally testing Brave/Chromium fallback support with a Web OAuth client whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`.
+- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` for Brave/Chromium fallback support with a Web OAuth client whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`.
 - Inspect `dist/manifest.json`.
 - Confirm `manifest_version` is `3`.
 - Confirm `background.service_worker` and `commands` in `dist/manifest.json` match `public/manifest.json`.
@@ -45,8 +45,8 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Create a Chrome Extension OAuth client for the final published extension ID.
 - Enable the Google Drive API for the Google Cloud project used by Aura Start.
 - Set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store`.
-- Leave `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` unset unless the release intentionally includes Brave/Chromium Web OAuth fallback support.
-- If Web OAuth fallback is enabled, confirm the Web OAuth client has the final extension redirect URI `https://<extension-id>.chromiumapp.org/oauth2` and that Google Chrome still uses manifest OAuth first.
+- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` before `npm run build:store` so Brave/Chromium browsers can fall back when `chrome.identity.getAuthToken` is rejected.
+- Confirm the Web OAuth client has the final extension redirect URI `https://<extension-id>.chromiumapp.org/oauth2` and that Google Chrome still uses manifest OAuth first.
 - Inspect `dist/manifest.json` and the final ZIP manifest after build.
 - Confirm the OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
 - Confirm there is no full Drive scope and no `drive.file` scope.

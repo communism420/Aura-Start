@@ -32,6 +32,31 @@ const configuredWebOAuthClientId = process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.
 const hardFailures = [];
 const warnings = [];
 
+async function readEnvValue(name) {
+  if (process.env[name]?.trim()) {
+    return process.env[name].trim();
+  }
+
+  for (const file of [".env.local", ".env.production", ".env"]) {
+    const path = join(root, file);
+    if (!await exists(path)) {
+      continue;
+    }
+
+    const text = await readFile(path, "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+      if (!match || match[1] !== name) {
+        continue;
+      }
+
+      return match[2].replace(/^["']|["']$/g, "").trim();
+    }
+  }
+
+  return "";
+}
+
 async function exists(path) {
   try {
     await stat(path);
@@ -74,13 +99,15 @@ function looksLikeExampleOAuthClientId(clientId) {
 }
 
 const allowedRuntimeOAuthClientIds = new Set();
-if (webOAuthFallbackEnabled) {
-  if (!configuredWebOAuthClientId) {
-    fail("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
-  } else if (!oauthClientIdPattern.test(configuredWebOAuthClientId) || looksLikeExampleOAuthClientId(configuredWebOAuthClientId)) {
+const webOAuthClientId = configuredWebOAuthClientId || await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID");
+if (webOAuthFallbackEnabled && !webOAuthClientId) {
+  fail("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
+}
+if (webOAuthClientId) {
+  if (!oauthClientIdPattern.test(webOAuthClientId) || looksLikeExampleOAuthClientId(webOAuthClientId)) {
     fail("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID must be a real Google OAuth Web Client ID ending with .apps.googleusercontent.com.");
   } else {
-    allowedRuntimeOAuthClientIds.add(configuredWebOAuthClientId);
+    allowedRuntimeOAuthClientIds.add(webOAuthClientId);
   }
 }
 
@@ -218,7 +245,7 @@ for (const file of codeFiles) {
     const bundledOAuthClientIds = Array.from(new Set(text.match(/\b[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com\b/gi) ?? []));
     const unexpectedOAuthClientIds = bundledOAuthClientIds.filter((clientId) => !allowedRuntimeOAuthClientIds.has(clientId));
     if (unexpectedOAuthClientIds.length) {
-      fail(`${displayPath} contains unexpected bundled OAuth Client ID(s): ${unexpectedOAuthClientIds.join(", ")}. Store runtime code may only embed an explicitly enabled Web OAuth fallback client.`);
+      fail(`${displayPath} contains unexpected bundled OAuth Client ID(s): ${unexpectedOAuthClientIds.join(", ")}. Store runtime code may only embed the configured AURA_GOOGLE_WEB_OAUTH_CLIENT_ID fallback client.`);
     }
 
     if (text.includes("accounts.google.com/o/oauth2/v2/auth") && unexpectedOAuthClientIds.length) {

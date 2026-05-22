@@ -407,7 +407,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   if (!clientId) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "This build uses Chrome's built-in Google sign-in for Drive sync. The development Web OAuth fallback is not enabled."
+      "This build uses Chrome's built-in Google sign-in for Drive sync. The Web OAuth fallback is not configured."
     );
   }
 
@@ -654,7 +654,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
       if (isChromeIdentityUnsupportedError(error)) {
         throw new GoogleDriveSyncError(
           "identity_unavailable",
-          "This browser rejected Chrome's built-in Google sign-in for Drive sync. Use Google Chrome, or rebuild Aura Start with the explicit Web OAuth fallback enabled for Chromium browsers that do not support chrome.identity.getAuthToken."
+          "This browser rejected Chrome's built-in Google sign-in for Drive sync. Use Google Chrome, or rebuild Aura Start with AURA_GOOGLE_WEB_OAUTH_CLIENT_ID set to a Web OAuth client authorized for chrome.identity.getRedirectURL('oauth2')."
         );
       }
 
@@ -663,14 +663,14 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   }
 
   if (flow === "web_oauth") {
-    console.debug?.("Aura Start Google Drive sync: using development Web OAuth fallback.");
+    console.debug?.("Aura Start Google Drive sync: using Web OAuth fallback.");
     return await launchGoogleWebAuthFlow(interactive);
   }
 
   if (preferWebOAuth && !webOAuthClientId) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "This browser does not support Chrome's built-in Google sign-in for Drive sync. Rebuild Aura Start with AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true and a Web OAuth client authorized for chrome.identity.getRedirectURL('oauth2'), or use Google Chrome."
+      "This browser does not support Chrome's built-in Google sign-in for Drive sync. Rebuild Aura Start with AURA_GOOGLE_WEB_OAUTH_CLIENT_ID set to a Web OAuth client authorized for chrome.identity.getRedirectURL('oauth2'), or use Google Chrome."
     );
   }
 

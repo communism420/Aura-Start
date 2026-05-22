@@ -62,7 +62,7 @@ For release builds with Google Drive sync, build with a real Chrome Extension OA
 AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store
 ```
 
-Google Chrome should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. If Brave/Chromium fallback support is included, set `AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true` with a real `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.
+Google Chrome should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. For Brave/Chromium fallback support, set a real `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.
 
 ## Fresh Chrome Web Store ZIP
 
