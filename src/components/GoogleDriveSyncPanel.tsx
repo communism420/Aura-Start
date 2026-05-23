@@ -1,4 +1,4 @@
-import { Cloud, Trash2 } from "lucide-react";
+import { AlertTriangle, Cloud, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
 import type {
@@ -10,7 +10,6 @@ import type {
 import { formatDateTime } from "../utils/dates";
 import { exportJsonBackup } from "../utils/exportJson";
 import { GoogleDriveSyncError } from "../services/googleDriveSync";
-import { ConfirmDialog } from "./ConfirmDialog";
 
 type GoogleDriveSyncPanelProps = {
   data: AuraStartData;
@@ -110,6 +109,45 @@ export function GoogleDriveSyncPanel({
         ) : null}
       </div>
 
+      {pendingConfirm === "delete_backup_and_disconnect" ? (
+        <div className="mt-4 rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] p-4 text-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--danger-soft)] text-[var(--danger)]">
+              <AlertTriangle size={20} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-semibold">{t(language, "googleDriveDeleteBackupAndDisconnect")}</div>
+                <button
+                  aria-label={t(language, "cancel")}
+                  className="btn btn-ghost h-8 w-8 shrink-0 p-0"
+                  type="button"
+                  onClick={() => setPendingConfirm(null)}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="muted mt-2 leading-6">{t(language, "googleDriveDeleteBackupAndDisconnectConfirmMessage")}</p>
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <button className="btn btn-secondary" type="button" onClick={() => setPendingConfirm(null)}>
+                  {t(language, "cancel")}
+                </button>
+                <button
+                  className="btn btn-danger"
+                  type="button"
+                  onClick={() => {
+                    setPendingConfirm(null);
+                    void runConfirmed(onDeleteBackupAndDisconnect);
+                  }}
+                >
+                  {t(language, "googleDriveDeleteBackupAndDisconnectConfirm")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4">
         {!hasGoogleConnection ? (
           <button className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm" disabled={busy} type="button" onClick={() => run(onConnect)}>
@@ -151,19 +189,6 @@ export function GoogleDriveSyncPanel({
           </div>
         </div>
       ) : null}
-
-      <ConfirmDialog
-        cancelLabel={t(language, "cancel")}
-        confirmLabel={t(language, "googleDriveDeleteBackupAndDisconnectConfirm")}
-        message={t(language, "googleDriveDeleteBackupAndDisconnectConfirmMessage")}
-        open={pendingConfirm !== null}
-        title={t(language, "googleDriveDeleteBackupAndDisconnect")}
-        onCancel={() => setPendingConfirm(null)}
-        onConfirm={async () => {
-          setPendingConfirm(null);
-          await runConfirmed(onDeleteBackupAndDisconnect);
-        }}
-      />
     </div>
   );
 }
