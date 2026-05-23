@@ -38,6 +38,7 @@ type SettingsDialogProps = {
   hasDemoData: boolean;
   onRemoveDemoData: () => void;
   onConnectGoogleDrive: () => Promise<void>;
+  onSyncGoogleDrive: () => Promise<void>;
   onDeleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   onResolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
@@ -63,6 +64,7 @@ export function SettingsDialog({
   hasDemoData,
   onRemoveDemoData,
   onConnectGoogleDrive,
+  onSyncGoogleDrive,
   onDeleteGoogleDriveBackupAndDisconnect,
   onResolveSyncConflict,
   onError
@@ -251,6 +253,7 @@ export function SettingsDialog({
             syncMessage={syncMessage}
             syncStatus={syncStatus}
             onConnect={onConnectGoogleDrive}
+            onSyncNow={onSyncGoogleDrive}
             onDeleteBackupAndDisconnect={onDeleteGoogleDriveBackupAndDisconnect}
             onError={onError}
             onResolveConflict={onResolveSyncConflict}

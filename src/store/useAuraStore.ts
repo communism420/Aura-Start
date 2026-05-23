@@ -443,7 +443,7 @@ function driveFailure(
   return message;
 }
 
-async function pauseGoogleDriveSyncAfterAuthLoss(
+async function markGoogleDriveSyncNeedsReconnect(
   set: (partial: Partial<AuraStore>) => void,
   get: () => AuraStore,
   error: unknown
@@ -453,27 +453,15 @@ async function pauseGoogleDriveSyncAfterAuthLoss(
 
   const data = get().data;
   if (!data) {
-    set({ syncStatus: "idle", syncMessage: mapDriveError(error), syncConflict: null });
+    set({ syncStatus: "connected", syncMessage: mapDriveError(error), syncConflict: null });
     return;
   }
 
-  await commitSyncMetadata(
-    set,
-    data,
-    {
-      mode: "off",
-      connected: false,
-      accountEmail: undefined,
-      accountName: undefined,
-      accountAvatarUrl: undefined,
-      cloudFileId: undefined,
-      lastSyncedAt: undefined,
-      lastCloudUpdatedAt: undefined
-    },
-    "idle",
-    null,
-    null
-  );
+  set({
+    syncStatus: "connected",
+    syncMessage: text(data, "googleDriveNeedsReconnect"),
+    syncConflict: null
+  });
 }
 
 async function applyCloudDownload(
@@ -1159,7 +1147,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       }
     } catch (error) {
       if (options.silent && isGoogleDriveAuthorizationUnavailable(error)) {
-        await pauseGoogleDriveSyncAfterAuthLoss(set, get, error);
+        await markGoogleDriveSyncNeedsReconnect(set, get, error);
         return;
       }
 
@@ -1303,7 +1291,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       });
     } catch (error) {
       if (options.silent && isGoogleDriveAuthorizationUnavailable(error)) {
-        await pauseGoogleDriveSyncAfterAuthLoss(set, get, error);
+        await markGoogleDriveSyncNeedsReconnect(set, get, error);
         return;
       }
 
