@@ -46,7 +46,7 @@ export function GoogleDriveSyncPanel({
   const hasGoogleConnection = Boolean(sync.connected);
   const connected = sync.mode !== "off" && hasGoogleConnection;
   const canManageConnection = hasGoogleConnection && !busy;
-  const displayMessage = syncMessage ?? (sync.mode === "off"
+  const displayMessage = hasGoogleConnection && syncMessage ? syncMessage : (sync.mode === "off"
     ? t(language, "googleDriveSyncDisabled")
     : connected
       ? t(language, "googleDriveConnected")
@@ -102,10 +102,10 @@ export function GoogleDriveSyncPanel({
         {sync.accountEmail || sync.accountName ? (
           <div className="muted mt-1">{sync.accountName ?? sync.accountEmail}</div>
         ) : null}
-        {sync.lastSyncedAt ? (
+        {hasGoogleConnection && sync.lastSyncedAt ? (
           <div className="muted mt-1">{t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) })}</div>
         ) : null}
-        {sync.lastCloudUpdatedAt ? (
+        {hasGoogleConnection && sync.lastCloudUpdatedAt ? (
           <div className="muted mt-1">{t(language, "googleDriveLastCloudUpdate", { time: formatDateTime(sync.lastCloudUpdatedAt) })}</div>
         ) : null}
       </div>

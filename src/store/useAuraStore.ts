@@ -465,10 +465,13 @@ async function pauseGoogleDriveSyncAfterAuthLoss(
       connected: false,
       accountEmail: undefined,
       accountName: undefined,
-      accountAvatarUrl: undefined
+      accountAvatarUrl: undefined,
+      cloudFileId: undefined,
+      lastSyncedAt: undefined,
+      lastCloudUpdatedAt: undefined
     },
     "idle",
-    text(data, "googleDriveAuthorizationExpired"),
+    null,
     null
   );
 }
