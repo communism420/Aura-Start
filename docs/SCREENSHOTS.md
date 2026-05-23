@@ -10,7 +10,7 @@ Recommended base sizes:
 - Chrome Web Store screenshots: 1280 x 800 or 1280 x 720 PNG
 - GitHub/social crops: 1600 x 900 PNG
 - Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data and should reflect the latest Google Drive sync and shortcut layout changes.
-- Final publishable screenshots live in `Photo/`; GitHub Pages copies live in `docs/assets/screenshots/`.
+- Final publishable screenshots live in `Photo/`; GitHub Pages copies live in `docs/assets/screenshots/`. The public site references the `*-20260524.png` copies so browsers and GitHub Pages do not keep showing stale cached images with the old filenames.
 - `docs/screenshot-gallery.html` displays the real captured screenshots. It is not a mockup renderer.
 
 ## General Capture Rules

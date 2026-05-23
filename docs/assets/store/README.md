@@ -5,6 +5,8 @@
 
 This folder tracks the Chrome Web Store and promotional screenshot set. The final PNG files are captured from the real Aura Start 1.2.0 UI and stored in `Photo/`, with GitHub Pages copies in `docs/assets/screenshots/`.
 
+The public GitHub Pages site uses the `*-20260524.png` screenshot copies to avoid stale cached images after design refreshes.
+
 Final filenames:
 
 1. `01-main-new-tab.png`
