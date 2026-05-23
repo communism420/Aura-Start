@@ -37,7 +37,7 @@ import { mergeImportedData } from "../utils/importJson";
 import { createEmptyData } from "../utils/sampleData";
 import { clearAuraData, loadAuraData, saveAuraData } from "../utils/storage";
 import { loadAuraUiState, saveAuraUiState, type DemoDataMarker } from "../utils/uiState";
-import { normalizeUrl, parseTags, validateTitle } from "../utils/validators";
+import { normalizeUrl, parseTags, type UrlValidationResult } from "../utils/validators";
 
 export type ToastMessage = {
   id: string;
@@ -307,16 +307,38 @@ function findGroup(data: AuraStartData, groupId: string): AuraStartGroup {
   return group;
 }
 
-function prepareLinkInput(input: LinkInput): Pick<AuraStartLink, "title" | "url" | "description" | "tags"> {
+function urlValidationMessage(data: AuraStartData, result: Extract<UrlValidationResult, { ok: false }>): string {
+  switch (result.code) {
+    case "required":
+      return text(data, "urlRequired");
+    case "unsupported_protocol":
+      return text(data, "urlHttpOnly");
+    case "missing_host":
+      return text(data, "urlHostRequired");
+    case "invalid":
+      return text(data, "urlInvalidExample");
+  }
+}
+
+function requireTitle(data: AuraStartData, input: string, key: Parameters<typeof t>[1]): string {
+  const title = input.trim();
+  if (!title) {
+    throw new Error(text(data, key));
+  }
+
+  return title;
+}
+
+function prepareLinkInput(data: AuraStartData, input: LinkInput): Pick<AuraStartLink, "title" | "url" | "description" | "tags"> {
   const normalizedUrl = normalizeUrl(input.url);
   if (!normalizedUrl.ok) {
-    throw new Error(normalizedUrl.message);
+    throw new Error(urlValidationMessage(data, normalizedUrl));
   }
 
   const description = input.description?.trim();
 
   return {
-    title: validateTitle(input.title, "Link"),
+    title: requireTitle(data, input.title, "linkTitleRequired"),
     url: normalizedUrl.url,
     description: description ? description : undefined,
     tags: input.tags ? parseTags(input.tags) : undefined
@@ -617,7 +639,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const now = nowIso();
     const group: AuraStartGroup = {
       id: createId("group"),
-      title: validateTitle(title, "Group"),
+      title: requireTitle(data, title, "groupTitleRequired"),
       collapsed: false,
       order: data.groups.length,
       links: []
@@ -635,7 +657,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async updateGroupTitle(groupId, title) {
     const data = get().data;
     if (!data) return;
-    const nextTitle = validateTitle(title, "Group");
+    const nextTitle = requireTitle(data, title, "groupTitleRequired");
     await safeCommit(set, {
       ...data,
       groups: data.groups.map((group) => (group.id === groupId ? { ...group, title: nextTitle } : group))
@@ -678,7 +700,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async addLink(groupId, input) {
     const data = get().data;
     if (!data) return;
-    const normalized = prepareLinkInput(input);
+    const normalized = prepareLinkInput(data, input);
     const now = nowIso();
     await safeCommit(set, {
       ...data,
@@ -706,7 +728,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async updateLink(groupId, linkId, input) {
     const data = get().data;
     if (!data) return;
-    const normalized = prepareLinkInput(input);
+    const normalized = prepareLinkInput(data, input);
     await safeCommit(set, {
       ...data,
       groups: data.groups.map((group) =>
@@ -957,7 +979,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async createManualRestorePoint(name) {
     const data = get().data;
     if (!data) return;
-    await safeCommit(set, withRestorePoint(data, validateTitle(name, "Restore point"), "manual"));
+    await safeCommit(set, withRestorePoint(data, requireTitle(data, name, "restorePointNameRequired"), "manual"));
   },
 
   async restoreRestorePoint(restorePointId) {

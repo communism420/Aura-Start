@@ -51,7 +51,7 @@ function countPotentialDuplicates(current: AuraStartData, imported: AuraStartDat
 function importErrorMessage(language: AuraLanguage, format: ImportDialogFormat, error: unknown): string {
   const message = error instanceof Error ? error.message : "";
   if (format !== "a_fine_start") {
-    return message || t(language, "couldNotParseImportData");
+    return localizedKnownMessage(language, message) ?? (message || t(language, "couldNotParseImportData"));
   }
 
   if (/does not contain bookmarks|no valid links/i.test(message)) {
@@ -63,6 +63,40 @@ function importErrorMessage(language: AuraLanguage, format: ImportDialogFormat, 
   }
 
   return message || t(language, "invalidExportCode");
+}
+
+function localizedKnownMessage(language: AuraLanguage, message: string): string | undefined {
+  if (!message) return undefined;
+
+  if (/^URL is required\.$/i.test(message)) return t(language, "urlRequired");
+  if (/^Only http and https links are allowed\.$/i.test(message)) return t(language, "urlHttpOnly");
+  if (/^URL must include a valid host\.$/i.test(message)) return t(language, "urlHostRequired");
+  if (/^Enter a valid URL/i.test(message)) return t(language, "urlInvalidExample");
+  if (/^Link title is required\.$/i.test(message)) return t(language, "linkTitleRequired");
+  if (/^Group title is required\.$/i.test(message)) return t(language, "groupTitleRequired");
+  if (/Every link must be an object|Every group must be an object|Backup root must be an object|backup version|not valid JSON/i.test(message)) {
+    return t(language, "couldNotParseImportData");
+  }
+
+  return undefined;
+}
+
+function importWarningMessage(language: AuraLanguage, warning: string): string {
+  const converted = warning.match(/^"(.+)" in "(.+)" used an internal A Fine Start URL, so it was converted to https:\/\/afinestart\.me\/bookmarks\/\.$/);
+  if (converted) {
+    return t(language, "aFineStartInternalUrlConverted", { title: converted[1], groupTitle: converted[2] });
+  }
+
+  const skipped = warning.match(/^"(.+)" in "(.+)" was skipped: (.+)$/);
+  if (skipped) {
+    return t(language, "aFineStartLinkSkipped", {
+      title: skipped[1],
+      groupTitle: skipped[2],
+      reason: localizedKnownMessage(language, skipped[3]) ?? skipped[3]
+    });
+  }
+
+  return localizedKnownMessage(language, warning) ?? warning;
 }
 
 export function ImportDialog({
@@ -312,7 +346,7 @@ export function ImportDialog({
             </div>
             <ul className="muted mt-2 list-disc space-y-1 pl-5">
               {importWarnings.slice(0, 4).map((warning) => (
-                <li key={warning}>{warning}</li>
+                <li key={warning}>{importWarningMessage(language, warning)}</li>
               ))}
             </ul>
             {importWarnings.length > 4 ? (

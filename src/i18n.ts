@@ -1,3 +1,4 @@
+import { translationCompletions } from "./i18nCompletions";
 import type { AuraLanguage } from "./types";
 
 export const languageOptions: Array<{ code: AuraLanguage; label: string }> = [
@@ -29,6 +30,8 @@ const en = {
   aFineStartImportStepReview: "Review the preview, then import.",
   aFineStartImportStepSettings: "Go to Settings -> Export bookmarks.",
   aFineStartImportStepsTitle: "Import from A Fine Start",
+  aFineStartInternalUrlConverted: "\"{title}\" in \"{groupTitle}\" used an internal A Fine Start URL, so it was converted to https://afinestart.me/bookmarks/.",
+  aFineStartLinkSkipped: "\"{title}\" in \"{groupTitle}\" was skipped: {reason}",
   allRestorePointsDeleted: "All restore points deleted",
   auto: "Auto",
   addDemoGroups: "Add demo groups",
@@ -373,6 +376,13 @@ const en = {
   unavailableTitle: "Aura Start is unavailable",
   updateAutomaticRestoreSafety: "Automatic restore safety",
   url: "URL",
+  urlHostRequired: "URL must include a valid host.",
+  urlHttpOnly: "Only http and https links are allowed.",
+  urlInvalidExample: "Enter a valid URL, for example https://example.com.",
+  urlRequired: "URL is required.",
+  groupTitleRequired: "Group title is required.",
+  linkTitleRequired: "Link title is required.",
+  restorePointNameRequired: "Restore point name is required.",
   validImport: "Valid import: {groups} groups, {links} links.",
   welcomeToAuraStart: "Welcome to Aura Start",
   onboardingFinishDescription: "You can change these choices later in Settings."
@@ -441,7 +451,7 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     googleDriveBackupSuccessDescription: "Aura Start обновил скрытый sync-файл в данных приложения Google Drive.",
     googleDriveBackupToDrive: "Сохранить в Google Drive",
     googleDriveCloudNewer: "Облачная версия новее",
-    googleDriveCloudNewerDescription: "Проверьте секцию Google Drive Sync и выберите восстановление из Google Drive, если хотите заменить локальные данные.",
+    googleDriveCloudNewerDescription: "Проверьте раздел синхронизации Google Drive и выберите восстановление из Google Drive, если хотите заменить локальные данные.",
     googleDriveConflictDescription: "Локальные данные и данные Google Drive изменились после последней синхронизации. Выберите, какая копия должна остаться.",
     googleDriveConflictDetected: "Обнаружен конфликт",
     googleDriveConflictTimes: "Локально: {local}. В облаке: {cloud}.",
@@ -495,9 +505,9 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     googleDriveSyncMode_auto: "Авто",
     googleDriveSyncMode_manual: "Вручную",
     googleDriveSyncMode_off: "Выключено",
-    googleDriveSyncModeUpdated: "Режим Google Drive Sync обновлён.",
+    googleDriveSyncModeUpdated: "Режим синхронизации Google Drive обновлён.",
     googleDriveSyncOffByDefault: "Синхронизация выключена по умолчанию, а Aura Start сначала хранит данные локально.",
-    googleDriveSyncTitle: "Google Drive Sync",
+    googleDriveSyncTitle: "Синхронизация Google Drive",
     googleDriveSyncUsesAppData: "Sync-файл хранится только в скрытой Google Drive appDataFolder.",
     googleDriveTokenRevokeFailed: "Кэшированный токен удалён, но Google token revoke вернул ошибку: {message}",
     delete: "Удалить",
@@ -569,7 +579,7 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     importMode: "Режим импорта",
     importPreviewGroupsLinks: "{groups} групп, {links} ссылок",
     importPreviewMode: "Режим",
-    importPreviewPayload: "Payload",
+    importPreviewPayload: "Данные",
     importPreviewPotentialDuplicates: "Возможные дубликаты",
     importPreviewRejected: "Отклонено",
     importPreviewValid: "Валидный импорт",
@@ -741,7 +751,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     removeDemoData: "Удалить демо-данные",
     removeDemoDataMessage: "Будут удалены только демо-группы и ссылки, которые отслеживает Aura Start. Пользовательские элементы с другими ID останутся.",
     validImport: "Корректный импорт: {groups} групп, {links} ссылок.",
-    welcomeToAuraStart: "Добро пожаловать в Aura Start"
+    welcomeToAuraStart: "Добро пожаловать в Aura Start",
+    ...translationCompletions.ru
   },
   es: {
     ...en,
@@ -917,7 +928,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     optionalLayout: "Diseño opcional",
     removeDemoData: "Eliminar datos de demo",
     removeDemoDataMessage: "Esto elimina solo grupos y enlaces de demo rastreados por Aura Start. Los elementos del usuario con otros ID no se tocan.",
-    welcomeToAuraStart: "Bienvenido a Aura Start"
+    welcomeToAuraStart: "Bienvenido a Aura Start",
+    ...translationCompletions.es
   },
   de: {
     ...en,
@@ -1057,7 +1069,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     optionalLayout: "Optionales Layout",
     removeDemoData: "Demo-Daten entfernen",
     removeDemoDataMessage: "Es werden nur Demo-Gruppen und Links entfernt, die Aura Start verfolgt. Benutzerelemente mit anderen IDs bleiben erhalten.",
-    welcomeToAuraStart: "Willkommen bei Aura Start"
+    welcomeToAuraStart: "Willkommen bei Aura Start",
+    ...translationCompletions.de
   },
   fr: {
     ...en,
@@ -1197,7 +1210,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     optionalLayout: "Disposition optionnelle",
     removeDemoData: "Supprimer les données de démonstration",
     removeDemoDataMessage: "Cela supprime uniquement les groupes et liens de démonstration suivis par Aura Start. Les éléments utilisateur avec d’autres ID restent intacts.",
-    welcomeToAuraStart: "Bienvenue dans Aura Start"
+    welcomeToAuraStart: "Bienvenue dans Aura Start",
+    ...translationCompletions.fr
   },
   pt: {
     ...en,
@@ -1337,7 +1351,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     optionalLayout: "Layout opcional",
     removeDemoData: "Remover dados de demonstração",
     removeDemoDataMessage: "Isso remove apenas grupos e links de demonstração rastreados pelo Aura Start. Itens do usuário com outros IDs permanecem.",
-    welcomeToAuraStart: "Bem-vindo ao Aura Start"
+    welcomeToAuraStart: "Bem-vindo ao Aura Start",
+    ...translationCompletions.pt
   },
   uk: {
     ...en,
@@ -1484,7 +1499,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     optionalLayout: "Додатковий макет",
     removeDemoData: "Видалити демо-дані",
     removeDemoDataMessage: "Буде видалено лише демо-групи й посилання, які відстежує Aura Start. Користувацькі елементи з іншими ID залишаться.",
-    welcomeToAuraStart: "Ласкаво просимо до Aura Start"
+    welcomeToAuraStart: "Ласкаво просимо до Aura Start",
+    ...translationCompletions.uk
   }
 };
 
