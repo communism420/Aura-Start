@@ -630,6 +630,13 @@ function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
 }
 
 export async function getAuthToken(interactive: boolean): Promise<string> {
+  if (!interactive) {
+    const cachedWebToken = await getCachedWebAuthToken();
+    if (cachedWebToken) {
+      return cachedWebToken;
+    }
+  }
+
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const webOAuthClientId = configuredWebOAuthClientId();

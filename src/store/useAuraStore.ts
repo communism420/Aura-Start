@@ -61,7 +61,7 @@ export type LinkDeleteTarget = {
 };
 
 type AuraStoreStatus = "idle" | "loading" | "ready" | "corrupt" | "error";
-type GoogleDriveBackupOptions = { silent?: boolean };
+type GoogleDriveBackupOptions = { silent?: boolean; token?: string };
 type GoogleDriveSyncNowOptions = { silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
 type ImportBackupSource = "aura_json" | "a_fine_start";
@@ -1117,7 +1117,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveBackingUp"), syncConflict: null });
     try {
       const sync = ensureSyncDevice(data.settings.sync);
-      const token = await getTokenForSync(sync, !options.silent);
+      const token = options.token ?? await getTokenForSync(sync, !options.silent);
       const metadata = await backupToDrive(data, {
         deviceId: sync.deviceId,
         fileId: sync.cloudFileId,
@@ -1207,7 +1207,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       const comparison = compareLocalAndCloud(data, download, sync);
 
       if (comparison === "no_cloud_file") {
-        await get().backupToGoogleDrive({ silent: true });
+        await get().backupToGoogleDrive({ silent: true, token });
         if (!options.silent) {
           get().addToast({
             type: "success",
@@ -1241,7 +1241,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       }
 
       if (comparison === "local_newer") {
-        await get().backupToGoogleDrive({ silent: true });
+        await get().backupToGoogleDrive({ silent: true, token });
         if (!options.silent) {
           get().addToast({
             type: "success",
