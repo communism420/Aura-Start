@@ -3,6 +3,7 @@ import { MAX_RESTORE_POINTS } from "../constants";
 import { t } from "../i18n";
 import {
   backupToDrive,
+  clearAuthToken,
   compareLocalAndCloud,
   deleteSyncFile,
   disconnectGoogleAccount as disconnectGoogleDriveAccount,
@@ -11,6 +12,7 @@ import {
   getAuthToken,
   getCachedAuthToken,
   getConnectedAccountInfo,
+  isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
   restoreFromDrive,
   type GoogleDriveSyncDownload
@@ -439,6 +441,36 @@ function driveFailure(
     message
   });
   return message;
+}
+
+async function pauseGoogleDriveSyncAfterAuthLoss(
+  set: (partial: Partial<AuraStore>) => void,
+  get: () => AuraStore,
+  error: unknown
+): Promise<void> {
+  clearAutoSyncQueue();
+  await clearAuthToken().catch(() => undefined);
+
+  const data = get().data;
+  if (!data) {
+    set({ syncStatus: "idle", syncMessage: mapDriveError(error), syncConflict: null });
+    return;
+  }
+
+  await commitSyncMetadata(
+    set,
+    data,
+    {
+      mode: "off",
+      connected: false,
+      accountEmail: undefined,
+      accountName: undefined,
+      accountAvatarUrl: undefined
+    },
+    "idle",
+    text(data, "googleDriveAuthorizationExpired"),
+    null
+  );
 }
 
 async function applyCloudDownload(
@@ -1123,6 +1155,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         });
       }
     } catch (error) {
+      if (options.silent && isGoogleDriveAuthorizationUnavailable(error)) {
+        await pauseGoogleDriveSyncAfterAuthLoss(set, get, error);
+        return;
+      }
+
       driveFailure(set, get, error);
       throw error;
     }
@@ -1262,6 +1299,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         message: text(data, "googleDriveConflictDescription")
       });
     } catch (error) {
+      if (options.silent && isGoogleDriveAuthorizationUnavailable(error)) {
+        await pauseGoogleDriveSyncAfterAuthLoss(set, get, error);
+        return;
+      }
+
       driveFailure(set, get, error);
       throw error;
     }

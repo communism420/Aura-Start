@@ -950,6 +950,9 @@ export function mapDriveError(error: unknown): string {
     const message = error.message.toLowerCase();
     const reason = error.reason?.toLowerCase() ?? "";
 
+    if (isGoogleDriveAuthorizationUnavailable(error)) {
+      return "Google authorization expired or was revoked. Reconnect Google Drive to resume sync.";
+    }
     if (error.code === "auth_cancelled") {
       return error.message || "Google authorization was cancelled or did not complete.";
     }
@@ -996,4 +999,27 @@ export function mapDriveError(error: unknown): string {
   }
 
   return error instanceof Error ? error.message : "Google Drive sync failed.";
+}
+
+export function isGoogleDriveAuthorizationUnavailable(error: unknown): boolean {
+  if (!(error instanceof GoogleDriveSyncError)) {
+    return false;
+  }
+
+  if (error.code === "unauthorized") {
+    return true;
+  }
+
+  if (error.code !== "auth_cancelled") {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  const reason = error.reason?.toLowerCase() ?? "";
+  return reason.includes("invalid_grant")
+    || message.includes("invalid_grant")
+    || message.includes("oauth2 not granted")
+    || message.includes("not granted or revoked")
+    || message.includes("token has been revoked")
+    || message.includes("authorization has been revoked");
 }
