@@ -275,43 +275,42 @@ function normalizeCachedToken(value: unknown): CachedToken | undefined {
   };
 }
 
-function sessionStorageArea(): chrome.storage.StorageArea | undefined {
-  return globalThis.chrome?.storage?.session;
+function webAuthTokenStorageAreas(): chrome.storage.StorageArea[] {
+  const storage = globalThis.chrome?.storage;
+  const areas: chrome.storage.StorageArea[] = [];
+  if (storage?.local) {
+    areas.push(storage.local);
+  }
+  if (storage?.session) {
+    areas.push(storage.session);
+  }
+  return areas;
 }
 
 async function readStoredWebAuthToken(): Promise<string | undefined> {
-  const area = sessionStorageArea();
-  if (!area) {
-    return undefined;
+  for (const area of webAuthTokenStorageAreas()) {
+    const result = await area.get(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+    const cached = result ? normalizeCachedToken(result[WEB_AUTH_TOKEN_STORAGE_KEY]) : undefined;
+    if (!cached) {
+      await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+      continue;
+    }
+
+    webAuthTokenCache = cached;
+    return cached.token;
   }
 
-  const result = await area.get(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-  const cached = result ? normalizeCachedToken(result[WEB_AUTH_TOKEN_STORAGE_KEY]) : undefined;
-  if (!cached) {
-    await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-    return undefined;
-  }
-
-  webAuthTokenCache = cached;
-  return cached.token;
+  return undefined;
 }
 
 async function writeStoredWebAuthToken(token: CachedToken): Promise<void> {
-  const area = sessionStorageArea();
-  if (!area) {
-    return;
-  }
-
-  await area.set({ [WEB_AUTH_TOKEN_STORAGE_KEY]: token }).catch(() => undefined);
+  await Promise.all(
+    webAuthTokenStorageAreas().map((area) => area.set({ [WEB_AUTH_TOKEN_STORAGE_KEY]: token }).catch(() => undefined))
+  );
 }
 
 async function removeStoredWebAuthToken(): Promise<void> {
-  const area = sessionStorageArea();
-  if (!area) {
-    return;
-  }
-
-  await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
+  await Promise.all(webAuthTokenStorageAreas().map((area) => area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined)));
 }
 
 async function getCachedWebAuthToken(): Promise<string | undefined> {
