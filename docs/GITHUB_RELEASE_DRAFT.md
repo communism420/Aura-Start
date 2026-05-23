@@ -13,9 +13,10 @@ Aura Start 1.2.0 focuses on migration, local-first data ownership, safer recover
 - Added Restore Points Manager for local recovery snapshots.
 - Added Privacy Promise in Settings.
 - Improved search and keyboard navigation.
-- Added Command Palette and keyboard shortcuts help.
+- Added Command Palette, visible palette access, and keyboard shortcuts help.
 - Added Duplicate Finder with read-only scan and user-confirmed deletion.
-- Improved Chrome Web Store submission notes and migration/comparison documentation.
+- Improved Google Drive sync behavior, including manifest OAuth first in Google Chrome, Web OAuth fallback for compatible Chromium browsers, automatic backup after connection, and onboarding restore from Drive.
+- Improved Chrome Web Store submission notes, refreshed screenshots, and migration/comparison documentation.
 
 ## Migration From A Fine Start
 
@@ -27,7 +28,7 @@ See `docs/MIGRATE_FROM_A_FINE_START.md` for the full migration guide.
 
 Aura Start stores groups, links, settings, and restore points locally by default. It has no required account, no analytics, no tracking, no ads, and no backend.
 
-Optional Google Drive sync is off by default and uses only the hidden Google Drive `appDataFolder` scope for Aura Start's own `aura-start-sync.json` file. Aura Start does not request full Google Drive access or browser history/bookmarks permissions.
+Optional Google Drive sync is off by default and uses only the hidden Google Drive `appDataFolder` scope for Aura Start's own `aura-start-sync.json` file. After connection, local changes are backed up automatically. Aura Start does not request full Google Drive access or browser history/bookmarks permissions.
 
 ## Export And Backup
 
@@ -41,7 +42,7 @@ Supported export formats:
 
 ## Chrome Web Store
 
-Chrome Web Store listing: coming soon unless a live listing URL is added at release time.
+Chrome Web Store availability: add or update the live listing URL in the final release notes after verifying the published item.
 
 Do not upload from automation. Build the package locally, verify the ZIP, then upload manually in the Chrome Web Store Developer Dashboard.
 
@@ -63,6 +64,8 @@ AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com
 ```
 
 Google Chrome should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. For Brave/Chromium fallback support, set a real `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.
+
+When testing the release, verify that onboarding can restore an existing `aura-start-sync.json` file from Google Drive and that it shows a clear no-file message without changing local data when no sync file exists.
 
 ## Fresh Chrome Web Store ZIP
 

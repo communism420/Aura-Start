@@ -12,7 +12,7 @@ Aura Start may be a good fit if you want:
 - No analytics or tracking
 - Full JSON backups
 - Multiple export formats
-- Optional Google Drive backup through the hidden Drive `appDataFolder`
+- Optional Google Drive backup through the hidden Drive `appDataFolder`, with automatic backup after connection
 - Restore points before destructive changes
 - Command Palette, keyboard shortcuts, and Duplicate Finder
 
@@ -87,7 +87,7 @@ No. Aura Start imports grouped links from supported export-code shapes. It does 
 
 **Can I use Aura Start without Google Drive?**
 
-Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default.
+Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default. After you connect Google Drive, local Aura Start changes are backed up automatically to the hidden app data file.
 
 **Can I keep a normal backup file?**
 

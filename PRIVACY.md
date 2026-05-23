@@ -25,7 +25,7 @@ Local storage remains the default. Manual JSON export/import continues to work i
 
 ## Optional Google Drive Sync
 
-If the user explicitly connects Google Drive sync, Aura Start uses Google OAuth through `chrome.identity` and requests only this scope:
+If the user explicitly connects Google Drive sync, Aura Start uses Google OAuth through Chromium extension identity APIs and requests only this scope:
 
 `https://www.googleapis.com/auth/drive.appdata`
 
@@ -39,6 +39,7 @@ Users can:
 
 - Keep sync off and use Aura Start fully locally
 - Restore an existing Google Drive sync file automatically when connecting sync
+- Restore an existing Google Drive sync file from first-run onboarding when the user chooses that action
 - Create a Google Drive sync file automatically when none exists
 - Back up local changes to Google Drive automatically after connecting sync
 - Delete the hidden Google Drive sync file and disconnect the Google account through one confirmed action
@@ -47,7 +48,7 @@ Deleting the Google Drive sync file and disconnecting the Google account does no
 
 Users can turn cloud sync off at any time by deleting the Google Drive backup and disconnecting the Google account. This does not remove local groups, links, settings, exports, imports, or restore points.
 
-Before replacing local data with a Google Drive restore during connection, Aura Start creates a local restore point.
+Before replacing local data with a Google Drive restore during connection or onboarding, Aura Start creates a local restore point.
 
 ## Account Marker
 

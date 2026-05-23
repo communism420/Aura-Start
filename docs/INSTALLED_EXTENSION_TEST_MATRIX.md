@@ -10,6 +10,8 @@ Use a fresh Chromium profile when possible, then repeat the existing-user cases 
 | Install ZIP contents | Extract the Chrome Submit ZIP to a temp folder and load it unpacked. | Extracted package behaves the same as `dist`. | Manual | Confirms ZIP root structure. |
 | New tab override | Open a new tab. | Aura Start opens as the Chromium new tab page. | Manual | Address bar focus may remain browser-controlled. |
 | First-run onboarding for new user | Clear extension storage, open new tab. | Onboarding appears only for an empty new profile. | Manual | |
+| First-run Restore from Google Drive with existing sync file | On a fresh profile, choose Restore from Google Drive after a Drive sync file already exists for the account. | Aura Start connects, creates a local restore point, restores the Drive data, and marks onboarding complete. | Manual | Requires real OAuth setup and an existing `aura-start-sync.json`. |
+| First-run Restore from Google Drive with no sync file | On a fresh profile with no Aura Start Drive file, choose Restore from Google Drive. | A clear no-file message appears and local data is not changed. | Manual | |
 | Existing data skips onboarding | Create at least one group/link, reload new tab. | Onboarding does not reopen automatically. | Manual | |
 | Empty state | Remove all groups/links after backup. | Empty state appears with create/import/demo actions. | Manual | |
 | Demo groups explicit add | Click Add demo groups. | Demo groups appear only after the click. | Manual | |
@@ -36,6 +38,7 @@ Use a fresh Chromium profile when possible, then repeat the existing-user cases 
 | Import Merge | Choose Merge and import valid data. | Imported groups are appended without replacing existing data. | Manual | |
 | Invalid import safety | Paste invalid JSON/export code. | No local data changes; user sees a clear error. | Manual | |
 | JSON import | Import Full Backup JSON. | Data validates and imports according to selected mode. | Manual | |
+| JSON import preserves Drive connection metadata | Connect Google Drive, then import a Full Backup JSON. | Imported data is applied without clearing local Google Drive sync metadata. | Manual | Local changes should continue to auto-sync after import. |
 | JSON export | Export Full Backup JSON. | Download contains full Aura Start data. | Manual | |
 | HTML bookmarks export | Export Browser Bookmarks HTML. | Download opens as bookmark HTML with folders/links. | Manual | |
 | Markdown export | Export Markdown. | Download contains grouped readable links. | Manual | |
@@ -52,6 +55,8 @@ Use a fresh Chromium profile when possible, then repeat the existing-user cases 
 | Corrupted storage recovery | If feasible, inject invalid storage data. | Recovery screen appears and does not overwrite silently. | Manual | |
 | Google Drive connect | Connect Google Drive with release OAuth client. | Google consent uses only Drive app data scope. | Manual | Requires real OAuth setup. |
 | Google Drive sync | Sync after local changes. | `aura-start-sync.json` is updated in appDataFolder. | Manual | |
+| Automatic Google Drive backup after edit | With Drive connected, add/edit/delete a group or link. | Local change persists and Aura Start updates the hidden Drive sync file automatically. | Manual | There is no separate Sync now button in the current UI. |
+| No manual sync button | Open Google Drive Sync settings after connection. | Settings show status and disconnect/delete action; no redundant Sync now button is shown. | Manual | |
 | Google Drive conflict | If feasible, create local/cloud divergence. | Conflict UI offers a deliberate choice. | Manual | |
 | Delete Drive backup and disconnect | Use delete backup/disconnect action. | Hidden appDataFolder file is deleted where authorized; local data remains. | Manual | |
 | Privacy Promise | Open Settings privacy section. | Claims match manifest/source: no analytics, tracking, backend, broad browser permissions. | Manual | |

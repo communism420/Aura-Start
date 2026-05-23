@@ -11,11 +11,13 @@ Aura Start is a single-purpose Chromium new tab extension for organizing user-cr
 
 ## Google Drive Sync
 
-Google Drive sync is optional and user-initiated. It is off by default. When enabled, Aura Start stores one hidden file named `aura-start-sync.json` in Google Drive `appDataFolder`.
+Google Drive sync is optional and user-initiated. It is off by default. When enabled, Aura Start stores one hidden file named `aura-start-sync.json` in Google Drive `appDataFolder`. After the user connects Google Drive, local changes are backed up automatically to that hidden app data file.
 
 Aura Start does not request full Google Drive access, does not read visible Drive files, and does not scan normal Drive folders.
 
-For release builds, the submitted ZIP is built with a Chrome Extension OAuth client ID for the final extension ID. The only OAuth scope in `manifest.json` is `https://www.googleapis.com/auth/drive.appdata`; no full Drive or `drive.file` scopes are requested.
+For release builds, the submitted ZIP is built with a Chrome Extension OAuth client ID for the final extension ID. Google Chrome uses the manifest OAuth client through `chrome.identity.getAuthToken`. Compatible Chromium browsers that reject the built-in Chrome identity flow can use the configured Web OAuth fallback, but the fallback requests the same app data scope and does not add permissions. The only OAuth scope in `manifest.json` is `https://www.googleapis.com/auth/drive.appdata`; no full Drive or `drive.file` scopes are requested.
+
+On first run, users can choose to restore an existing Aura Start sync file from Google Drive. If no `aura-start-sync.json` file exists in appDataFolder, Aura Start shows a clear message and leaves local data unchanged. Importing a local Full Backup JSON does not clear local Google Drive connection metadata.
 
 ## Privacy And Code
 

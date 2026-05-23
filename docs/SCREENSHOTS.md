@@ -9,7 +9,7 @@ Recommended base sizes:
 
 - Chrome Web Store screenshots: 1280 x 800 or 1280 x 720 PNG
 - GitHub/social crops: 1600 x 900 PNG
-- Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data.
+- Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data and should reflect the latest Google Drive sync and shortcut layout changes.
 - Final publishable screenshots live in `Photo/`; GitHub Pages copies live in `docs/assets/screenshots/`.
 - `docs/screenshot-gallery.html` displays the real captured screenshots. It is not a mockup renderer.
 
@@ -128,7 +128,7 @@ Recommended base sizes:
 - Overlay text: "Optional backup through Google Drive appDataFolder"
 - Theme recommendation: light theme.
 - What not to show: real Google account email, OAuth client IDs, tokens, visible Drive files, or a fake success state.
-- Manual verification: confirm Google Drive sync is optional/off by default and Drive access is limited to `drive.appdata`.
+- Manual verification: confirm Google Drive sync is optional/off by default, Drive access is limited to `drive.appdata`, local changes auto-sync after connection, and no redundant Sync now button is shown.
 - Chrome Web Store-safe wording: "Optional backup" and "appDataFolder" match the implemented permission model.
 - Recommended size: 1280 x 800.
 - Capture source: real extension UI. Hide account data if a connected account is used.

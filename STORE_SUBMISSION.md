@@ -18,7 +18,7 @@ Suggested positioning:
 
 Suggested detailed description:
 
-> Aura Start replaces the Chromium new tab page with a clean local-first start page for groups of links. Create, search, and reorder link groups; import from Aura Start backups or A Fine Start export codes; export anytime as JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code; use restore points before destructive changes; and work faster with Command Palette, browser-assigned shortcuts, and Duplicate Finder. Aura Start requires no account, has no analytics or tracking, and has no backend. Optional Google Drive backup/sync uses only the hidden Google Drive appDataFolder file. Aura Start is open-source under the MIT License and is an independent project, not affiliated with A Fine Start.
+> Aura Start replaces the Chromium new tab page with a clean local-first start page for groups of links. Create, search, and reorder link groups; import from Aura Start backups or A Fine Start export codes; export anytime as JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code; use restore points before destructive changes; and work faster with Command Palette, browser-assigned shortcuts, Cyrillic-layout shortcut handling, and Duplicate Finder. Aura Start requires no account, has no analytics or tracking, and has no backend. Optional Google Drive backup/sync uses only the hidden Google Drive appDataFolder file and syncs local changes automatically after the user connects it. Aura Start is open-source under the MIT License and is an independent project, not affiliated with A Fine Start.
 
 ## Open Source Policy
 
@@ -62,7 +62,7 @@ Requested OAuth scope:
 
 Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive. The Chrome Web Store build must use the Chrome Extension OAuth client configured in `manifest.oauth2`; a manual `launchWebAuthFlow` URL must never be the primary auth path in Google Chrome. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. To support Brave and other Chromium browsers that reject `chrome.identity.getAuthToken`, also set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` to a real Web OAuth client whose authorized redirect URI is `https://<extension-id>.chromiumapp.org/oauth2`. That fallback is used only when Chrome identity is unavailable or explicitly unsupported; Google Chrome still uses manifest OAuth first. Example and placeholder IDs are rejected by validation because Google returns `invalid_client` for them. This does not add host permissions and does not grant access to normal Google Drive files.
 
-The Google OAuth consent is used only to read, create, update, or delete Aura Start's hidden `aura-start-sync.json` app data file. Aura Start does not use Google authorization for analytics, tracking, advertising, account profiling, or access to visible Google Drive files.
+The Google OAuth consent is used only to read, create, update, or delete Aura Start's hidden `aura-start-sync.json` app data file. Aura Start does not use Google authorization for analytics, tracking, advertising, account profiling, or access to visible Google Drive files. Importing local JSON data preserves the local Google Drive connection metadata for the installed extension, so changing groups or links does not disconnect sync by itself.
 
 Aura Start intentionally does not request:
 
@@ -87,6 +87,8 @@ Recommended dashboard disclosure:
 - Aura Start handles user-provided bookmark/link data locally.
 - Google Drive sync is optional and off by default.
 - When enabled, Aura Start stores one hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`.
+- After connection, local Aura Start changes are queued and synced automatically.
+- First-run onboarding can restore an existing hidden Drive sync file when the user chooses that action; if no file exists, Aura Start reports that and keeps local data unchanged.
 - Aura Start does not request full Google Drive access and does not read, scan, edit, delete, or create visible Drive files.
 - Aura Start does not use Google authorization to track users or profile their Drive contents.
 - Aura Start does not collect or transmit user data to the developer.

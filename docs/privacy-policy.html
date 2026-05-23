@@ -101,7 +101,7 @@
           <h2>Optional Google Drive Sync</h2>
           <p>
             If the user explicitly connects Google Drive sync, Aura Start uses Google
-            OAuth through <code>chrome.identity</code> and requests only this scope:
+            OAuth through Chromium extension identity APIs and requests only this scope:
             <code>https://www.googleapis.com/auth/drive.appdata</code>.
           </p>
           <p>
@@ -131,6 +131,7 @@
           <ul>
             <li>Keep sync off and use Aura Start fully locally.</li>
             <li>Restore an existing Google Drive sync file automatically when connecting sync.</li>
+            <li>Restore an existing Google Drive sync file from first-run onboarding when the user chooses that action.</li>
             <li>Create a Google Drive sync file automatically when none exists.</li>
             <li>
               Back up local changes to Google Drive automatically after connecting sync,
@@ -164,8 +165,8 @@
             groups, links, settings, exports, imports, or restore points.
           </p>
           <p>
-            Before replacing local data with a Google Drive restore during connection,
-            Aura Start creates a local restore point.
+            Before replacing local data with a Google Drive restore during connection
+            or onboarding, Aura Start creates a local restore point.
           </p>
 
           <h2>Account Marker</h2>

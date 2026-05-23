@@ -1,5 +1,7 @@
 # Aura Start Competitive Audit
 
+> Current status note: this audit is retained as launch context. Since it was written, Aura Start has addressed several noted blockers, including regenerated store materials/screenshots, installed-extension checklist coverage, OAuth flow selection, shortcut/layout handling, Google Drive reconnect/token persistence behavior, and public documentation cleanup. Chromium-only and broader multi-browser support remain intentionally out of scope for the current work.
+
 Audit date: 2026-05-18  
 Repository audited: local working copy of `communism420/Aura-Start` at Aura Start 1.2.0  
 Scope: product, code architecture, documentation, GitHub Pages site, Chrome Web Store materials, and release readiness.  

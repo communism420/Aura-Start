@@ -43,7 +43,7 @@
                 <a class="button secondary" href="screenshot-gallery.html">View screenshots</a>
                 <a class="button secondary" href="privacy-policy.html">Read privacy policy</a>
               </div>
-              <p class="status">Chrome Web Store listing coming soon. Manual installation from source is documented on GitHub.</p>
+              <p class="status">Source code, manual installation notes, and release materials are available on GitHub.</p>
             </div>
 
             <div class="hero-preview" aria-label="Aura Start new tab preview">
@@ -86,7 +86,7 @@
             <article class="feature-card">
               <span class="feature-icon">01</span>
               <h3>Clean link groups</h3>
-              <p>Organize links into readable groups with descriptions, tags, search, themes, compact mode, and configurable columns.</p>
+              <p>Organize links into readable groups with descriptions, tags, search modifiers, themes, compact mode, and configurable columns.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">02</span>
@@ -106,7 +106,7 @@
             <article class="feature-card">
               <span class="feature-icon">05</span>
               <h3>Command Palette</h3>
-              <p>Open common actions quickly with keyboard-first navigation and a focused command workflow.</p>
+              <p>Open common actions from the visible palette button or Ctrl+K/Cmd+K when the browser assigns that shortcut.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">06</span>
@@ -116,7 +116,7 @@
             <article class="feature-card">
               <span class="feature-icon">07</span>
               <h3>Optional Drive backup</h3>
-              <p>Google Drive sync is optional, off by default, and uses only the hidden appDataFolder scope.</p>
+              <p>Google Drive sync is optional, restores or creates Aura Start's hidden sync file, and syncs local changes automatically after connection.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">08</span>
@@ -163,9 +163,10 @@
             <span class="kicker">Optional backup</span>
             <h2>Google Drive sync only when you choose it.</h2>
             <p>
-              When enabled, Drive sync uses Chrome identity and the
+              When enabled, Drive sync uses Chromium extension identity APIs and the
               <code>drive.appdata</code> scope to store Aura Start's hidden
-              <code>aura-start-sync.json</code> file.
+              <code>aura-start-sync.json</code> file. Aura Start does not request
+              full Drive access or visible Drive files.
             </p>
           </div>
         </section>

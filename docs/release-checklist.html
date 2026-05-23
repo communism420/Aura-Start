@@ -57,7 +57,7 @@
 <li>Upload ZIP manually in Chrome Web Store Developer Dashboard.</li>
 </ul>
 <h2>Installed Extension Test Matrix</h2>
-<p>Run the exact installed-extension matrix in <a href="INSTALLED_EXTENSION_TEST_MATRIX.md">INSTALLED_EXTENSION_TEST_MATRIX.md</a> against the same <code>dist</code>/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, and Google Drive connect/disconnect need browser verification.</p>
+<p>Run the exact installed-extension matrix in <a href="INSTALLED_EXTENSION_TEST_MATRIX.md">INSTALLED_EXTENSION_TEST_MATRIX.md</a> against the same <code>dist</code>/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.</p>
 <h2>Google Drive OAuth Release Verification</h2>
 <ul>
 <li>Create a Chrome Extension OAuth client for the final published extension ID.</li>
@@ -68,7 +68,7 @@
 <li>Inspect <code>dist/manifest.json</code> and the final ZIP manifest after build.</li>
 <li>Confirm the OAuth scope is only <code>https://www.googleapis.com/auth/drive.appdata</code>.</li>
 <li>Confirm there is no full Drive scope and no <code>drive.file</code> scope.</li>
-<li>Install the final build as unpacked, then test connect, sync, restore, disconnect, and delete-backup flows.</li>
+<li>Install the final build as unpacked, then test connect, automatic backup after local edits, first-run restore from an existing Drive sync file, no-file messaging when no Drive sync file exists, disconnect, and delete-backup flows.</li>
 <li>Re-check <code>Chrome Submit/REVIEWER_NOTES.md</code> and the Chrome Web Store privacy form before submission.</li>
 <li>If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.</li>
 </ul>

@@ -12,9 +12,9 @@ A local-first, private, exportable start page for your Chromium new tab.
 
 Aura Start replaces the Chromium new tab page with clean groups of links, local-first storage, and export-first data ownership.
 
-Create groups, save links, search by title, URL, description, tags, and supported modifiers, and move faster with Command Palette, a visible palette button, and browser-assigned keyboard shortcuts. Aura Start includes Import from A Fine Start export codes, Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export code. Restore points help protect destructive actions, and Duplicate Finder scans local links read-only before any user-confirmed deletion.
+Create groups, save links, search by title, URL, description, tags, and supported modifiers, and move faster with Command Palette, a visible palette button, and browser-assigned keyboard shortcuts that handle Latin and Cyrillic keyboard layouts where implemented. Aura Start includes Import from A Fine Start export codes, Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export code. Restore points help protect destructive actions, and Duplicate Finder scans local links read-only before any user-confirmed deletion.
 
-Aura Start has no required account, no analytics, no tracking, no ads, and no backend. Optional Google Drive backup/sync is off by default and uses only the hidden Google Drive appDataFolder scope for Aura Start's own `aura-start-sync.json` file.
+Aura Start has no required account, no analytics, no tracking, no ads, and no backend. Optional Google Drive backup/sync is off by default and uses only the hidden Google Drive appDataFolder scope for Aura Start's own `aura-start-sync.json` file. After the user connects Google Drive, local changes are backed up automatically. On first run, users can also restore an existing Aura Start Drive sync file; if no file exists, Aura Start shows a clear error and leaves local data unchanged.
 
 Aura Start is open-source under the MIT License. It is an independent project and is not affiliated with A Fine Start.
 
@@ -27,7 +27,7 @@ Aura Start is open-source under the MIT License. It is an independent project an
 - Restore points before destructive actions
 - Command Palette, visible UI access, and browser-assigned keyboard shortcuts
 - Duplicate Finder with read-only scan and user-confirmed deletion
-- Optional Google Drive appDataFolder backup
+- Optional Google Drive appDataFolder backup with automatic sync after connection
 - No account, no analytics, no tracking
 - Open-source under the MIT License
 

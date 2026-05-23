@@ -1,6 +1,6 @@
 # Chrome Web Store Screenshots Checklist
 
-All screenshots are final PNG files in `Photo/` and GitHub Pages copies in `docs/assets/screenshots/`. They were generated from the real Aura Start 1.2.0 UI with non-personal demo data.
+All screenshots are final PNG files in `Photo/` and GitHub Pages copies in `docs/assets/screenshots/`. They were refreshed against the current Aura Start 1.2.0 UI with non-personal demo data, including the latest Google Drive sync and shortcut-related layout changes.
 
 | Filename | What it shows | Why it matters | Matching feature | Real UI status |
 | --- | --- | --- | --- | --- |

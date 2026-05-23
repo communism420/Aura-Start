@@ -16,7 +16,7 @@ Core message:
 - No analytics or tracking.
 - Export anytime.
 - Import from A Fine Start export codes.
-- Optional Google Drive backup through `appDataFolder`.
+- Optional Google Drive backup through `appDataFolder`, with automatic backup after connection.
 - Open-source under the MIT License.
 
 ## 2. Target Users
@@ -30,7 +30,7 @@ Core message:
 ## 3. Launch Channels
 
 - GitHub release
-- Chrome Web Store listing after manual publication
+- Chrome Web Store listing after publication or after the live listing URL is verified
 - Personal website or project page
 - Privacy/open-source communities where self-promotion is allowed
 - Browser extension communities
@@ -48,7 +48,7 @@ Body:
 
 > Aura Start is a Chromium new tab extension for people who want clean groups of links without a required account. It stores data locally by default, has no analytics or tracking, and supports export to JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code.
 >
-> Optional Google Drive sync is off by default and uses only the hidden Drive `appDataFolder` scope. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
+> Optional Google Drive sync is off by default and uses only the hidden Drive `appDataFolder` scope. After connection, local changes are backed up automatically. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
 
 ## 5. Reddit / Forum Post Draft: Migration From A Fine Start
 
@@ -60,7 +60,7 @@ Body:
 
 > Aura Start is an independent open-source start page inspired by the simple grouped-link workflow. It can import A Fine Start export codes and export an A Fine Start-compatible code for a basic grouped-link format later.
 >
-> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, export formats, restore points, and optional Google Drive `appDataFolder` backup. Feedback from people who use grouped-link start pages would be useful.
+> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, export formats, restore points, and optional Google Drive `appDataFolder` backup that runs after the user connects it. Feedback from people who use grouped-link start pages would be useful.
 
 ## 6. Reddit / Forum Post Draft: Power-User Workflow
 
@@ -104,7 +104,7 @@ Focus on:
 - No account
 - No analytics/tracking/ads/backend
 - Least-privilege permissions
-- Optional Google Drive `appDataFolder` backup
+- Optional Google Drive `appDataFolder` backup with automatic backup after connection
 - Export formats and restore points
 
 ## 10. What Not To Say

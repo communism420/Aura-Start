@@ -15,7 +15,9 @@ Aura Start handles user-created start page data:
 
 Data is stored locally by default in extension storage. Aura Start has no backend and does not collect, sell, share, or use user data for ads, analytics, tracking, profiling, or unrelated purposes.
 
-Optional Google Drive sync is off by default and starts only after user action. It uses Chrome identity/OAuth and only the Google Drive `drive.appdata` scope. The sync file is `aura-start-sync.json` in the hidden Google Drive `appDataFolder`. Aura Start does not request full Drive access and does not read visible Drive files.
+Optional Google Drive sync is off by default and starts only after user action. It uses Chrome identity/OAuth and only the Google Drive `drive.appdata` scope. The sync file is `aura-start-sync.json` in the hidden Google Drive `appDataFolder`. After connection, local changes are backed up automatically to that hidden file. Aura Start does not request full Drive access and does not read visible Drive files.
+
+On first run, users can choose to restore an existing Aura Start sync file from Google Drive. If no sync file exists, Aura Start reports that and does not overwrite local data.
 
 Use this privacy policy URL after GitHub Pages is published:
 

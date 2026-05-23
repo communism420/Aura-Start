@@ -13,7 +13,7 @@ Aura Start is not affiliated with A Fine Start. This document only makes claims 
 - You want no required account
 - You want export formats
 - You want A Fine Start migration
-- You want optional Google Drive appDataFolder backup
+- You want optional Google Drive appDataFolder backup with automatic backup after connection
 
 ## Feature comparison
 
@@ -21,7 +21,7 @@ Aura Start is not affiliated with A Fine Start. This document only makes claims 
 | --- | --- | --- |
 | Project relationship | Independent open-source project, not affiliated with A Fine Start | Separate product; check official listing |
 | Source availability | Open-source under the MIT License | Not verified here |
-| Published maturity | Prepared for Chrome Web Store submission in this repository | Already published and has an existing audience according to the audit; verify current listing |
+| Published maturity | Chrome Web Store release materials exist in this repository; verify the current live listing before sharing a store link | Already published and has an existing audience according to the audit; verify current listing |
 | Browser/web footprint | Chromium new tab extension | Public A Fine Start pages indicate broader browser/web availability; verify current support |
 | Account requirement | No account required for local use | Depends on current version; check official listing |
 | Default storage | Local extension storage through `chrome.storage.local` | Not claimed by Aura Start docs |
@@ -34,13 +34,13 @@ Aura Start is not affiliated with A Fine Start. This document only makes claims 
 | Export formats | JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export code | A Fine Start has import/export tools; exact current formats should be verified |
 | A Fine Start migration | Imports A Fine Start export codes | Native format behavior depends on current version |
 | Restore points | Local Restore Points Manager, up to 20 local snapshots, and safety points before destructive operations | Public help checked in the audit documents restore points, including a broader every-change story and higher cap; verify current documentation |
-| Power-user tools | Command Palette, keyboard shortcuts when assigned by the browser, and read-only Duplicate Finder scan | A Fine Start documents a search pane shortcut; broader command palette/duplicate tooling was not verified |
-| Optional cloud backup | Google Drive `appDataFolder` sync file, off by default | Not claimed by Aura Start docs |
+| Power-user tools | Command Palette, visible palette button, layout-aware shortcuts where implemented, and read-only Duplicate Finder scan | A Fine Start documents a search pane shortcut; broader command palette/duplicate tooling was not verified |
+| Optional cloud backup | Google Drive `appDataFolder` sync file, off by default, with automatic backup after connection and first-run restore if a sync file exists | Not claimed by Aura Start docs |
 | Browser permissions | `storage`, `identity`, Google API host permission for optional Drive sync | Check official listing |
 
 ## Where A Fine Start may be stronger today
 
-- A Fine Start is already published and has existing market proof; Aura Start still needs final Chrome Web Store submission and review.
+- A Fine Start is already published and has existing market proof; Aura Start's live Chrome Web Store status should be verified before using a store link in public materials.
 - Public pages checked in the audit indicate a broader browser/web footprint for A Fine Start. Aura Start intentionally remains Chromium-only for now.
 - Public A Fine Start docs/listing describe a quick-add/current-page workflow. Aura Start does not implement this today because doing so safely may require permissions that Aura Start currently avoids.
 - A Fine Start publicly documents restore points with a broader every-bookmark-change story. Aura Start focuses restore points on destructive actions, keeps a visible manager, and recommends Full Backup JSON for long-term backups.
@@ -63,7 +63,7 @@ Aura Start validates imported URLs before saving them. Unsupported or unsafe URL
 
 Aura Start is export-first. The primary data lives in local extension storage by default, and users can export a full JSON backup at any time. Manual JSON export/import works independently of optional Google Drive sync.
 
-Optional Google Drive sync uses a hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`. Aura Start does not request full Google Drive access and does not create visible Drive files.
+Optional Google Drive sync uses a hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`. After connection, local changes are backed up automatically. Aura Start does not request full Google Drive access and does not create visible Drive files.
 
 When exporting back to an A Fine Start-compatible export code, Aura Start writes the compatibility fields supported by that format: group names and bookmark `name`/`url` values. Aura Start-specific fields such as descriptions and tags are not included in that compatibility export when the target format does not support them.
 

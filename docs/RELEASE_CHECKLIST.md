@@ -38,7 +38,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 
 ## Installed Extension Test Matrix
 
-Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md`](./INSTALLED_EXTENSION_TEST_MATRIX.md) against the same `dist`/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, and Google Drive connect/disconnect need browser verification.
+Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md`](./INSTALLED_EXTENSION_TEST_MATRIX.md) against the same `dist`/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.
 
 ## Google Drive OAuth Release Verification
 
@@ -50,7 +50,7 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Inspect `dist/manifest.json` and the final ZIP manifest after build.
 - Confirm the OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
 - Confirm there is no full Drive scope and no `drive.file` scope.
-- Install the final build as unpacked, then test connect, sync, restore, disconnect, and delete-backup flows.
+- Install the final build as unpacked, then test connect, automatic backup after local edits, first-run restore from an existing Drive sync file, no-file messaging when no Drive sync file exists, disconnect, and delete-backup flows.
 - Re-check `Chrome Submit/REVIEWER_NOTES.md` and the Chrome Web Store privacy form before submission.
 - If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.
 
