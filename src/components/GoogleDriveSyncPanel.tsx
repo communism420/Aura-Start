@@ -1,4 +1,4 @@
-import { Cloud, RefreshCw, Trash2 } from "lucide-react";
+import { Cloud, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
 import type {
@@ -18,7 +18,6 @@ type GoogleDriveSyncPanelProps = {
   syncMessage: string | null;
   syncConflict: AuraSyncConflict | null;
   onConnect: () => Promise<void>;
-  onSyncNow: () => Promise<void>;
   onDeleteBackupAndDisconnect: () => Promise<void>;
   onResolveConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
   onError: (message: string) => void;
@@ -36,7 +35,6 @@ export function GoogleDriveSyncPanel({
   syncMessage,
   syncConflict,
   onConnect,
-  onSyncNow,
   onDeleteBackupAndDisconnect,
   onResolveConflict,
   onError
@@ -119,26 +117,15 @@ export function GoogleDriveSyncPanel({
             <span className="truncate">{t(language, "googleDriveConnect")}</span>
           </button>
         ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button
-              className="btn btn-primary h-11 min-w-0 justify-center whitespace-nowrap px-3 text-sm"
-              disabled={busy}
-              type="button"
-              onClick={() => run(onSyncNow)}
-            >
-              <RefreshCw className="shrink-0" size={17} />
-              <span className="truncate">{t(language, "googleDriveSyncNow")}</span>
-            </button>
-            <button
-              className="btn btn-danger h-11 min-w-0 justify-center whitespace-nowrap px-3 text-sm"
-              disabled={!canManageConnection}
-              type="button"
-              onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
-            >
-              <Trash2 className="shrink-0" size={17} />
-              <span className="truncate">{t(language, "googleDriveDeleteBackupAndDisconnect")}</span>
-            </button>
-          </div>
+          <button
+            className="btn btn-danger h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
+            disabled={!canManageConnection}
+            type="button"
+            onClick={() => setPendingConfirm("delete_backup_and_disconnect")}
+          >
+            <Trash2 className="shrink-0" size={17} />
+            <span className="truncate">{t(language, "googleDriveDeleteBackupAndDisconnect")}</span>
+          </button>
         )}
       </div>
 

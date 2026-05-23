@@ -101,7 +101,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     deleteRestorePoint,
     deleteAllRestorePoints,
     connectGoogleDrive,
-    syncNow,
     deleteGoogleDriveBackupAndDisconnect,
     resolveSyncConflict,
     addToast
@@ -752,7 +751,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         syncMessage={syncMessage}
         syncStatus={syncStatus}
         onConnectGoogleDrive={connectGoogleDrive}
-        onSyncGoogleDrive={syncNow}
         onClose={() => setSettingsOpen(false)}
         onDeleteGoogleDriveBackupAndDisconnect={deleteGoogleDriveBackupAndDisconnect}
         onError={showError}
