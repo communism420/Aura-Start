@@ -62,6 +62,7 @@ export type LinkDeleteTarget = {
 
 type AuraStoreStatus = "idle" | "loading" | "ready" | "corrupt" | "error";
 type GoogleDriveBackupOptions = { silent?: boolean; token?: string };
+type GoogleDriveRestoreOptions = { requireExistingFile?: boolean };
 type GoogleDriveSyncNowOptions = { silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
 type ImportBackupSource = "aura_json" | "a_fine_start";
@@ -108,7 +109,7 @@ type AuraStore = {
   connectGoogleDrive: () => Promise<void>;
   disconnectGoogleDrive: () => Promise<void>;
   backupToGoogleDrive: (options?: GoogleDriveBackupOptions) => Promise<void>;
-  restoreFromGoogleDrive: () => Promise<void>;
+  restoreFromGoogleDrive: (options?: GoogleDriveRestoreOptions) => Promise<boolean>;
   syncNow: (options?: GoogleDriveSyncNowOptions) => Promise<void>;
   setSyncMode: (mode: AuraSyncMode) => Promise<void>;
   deleteGoogleDriveSyncFile: () => Promise<void>;
@@ -1156,15 +1157,20 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     }
   },
 
-  async restoreFromGoogleDrive() {
+  async restoreFromGoogleDrive(options = {}) {
     const data = get().data;
-    if (!data) return;
+    if (!data) return false;
 
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveRestoring"), syncConflict: null });
     try {
       const token = await getTokenForSync(data.settings.sync);
       const download = await restoreFromDrive(token);
       if (!download) {
+        if (options.requireExistingFile) {
+          set({ syncStatus: "idle", syncMessage: text(data, "googleDriveNoSyncFileFound"), syncConflict: null });
+          return false;
+        }
+
         await commitSyncMetadata(
           set,
           data,
@@ -1180,7 +1186,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           type: "info",
           title: text(data, "googleDriveNoSyncFileFound")
         });
-        return;
+        return false;
       }
 
       await applyCloudDownload(set, get, download);
@@ -1189,6 +1195,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         title: text(get().data, "googleDriveRestoreSuccess"),
         message: text(get().data, "googleDriveRestoreSuccessDescription")
       });
+      return true;
     } catch (error) {
       driveFailure(set, get, error);
       throw error;

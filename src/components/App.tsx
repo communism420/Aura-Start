@@ -102,6 +102,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     deleteAllRestorePoints,
     connectGoogleDrive,
     deleteGoogleDriveBackupAndDisconnect,
+    restoreFromGoogleDrive,
     resolveSyncConflict,
     addToast
   } = useAuraStore();
@@ -785,6 +786,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onError={showError}
         onImportAFineStart={() => openImport("a_fine_start")}
         onImportBackup={() => openImport("aura_json")}
+        onRestoreGoogleDrive={() => restoreFromGoogleDrive({ requireExistingFile: true })}
         onUpdateSettings={updateSettings}
       />
       <RestorePointsDialog

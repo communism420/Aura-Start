@@ -1,4 +1,4 @@
-import { Check, FileUp, Palette, Sparkles } from "lucide-react";
+import { Check, Cloud, FileUp, Palette, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import type { AuraStartData, AuraStartSettings } from "../types";
@@ -13,6 +13,7 @@ type OnboardingDialogProps = {
   onComplete: () => Promise<void>;
   onImportAFineStart: () => void;
   onImportBackup: () => void;
+  onRestoreGoogleDrive: () => Promise<boolean>;
   onUpdateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
   onError: (message: string) => void;
 };
@@ -24,6 +25,7 @@ export function OnboardingDialog({
   onComplete,
   onImportAFineStart,
   onImportBackup,
+  onRestoreGoogleDrive,
   onUpdateSettings,
   onError
 }: OnboardingDialogProps) {
@@ -68,6 +70,21 @@ export function OnboardingDialog({
     action();
   }
 
+  async function completeAndRestoreGoogleDrive() {
+    try {
+      const restored = await onRestoreGoogleDrive();
+      if (!restored) {
+        onError(t(language, "googleDriveNoSyncFileFound"));
+        return;
+      }
+
+      await onComplete();
+      onClose();
+    } catch (error) {
+      onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"));
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -80,10 +97,14 @@ export function OnboardingDialog({
       {step === "start" ? (
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">{t(language, "chooseHowToStart")}</h3>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-4">
             <button className="surface-flat rounded-lg border border-[var(--border)] p-4 text-left" type="button" onClick={() => setStep("appearance")}>
               <Sparkles className="mb-3 text-[var(--accent)]" size={22} />
               <div className="font-semibold">{t(language, "startFresh")}</div>
+            </button>
+            <button className="surface-flat rounded-lg border border-[var(--border)] p-4 text-left" type="button" onClick={() => void completeAndRestoreGoogleDrive()}>
+              <Cloud className="mb-3 text-[var(--accent)]" size={22} />
+              <div className="font-semibold">{t(language, "restoreFromGoogleDriveOnboarding")}</div>
             </button>
             <button className="surface-flat rounded-lg border border-[var(--border)] p-4 text-left" type="button" onClick={() => void completeAndOpenImport(onImportAFineStart)}>
               <FileUp className="mb-3 text-[var(--accent)]" size={22} />
