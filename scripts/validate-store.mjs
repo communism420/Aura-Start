@@ -99,16 +99,15 @@ function looksLikeExampleOAuthClientId(clientId) {
 }
 
 const allowedRuntimeOAuthClientIds = new Set();
-const webOAuthClientId = configuredWebOAuthClientId || await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID");
-if (webOAuthFallbackEnabled && !webOAuthClientId) {
-  fail("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
-}
-if (webOAuthClientId) {
-  if (!oauthClientIdPattern.test(webOAuthClientId) || looksLikeExampleOAuthClientId(webOAuthClientId)) {
+if (webOAuthFallbackEnabled) {
+  const webOAuthClientId = configuredWebOAuthClientId || await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID");
+  if (!webOAuthClientId) {
+    fail("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
+  } else if (!oauthClientIdPattern.test(webOAuthClientId) || looksLikeExampleOAuthClientId(webOAuthClientId)) {
     fail("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID must be a real Google OAuth Web Client ID ending with .apps.googleusercontent.com.");
-  } else {
-    allowedRuntimeOAuthClientIds.add(webOAuthClientId);
   }
+
+  fail("Chrome Web Store builds must not enable the Web OAuth fallback. Use manifest oauth2 with chrome.identity.getAuthToken for Google Drive sync.");
 }
 
 for (const file of requiredFiles) {

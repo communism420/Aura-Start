@@ -9,6 +9,12 @@ const steps = [
 for (const [command, args] of steps) {
   const result = spawnSync(command, args, {
     cwd: process.cwd(),
+    env: {
+      ...process.env,
+      AURA_STORE_BUILD: "true",
+      AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK: "false",
+      AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: ""
+    },
     stdio: "inherit",
     shell: false
   });

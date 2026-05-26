@@ -1,1 +1,2 @@
+declare const __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__: boolean;
 declare const __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__: string;

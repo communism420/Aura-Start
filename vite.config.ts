@@ -52,7 +52,15 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const googleOAuthClientId = env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
-  const googleWebOAuthClientId = env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+  const storeBuild = process.env.AURA_STORE_BUILD === "true" || env.AURA_STORE_BUILD === "true";
+  const enableGoogleWebOAuthFallback = !storeBuild && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK === "true";
+  const googleWebOAuthClientId = enableGoogleWebOAuthFallback
+    ? env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? ""
+    : "";
+
+  if (enableGoogleWebOAuthFallback && !googleWebOAuthClientId) {
+    throw new Error("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
+  }
 
   if (googleWebOAuthClientId) {
     if (!OAUTH_CLIENT_ID_PATTERN.test(googleWebOAuthClientId)) {
@@ -66,6 +74,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react(), googleOAuthClientPlugin(googleOAuthClientId)],
     define: {
+      __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__: JSON.stringify(enableGoogleWebOAuthFallback),
       __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__: JSON.stringify(googleWebOAuthClientId)
     },
     build: {
