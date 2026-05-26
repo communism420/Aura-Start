@@ -11,9 +11,7 @@ for (const [command, args] of steps) {
     cwd: process.cwd(),
     env: {
       ...process.env,
-      AURA_STORE_BUILD: "true",
-      AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK: "false",
-      AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: ""
+      AURA_STORE_BUILD: "true"
     },
     stdio: "inherit",
     shell: false

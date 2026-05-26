@@ -56,6 +56,31 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
+  it("uses Web OAuth in known non-Chrome Chromium browsers when fallback is configured", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        chromeIdentityUnsupported: true,
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("web_oauth");
+  });
+
+  it("does not open Chrome identity OAuth in known unsupported browsers without Web OAuth fallback", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        chromeIdentityUnsupported: true
+      })
+    ).toBe("unavailable");
+  });
+
   it("does not prefer Web OAuth over valid manifest OAuth", () => {
     expect(
       selectGoogleDriveAuthFlow({

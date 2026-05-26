@@ -21,6 +21,10 @@ const WEB_OAUTH_CLIENT_ID =
   WEB_OAUTH_FALLBACK_ENABLED && typeof __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__ === "string"
     ? __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__.trim()
     : "";
+const WEB_OAUTH_REDIRECT_PATH =
+  WEB_OAUTH_FALLBACK_ENABLED && typeof __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__ === "string"
+    ? __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__.trim()
+    : "";
 type RecordValue = Record<string, unknown>;
 type ManifestWithOAuth = chrome.runtime.Manifest & {
   oauth2?: {
@@ -40,6 +44,7 @@ export type GoogleDriveAuthFlowInput = {
   hasGetAuthToken: boolean;
   manifestClientId?: string;
   manifestScopes?: string[];
+  chromeIdentityUnsupported?: boolean;
   webOAuthClientId?: string;
 };
 
@@ -136,7 +141,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.0";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.1";
 }
 
 function looksLikeExampleOAuthClientId(clientId: string): boolean {
@@ -162,6 +167,14 @@ function hasExactDriveAppDataScope(scopes: string[] | undefined): boolean {
 }
 
 export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): GoogleDriveAuthFlow {
+  if (input.chromeIdentityUnsupported && isUsableOAuthClientId(input.webOAuthClientId)) {
+    return "web_oauth";
+  }
+
+  if (input.chromeIdentityUnsupported) {
+    return "unavailable";
+  }
+
   if (input.hasIdentityApi && input.hasGetAuthToken) {
     return isUsableOAuthClientId(input.manifestClientId) && hasExactDriveAppDataScope(input.manifestScopes)
       ? "chrome_identity"
@@ -169,6 +182,26 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
   }
 
   return input.hasIdentityApi && isUsableOAuthClientId(input.webOAuthClientId) ? "web_oauth" : "unavailable";
+}
+
+type NavigatorWithBrave = Navigator & {
+  brave?: {
+    isBrave?: () => Promise<boolean>;
+  };
+};
+
+async function isKnownNonChromeChromiumBrowser(): Promise<boolean> {
+  const userAgent = globalThis.navigator?.userAgent ?? "";
+  if (/\bEdg\//.test(userAgent) || /\bOPR\//.test(userAgent)) {
+    return true;
+  }
+
+  const brave = (globalThis.navigator as NavigatorWithBrave | undefined)?.brave;
+  if (typeof brave?.isBrave === "function" && await brave.isBrave().catch(() => false)) {
+    return true;
+  }
+
+  return false;
 }
 
 function oauthClientConfigurationError(clientId: string | undefined): string {
@@ -394,7 +427,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const redirectUri = identity.getRedirectURL("oauth2");
+  const redirectUri = identity.getRedirectURL(WEB_OAUTH_REDIRECT_PATH);
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", clientId);
@@ -610,11 +643,13 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const webOAuthClientId = configuredWebOAuthClientId();
+  const chromeIdentityUnsupported = interactive && await isKnownNonChromeChromiumBrowser();
   const flow = selectGoogleDriveAuthFlow({
     hasIdentityApi: Boolean(identity),
     hasGetAuthToken: typeof identity?.getAuthToken === "function",
     manifestClientId: manifestConfig.clientId,
     manifestScopes: manifestConfig.scopes,
+    chromeIdentityUnsupported,
     webOAuthClientId
   });
 
@@ -640,6 +675,13 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   if (flow === "web_oauth") {
     console.debug?.("Aura Start Google Drive sync: using Web OAuth fallback.");
     return await launchGoogleWebAuthFlow(interactive);
+  }
+
+  if (chromeIdentityUnsupported && !webOAuthClientId) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "This browser does not support Chrome's built-in Google sign-in for Drive sync. Use Google Chrome, or build Aura Start with a Web OAuth fallback client authorized for this extension redirect URL."
+    );
   }
 
   throw new GoogleDriveSyncError("identity_unavailable", manifestOAuthConfigurationError(manifestConfig));

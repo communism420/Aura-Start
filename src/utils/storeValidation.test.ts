@@ -125,18 +125,16 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stderr).toContain("unexpected bundled OAuth Client ID");
   });
 
-  it("fails when the Web OAuth fallback client is bundled into a store build", async () => {
+  it("allows the configured Web OAuth fallback client", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
       `const webClient = "${VALID_WEB_CLIENT_ID}"; const url = "https://accounts.google.com/o/oauth2/v2/auth";`,
       {
-        AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK: "true",
         AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: VALID_WEB_CLIENT_ID
       }
     );
 
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("must not enable the Web OAuth fallback");
-    expect(result.stderr).toContain("unexpected bundled OAuth Client ID");
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 });
