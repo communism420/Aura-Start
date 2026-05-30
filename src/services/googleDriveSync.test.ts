@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  detectGoogleDriveInstallSource,
   GoogleDriveSyncError,
   isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
@@ -69,6 +70,33 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
+  it("keeps Chrome Web Store installs on manifest OAuth even in non-Chrome Chromium browsers", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        chromeIdentityUnsupported: true,
+        installSource: "chrome_web_store",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("chrome_identity");
+  });
+
+  it("does not use Web OAuth for Chrome Web Store installs without getAuthToken", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: false,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        installSource: "chrome_web_store",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("unavailable");
+  });
+
   it("does not open Chrome identity OAuth in known unsupported browsers without Web OAuth fallback", () => {
     expect(
       selectGoogleDriveAuthFlow({
@@ -113,6 +141,46 @@ describe("Google Drive OAuth flow selection", () => {
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("unavailable");
+  });
+});
+
+describe("Google Drive install source detection", () => {
+  it("detects the published Chrome Web Store extension ID", () => {
+    const originalChrome = globalThis.chrome;
+    Object.defineProperty(globalThis, "chrome", {
+      configurable: true,
+      value: {
+        runtime: {
+          id: "pdhhnnmcampmmklkbbtfbmnijmgjliabi",
+          getManifest: () => ({})
+        }
+      }
+    });
+
+    try {
+      expect(detectGoogleDriveInstallSource()).toBe("chrome_web_store");
+    } finally {
+      Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
+    }
+  });
+
+  it("detects unpacked installs when no store update URL is present", () => {
+    const originalChrome = globalThis.chrome;
+    Object.defineProperty(globalThis, "chrome", {
+      configurable: true,
+      value: {
+        runtime: {
+          id: "abcdefghijklmnopabcdefghijklmnop",
+          getManifest: () => ({})
+        }
+      }
+    });
+
+    try {
+      expect(detectGoogleDriveInstallSource()).toBe("unpacked");
+    } finally {
+      Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
+    }
   });
 });
 
