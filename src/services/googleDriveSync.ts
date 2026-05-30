@@ -40,6 +40,7 @@ type CachedToken = {
 };
 
 export type GoogleDriveAuthFlow = "chrome_identity" | "web_oauth" | "unavailable";
+export type GoogleDriveBrowserOAuthCapability = "chrome_identity" | "web_oauth";
 export type GoogleDriveInstallSource = "chrome_web_store" | "unpacked" | "unknown";
 
 export type GoogleDriveAuthFlowInput = {
@@ -228,22 +229,34 @@ type NavigatorWithBrave = Navigator & {
   };
 };
 
-async function isKnownNonChromeChromiumBrowser(): Promise<boolean> {
+export async function detectGoogleDriveBrowserOAuthCapability(): Promise<GoogleDriveBrowserOAuthCapability> {
   const userAgent = globalThis.navigator?.userAgent ?? "";
   const brands = (globalThis.navigator as NavigatorWithBrave | undefined)?.userAgentData?.brands ?? [];
   const brandText = brands.map((brand) => brand.brand ?? "").join(" ");
   const browserText = `${userAgent} ${brandText}`;
+  const hasGoogleChromeBrand = /\bGoogle Chrome\b/i.test(brandText);
+  const hasChromiumBrand = /\bChromium\b/i.test(browserText);
 
-  if (/\b(Helium|Edg|OPR|Opera|Vivaldi)\b/i.test(browserText)) {
-    return true;
+  if (/\b(Helium|Ungoogled|ungoogled-chromium|Cromite|Edg|OPR|Opera|Vivaldi)\b/i.test(browserText)) {
+    return "web_oauth";
   }
 
   const brave = (globalThis.navigator as NavigatorWithBrave | undefined)?.brave;
   if (typeof brave?.isBrave === "function" && await brave.isBrave().catch(() => false)) {
-    return true;
+    return "web_oauth";
   }
 
-  return false;
+  if (hasGoogleChromeBrand) {
+    return "chrome_identity";
+  }
+
+  // Plain Chromium and de-Googled Chromium variants often do not have Chrome's
+  // Google account token service even when they can install Chrome extensions.
+  if (hasChromiumBrand) {
+    return "web_oauth";
+  }
+
+  return "chrome_identity";
 }
 
 function webOAuthRedirectPath(installSource: GoogleDriveInstallSource): string {
@@ -373,7 +386,9 @@ async function getCachedWebAuthToken(): Promise<string | undefined> {
 
 async function getNonInteractiveCachedToken(): Promise<string | undefined> {
   const installSource = detectGoogleDriveInstallSource();
-  if (installSource !== "chrome_web_store") {
+  const browserOAuthCapability = await detectGoogleDriveBrowserOAuthCapability();
+  const chromeIdentityUnsupported = browserOAuthCapability === "web_oauth";
+  if (chromeIdentityUnsupported || installSource !== "chrome_web_store") {
     const cachedWebToken = await getCachedWebAuthToken();
     if (cachedWebToken) {
       return cachedWebToken;
@@ -387,6 +402,7 @@ async function getNonInteractiveCachedToken(): Promise<string | undefined> {
     hasGetAuthToken: typeof identity?.getAuthToken === "function",
     manifestClientId: manifestConfig.clientId,
     manifestScopes: manifestConfig.scopes,
+    chromeIdentityUnsupported,
     installSource,
     webOAuthClientId: configuredWebOAuthClientId()
   });
@@ -698,7 +714,8 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const webOAuthClientId = configuredWebOAuthClientId();
-  const chromeIdentityUnsupported = interactive && await isKnownNonChromeChromiumBrowser();
+  const browserOAuthCapability = await detectGoogleDriveBrowserOAuthCapability();
+  const chromeIdentityUnsupported = interactive && browserOAuthCapability === "web_oauth";
   const flow = selectGoogleDriveAuthFlow({
     hasIdentityApi: Boolean(identity),
     hasGetAuthToken: typeof identity?.getAuthToken === "function",

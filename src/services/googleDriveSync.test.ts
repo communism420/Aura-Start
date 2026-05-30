@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  detectGoogleDriveBrowserOAuthCapability,
   detectGoogleDriveInstallSource,
   GoogleDriveSyncError,
   isGoogleDriveAuthorizationUnavailable,
@@ -207,6 +208,70 @@ describe("Google Drive install source detection", () => {
     } finally {
       Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
     }
+  });
+});
+
+function withNavigator<T>(navigatorValue: unknown, run: () => T): T {
+  const originalNavigator = globalThis.navigator;
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: navigatorValue
+  });
+
+  try {
+    return run();
+  } finally {
+    Object.defineProperty(globalThis, "navigator", { configurable: true, value: originalNavigator });
+  }
+}
+
+describe("Google Drive browser OAuth capability detection", () => {
+  it("uses Chrome identity for Google Chrome", async () => {
+    const capability = await withNavigator(
+      {
+        userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        userAgentData: {
+          brands: [
+            { brand: "Chromium", version: "125" },
+            { brand: "Google Chrome", version: "125" }
+          ]
+        }
+      },
+      () => detectGoogleDriveBrowserOAuthCapability()
+    );
+
+    expect(capability).toBe("chrome_identity");
+  });
+
+  it("uses Web OAuth for plain Chromium without the Google Chrome brand", async () => {
+    const capability = await withNavigator(
+      {
+        userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chromium/125.0.0.0 Safari/537.36",
+        userAgentData: {
+          brands: [{ brand: "Chromium", version: "125" }]
+        }
+      },
+      () => detectGoogleDriveBrowserOAuthCapability()
+    );
+
+    expect(capability).toBe("web_oauth");
+  });
+
+  it("uses Web OAuth for ungoogled Chromium variants such as Helium", async () => {
+    const capability = await withNavigator(
+      {
+        userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Helium/125.0.0.0 Chromium/125.0.0.0 Safari/537.36",
+        userAgentData: {
+          brands: [
+            { brand: "Chromium", version: "125" },
+            { brand: "Helium", version: "125" }
+          ]
+        }
+      },
+      () => detectGoogleDriveBrowserOAuthCapability()
+    );
+
+    expect(capability).toBe("web_oauth");
   });
 });
 
