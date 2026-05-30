@@ -216,6 +216,7 @@ const benignUrlFragments = [
   "www.w3.org/1998/Math/MathML",
   "www.w3.org/1999/xhtml",
   "${trimmed}",
+  "${extensionId}.chromiumapp.org",
   "accounts.google.com/o/oauth2/v2/auth",
   "www.googleapis.com",
   "oauth2.googleapis.com",

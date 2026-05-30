@@ -112,6 +112,31 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
+  it("prefers Web OAuth for unpacked dev installs when fallback is configured", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        installSource: "unpacked",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("web_oauth");
+  });
+
+  it("can still use manifest OAuth for unpacked installs without a Web OAuth fallback", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        installSource: "unpacked"
+      })
+    ).toBe("chrome_identity");
+  });
+
   it("does not use Web OAuth for Chrome Web Store installs without identity API", () => {
     expect(
       selectGoogleDriveAuthFlow({
@@ -206,6 +231,45 @@ describe("Google Drive install source detection", () => {
 
     try {
       expect(detectGoogleDriveInstallSource()).toBe("unpacked");
+    } finally {
+      Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
+    }
+  });
+
+  it("detects Chrome Web Store installs from the Google update URL", () => {
+    const originalChrome = globalThis.chrome;
+    Object.defineProperty(globalThis, "chrome", {
+      configurable: true,
+      value: {
+        runtime: {
+          id: "abcdefghijklmnopabcdefghijklmnop",
+          getManifest: () => ({
+            update_url: "https://clients2.google.com/service/update2/crx"
+          })
+        }
+      }
+    });
+
+    try {
+      expect(detectGoogleDriveInstallSource()).toBe("chrome_web_store");
+    } finally {
+      Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
+    }
+  });
+
+  it("does not classify a missing extension ID as an unpacked install", () => {
+    const originalChrome = globalThis.chrome;
+    Object.defineProperty(globalThis, "chrome", {
+      configurable: true,
+      value: {
+        runtime: {
+          getManifest: () => ({})
+        }
+      }
+    });
+
+    try {
+      expect(detectGoogleDriveInstallSource()).toBe("unknown");
     } finally {
       Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
     }

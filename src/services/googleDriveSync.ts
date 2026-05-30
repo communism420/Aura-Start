@@ -194,6 +194,14 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
       : "unavailable";
   }
 
+  // Unpacked builds usually have a different extension ID than the published
+  // Chrome Web Store item, so the manifest Chrome Extension OAuth client may
+  // not be authorized for that local ID. Prefer the explicit Web OAuth dev
+  // fallback when it is configured.
+  if (input.installSource === "unpacked" && canUseWebOAuth) {
+    return "web_oauth";
+  }
+
   if (input.chromeIdentityUnsupported) {
     return canUseWebOAuth ? "web_oauth" : "unavailable";
   }
@@ -207,21 +215,33 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
   return canUseWebOAuth ? "web_oauth" : "unavailable";
 }
 
+function isChromeExtensionId(value: string | undefined): boolean {
+  return typeof value === "string" && /^[a-p]{32}$/.test(value);
+}
+
+function isChromeWebStoreUpdateUrl(value: string): boolean {
+  return /(?:^|\/\/)clients2\.google\.com\/service\/update2\/crx/i.test(value);
+}
+
 export function detectGoogleDriveInstallSource(): GoogleDriveInstallSource {
   const runtime = globalThis.chrome?.runtime;
   if (!runtime) {
     return "unknown";
   }
 
-  const extensionId = runtime.id;
+  const extensionId = typeof runtime.id === "string" ? runtime.id.trim() : "";
   const manifest = runtime.getManifest?.() as ManifestWithOAuth | undefined;
-  const updateUrl = manifest?.update_url ?? "";
+  const updateUrl = typeof manifest?.update_url === "string" ? manifest.update_url.trim() : "";
 
   if (
     extensionId === PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID
-    || /clients2\.google\.com\/service\/update2\/crx/i.test(updateUrl)
+    || isChromeWebStoreUpdateUrl(updateUrl)
   ) {
     return "chrome_web_store";
+  }
+
+  if (!isChromeExtensionId(extensionId)) {
+    return "unknown";
   }
 
   return updateUrl ? "unknown" : "unpacked";
