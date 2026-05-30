@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => {
   const enableGoogleWebOAuthFallback =
     Boolean(googleWebOAuthClientId) && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK !== "false";
   const googleWebOAuthRedirectPath = enableGoogleWebOAuthFallback
-    ? env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? "oauth2"
+    ? env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? ""
     : "";
 
   if (enableGoogleWebOAuthFallback && !googleWebOAuthClientId) {

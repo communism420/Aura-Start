@@ -70,7 +70,20 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
-  it("keeps Chrome Web Store installs on manifest OAuth even in non-Chrome Chromium browsers", () => {
+  it("keeps Chrome Web Store installs on manifest OAuth in supported Chrome identity environments", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        installSource: "chrome_web_store",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("chrome_identity");
+  });
+
+  it("uses Web OAuth for Chrome Web Store installs when Chrome identity is unsupported", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -81,13 +94,26 @@ describe("Google Drive OAuth flow selection", () => {
         installSource: "chrome_web_store",
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("chrome_identity");
+    ).toBe("web_oauth");
   });
 
-  it("does not use Web OAuth for Chrome Web Store installs without getAuthToken", () => {
+  it("uses Web OAuth for Chrome Web Store installs without getAuthToken when fallback is configured", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
+        hasGetAuthToken: false,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        installSource: "chrome_web_store",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("web_oauth");
+  });
+
+  it("does not use Web OAuth for Chrome Web Store installs without identity API", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: false,
         hasGetAuthToken: false,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
         manifestScopes: [DRIVE_APPDATA_SCOPE],

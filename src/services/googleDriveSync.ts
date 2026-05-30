@@ -171,7 +171,13 @@ function hasExactDriveAppDataScope(scopes: string[] | undefined): boolean {
 }
 
 export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): GoogleDriveAuthFlow {
+  const canUseWebOAuth = input.hasIdentityApi && isUsableOAuthClientId(input.webOAuthClientId);
+
   if (input.installSource === "chrome_web_store") {
+    if (input.chromeIdentityUnsupported || !input.hasGetAuthToken) {
+      return canUseWebOAuth ? "web_oauth" : "unavailable";
+    }
+
     return input.hasIdentityApi
       && input.hasGetAuthToken
       && isUsableOAuthClientId(input.manifestClientId)
@@ -180,12 +186,8 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
       : "unavailable";
   }
 
-  if (input.chromeIdentityUnsupported && isUsableOAuthClientId(input.webOAuthClientId)) {
-    return "web_oauth";
-  }
-
   if (input.chromeIdentityUnsupported) {
-    return "unavailable";
+    return canUseWebOAuth ? "web_oauth" : "unavailable";
   }
 
   if (input.hasIdentityApi && input.hasGetAuthToken) {
@@ -194,7 +196,7 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
       : "unavailable";
   }
 
-  return input.hasIdentityApi && isUsableOAuthClientId(input.webOAuthClientId) ? "web_oauth" : "unavailable";
+  return canUseWebOAuth ? "web_oauth" : "unavailable";
 }
 
 export function detectGoogleDriveInstallSource(): GoogleDriveInstallSource {
@@ -221,11 +223,18 @@ type NavigatorWithBrave = Navigator & {
   brave?: {
     isBrave?: () => Promise<boolean>;
   };
+  userAgentData?: {
+    brands?: Array<{ brand?: string; version?: string }>;
+  };
 };
 
 async function isKnownNonChromeChromiumBrowser(): Promise<boolean> {
   const userAgent = globalThis.navigator?.userAgent ?? "";
-  if (/\bEdg\//.test(userAgent) || /\bOPR\//.test(userAgent)) {
+  const brands = (globalThis.navigator as NavigatorWithBrave | undefined)?.userAgentData?.brands ?? [];
+  const brandText = brands.map((brand) => brand.brand ?? "").join(" ");
+  const browserText = `${userAgent} ${brandText}`;
+
+  if (/\b(Helium|Edg|OPR|Opera|Vivaldi)\b/i.test(browserText)) {
     return true;
   }
 
@@ -235,6 +244,14 @@ async function isKnownNonChromeChromiumBrowser(): Promise<boolean> {
   }
 
   return false;
+}
+
+function webOAuthRedirectPath(installSource: GoogleDriveInstallSource): string {
+  if (WEB_OAUTH_REDIRECT_PATH) {
+    return WEB_OAUTH_REDIRECT_PATH;
+  }
+
+  return installSource === "chrome_web_store" ? "" : "oauth2";
 }
 
 function oauthClientConfigurationError(clientId: string | undefined): string {
@@ -464,7 +481,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const redirectUri = identity.getRedirectURL(WEB_OAUTH_REDIRECT_PATH);
+  const redirectUri = identity.getRedirectURL(webOAuthRedirectPath(detectGoogleDriveInstallSource()));
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", clientId);
@@ -681,8 +698,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const webOAuthClientId = configuredWebOAuthClientId();
-  const chromeIdentityUnsupported =
-    installSource !== "chrome_web_store" && interactive && await isKnownNonChromeChromiumBrowser();
+  const chromeIdentityUnsupported = interactive && await isKnownNonChromeChromiumBrowser();
   const flow = selectGoogleDriveAuthFlow({
     hasIdentityApi: Boolean(identity),
     hasGetAuthToken: typeof identity?.getAuthToken === "function",
