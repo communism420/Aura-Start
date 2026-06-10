@@ -376,12 +376,14 @@ function chromeIdentityTimeoutError(): GoogleDriveSyncError {
   );
 }
 
-function webOAuthRedirectPath(installSource: GoogleDriveInstallSource): string {
+function webOAuthRedirectPath(): string {
   if (WEB_OAUTH_REDIRECT_PATH) {
     return WEB_OAUTH_REDIRECT_PATH;
   }
 
-  return installSource === "chrome_web_store" ? "" : "oauth2";
+  // A named path avoids root redirect trailing-slash ambiguity in Google OAuth
+  // Web clients and works for both store and unpacked extension IDs.
+  return "oauth2";
 }
 
 function normalizeWebOAuthRedirectPath(path: string): string {
@@ -665,7 +667,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const redirectUri = webOAuthRedirectUri(identity, webOAuthRedirectPath(detectGoogleDriveInstallSource()));
+  const redirectUri = webOAuthRedirectUri(identity, webOAuthRedirectPath());
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", clientId);
