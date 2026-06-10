@@ -1,16 +1,24 @@
 # Chrome Web Store Screenshots Checklist
 
-All screenshots are final PNG files in `Photo/` and GitHub Pages copies in `docs/assets/screenshots/`. They were refreshed against the current Aura Start 1.2.0 UI with non-personal demo data, including the latest Google Drive sync and shortcut-related layout changes.
+Chrome Web Store allows a maximum of 5 screenshots. Upload the 5 final PNG files from `Chrome Submit/Photo/` in filename order. They were copied from the refreshed real Aura Start 1.2.3 UI screenshot set with non-personal demo data.
+
+The full 8-screenshot set remains in `Photo/` and `docs/assets/screenshots/` for GitHub Pages and broader promotional use.
 
 | Filename | What it shows | Why it matters | Matching feature | Real UI status |
 | --- | --- | --- | --- | --- |
-| `01-main-new-tab.png` | Main new tab with groups | Core grouped-link workflow | New tab groups | Captured from real UI |
-| `02-import-from-a-fine-start.png` | A Fine Start import flow and preview | Migration path | Import from A Fine Start | Captured from real UI |
-| `03-export-backup.png` | Export / Backup menu | Data ownership | JSON, HTML, Markdown, CSV, A Fine Start-compatible export | Captured from real UI |
-| `04-restore-points.png` | Restore Points Manager | Recovery before destructive changes | Restore points | Captured from real UI |
-| `05-privacy-promise.png` | Privacy Promise in Settings | Trust and privacy | No account, no analytics, no tracking | Captured from real UI |
-| `06-command-palette.png` | Command Palette overlay | Keyboard-first workflow | Command Palette UI and browser-assigned Ctrl+K/Cmd+K shortcut | Captured from real UI |
-| `07-duplicate-finder.png` | Duplicate Finder | Safe cleanup | Read-only duplicate scan | Captured from real UI |
-| `08-google-drive-backup.png` | Google Drive sync settings | Optional backup | appDataFolder sync | Captured from real UI |
+| `Chrome Submit/Photo/01-main-new-tab.png` | Main new tab with groups | Core grouped-link workflow | New tab groups | Captured from real UI |
+| `Chrome Submit/Photo/02-import-from-a-fine-start.png` | A Fine Start import flow and preview | Migration path | Import from A Fine Start | Captured from real UI |
+| `Chrome Submit/Photo/03-export-backup.png` | Export / Backup menu | Data ownership | JSON, HTML, Markdown, CSV, A Fine Start-compatible export | Captured from real UI |
+| `Chrome Submit/Photo/04-privacy-promise.png` | Privacy Promise in Settings | Trust and privacy | No account, no analytics, no tracking | Captured from real UI |
+| `Chrome Submit/Photo/05-google-drive-backup.png` | Google Drive sync settings | Optional backup | appDataFolder sync | Captured from real UI |
 
 `docs/screenshot-gallery.html` has been updated to show these current screenshots.
+
+## Promotional Images
+
+Chrome Web Store promotional images are separate from the 5 screenshot limit:
+
+| Filename | Required size | What it shows | Status |
+| --- | ---: | --- | --- |
+| `Chrome Submit/Promo/small-promo-440x280.png` | 440 x 280 | Aura Start brand, local-first positioning, and real UI preview | Ready |
+| `Chrome Submit/Promo/large-promo-1400x560.png` | 1400 x 560 | Aura Start positioning with real UI and Google Drive backup preview | Ready |

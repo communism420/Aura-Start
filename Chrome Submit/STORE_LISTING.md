@@ -42,4 +42,11 @@ Aura Start is open-source under the MIT License. It is an independent project an
 
 ## Screenshot Notes
 
-Upload the PNG files from `Photo/` in filename order. They were captured from the real Aura Start 1.2.0 UI with non-personal demo data.
+Upload the 5 PNG files from `Chrome Submit/Photo/` in filename order. They were captured from the real Aura Start 1.2.3 UI with non-personal demo data.
+
+## Promotional Image Notes
+
+- Small promotional image: `Chrome Submit/Promo/small-promo-440x280.png`
+- Very large promotional image: `Chrome Submit/Promo/large-promo-1400x560.png`
+
+Both promotional images use Aura Start's logo, current product positioning, and real UI previews. They do not use competitor logos, fake store links, analytics claims beyond the documented privacy policy, or remote assets.

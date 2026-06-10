@@ -153,7 +153,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.2";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.3";
 }
 
 function looksLikeExampleOAuthClientId(clientId: string): boolean {
