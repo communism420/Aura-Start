@@ -153,7 +153,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.3";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.4";
 }
 
 function looksLikeExampleOAuthClientId(clientId: string): boolean {
@@ -264,7 +264,7 @@ type NavigatorWithBrave = Navigator & {
 };
 
 function chromiumVariantOAuthCapability(variant: GoogleDriveChromiumVariant): GoogleDriveBrowserOAuthCapability {
-  return variant === "google_chrome" || variant === "unknown" ? "chrome_identity" : "web_oauth";
+  return variant === "google_chrome" ? "chrome_identity" : "web_oauth";
 }
 
 export async function detectGoogleDriveChromiumVariant(): Promise<GoogleDriveChromiumVariant> {
@@ -308,7 +308,11 @@ export async function detectGoogleDriveChromiumVariant(): Promise<GoogleDriveChr
   }
 
   if (hasChromeUserAgent) {
-    return googleVendor ? "google_chrome" : "chromium_fork";
+    // Some Chromium browsers expose a Chrome-like user agent and Google vendor
+    // but do not support Chrome's Google account token service. Treat that as
+    // ambiguous unless userAgentData explicitly reported the Google Chrome
+    // brand above, so Drive sync uses the Web OAuth fallback instead.
+    return googleVendor ? "unknown" : "chromium_fork";
   }
 
   return "unknown";
@@ -604,7 +608,8 @@ function isChromeIdentityUnsupportedError(error: unknown): boolean {
     || message.includes("did not respond")
     || message.includes("custom uri scheme")
     || message.includes("not supported on chrome apps")
-    || message.includes("oauth2 request failed: invalid_request");
+    || message.includes("oauth2 request failed: invalid_request")
+    || message.includes("redirect_uri_mismatch");
 }
 
 async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Promise<string> {

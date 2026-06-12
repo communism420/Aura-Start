@@ -59,6 +59,20 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
+  it("uses Web OAuth in ambiguous Chrome-like browsers when fallback is configured", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        chromeIdentityUnsupported: true,
+        installSource: "chrome_web_store",
+        webOAuthClientId: WEB_CLIENT_ID
+      })
+    ).toBe("web_oauth");
+  });
+
   it("uses Web OAuth in known non-Chrome Chromium browsers when fallback is configured", () => {
     expect(
       selectGoogleDriveAuthFlow({
@@ -388,6 +402,24 @@ describe("Google Drive browser OAuth capability detection", () => {
     );
 
     expect(variant).toBe("chromium_fork");
+  });
+
+  it("does not trust Chrome-like user agents without an explicit Google Chrome brand", async () => {
+    const navigatorValue = {
+      vendor: "Google Inc.",
+      userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    };
+    const variant = await withNavigator(
+      navigatorValue,
+      () => detectGoogleDriveChromiumVariant()
+    );
+    const capability = await withNavigator(
+      navigatorValue,
+      () => detectGoogleDriveBrowserOAuthCapability()
+    );
+
+    expect(variant).toBe("unknown");
+    expect(capability).toBe("web_oauth");
   });
 });
 
