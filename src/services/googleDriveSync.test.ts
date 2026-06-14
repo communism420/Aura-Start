@@ -12,7 +12,7 @@ import {
 } from "./googleDriveSync";
 
 const CHROME_EXTENSION_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
-const WEB_CLIENT_ID = "391557451047-rdtft86g9hcbst7mcs38h6t2jgkvrnm3.apps.googleusercontent.com";
+const WEB_CLIENT_ID = "391557451047-i97jn2iuqfoc0igquhgo2lpp3q4vabim.apps.googleusercontent.com";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 
 describe("Google Drive OAuth flow selection", () => {
