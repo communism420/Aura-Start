@@ -49,7 +49,7 @@ const entries = errors.length
   ? []
   : run("tar", ["-tf", zipPath])
       .split(/\r?\n/)
-      .map((entry) => entry.replaceAll("\\", "/").replace(/^\.\//, ""))
+      .map((entry) => entry.replaceAll("\\", "/"))
       .filter(Boolean);
 
 if (entries.length) {
@@ -70,6 +70,10 @@ if (entries.length) {
   }
 
   for (const entry of entries) {
+    if (entry === "." || entry === "./" || entry.startsWith("./")) {
+      fail(`ZIP entry must not use a ./ prefix because Chrome Web Store may not treat it as root content: ${entry}`);
+    }
+
     if (forbiddenPrefixes.some((prefix) => entry.startsWith(prefix))) {
       fail(`ZIP contains forbidden path: ${entry}`);
     }
