@@ -442,8 +442,8 @@ describe("Google Drive OAuth error handling", () => {
 });
 
 describe("Google Drive Web OAuth redirect URI", () => {
-  it("uses the canonical root chromiumapp.org redirect by default", () => {
-    expect(webOAuthRedirectPath()).toBe("");
+  it("uses the build-time Web OAuth redirect path when configured", () => {
+    expect(webOAuthRedirectPath()).toBe(__AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__.trim());
   });
 
   it("builds a root chromiumapp.org fallback URL when no custom path is used", () => {

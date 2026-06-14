@@ -891,6 +891,17 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   const manifestConfig = manifestOAuthConfig();
   const identity = globalThis.chrome?.identity;
   const webOAuthClientId = configuredWebOAuthClientId();
+  if (interactive && installSource === "unpacked" && webOAuthClientId) {
+    // Local unpacked builds use an explicit Web OAuth client because their
+    // extension ID differs from the Chrome Web Store item. Starting that flow
+    // directly avoids waiting for Chrome identity probing before the auth
+    // window appears.
+    console.debug?.("Aura Start Google Drive sync: using Web OAuth fallback for unpacked install.", {
+      installSource
+    });
+    return await launchGoogleWebAuthFlow(interactive);
+  }
+
   const {
     browserOAuthCapability,
     chromiumVariant,
