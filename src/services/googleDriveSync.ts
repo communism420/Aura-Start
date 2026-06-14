@@ -153,7 +153,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.4";
+  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.5";
 }
 
 function looksLikeExampleOAuthClientId(clientId: string): boolean {
@@ -380,14 +380,16 @@ function chromeIdentityTimeoutError(): GoogleDriveSyncError {
   );
 }
 
-function webOAuthRedirectPath(): string {
+export function webOAuthRedirectPath(): string {
   if (WEB_OAUTH_REDIRECT_PATH) {
     return WEB_OAUTH_REDIRECT_PATH;
   }
 
-  // A named path avoids root redirect trailing-slash ambiguity in Google OAuth
-  // Web clients and works for both store and unpacked extension IDs.
-  return "oauth2";
+  // Use Chrome's canonical extension redirect URL by default:
+  // https://<extension-id>.chromiumapp.org/
+  // This is the least surprising URI to register in Google Cloud Web clients
+  // and avoids mismatches caused by custom paths such as /oauth2.
+  return "";
 }
 
 function normalizeWebOAuthRedirectPath(path: string): string {
@@ -403,7 +405,7 @@ function isChromiumAppRedirectUrl(value: string): boolean {
   }
 }
 
-function fallbackChromiumAppRedirectUrl(path: string): string | undefined {
+export function fallbackChromiumAppRedirectUrl(path: string): string | undefined {
   const extensionId = globalThis.chrome?.runtime?.id;
   if (!extensionId) {
     return undefined;

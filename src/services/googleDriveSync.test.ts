@@ -3,10 +3,12 @@ import {
   detectGoogleDriveBrowserOAuthCapability,
   detectGoogleDriveChromiumVariant,
   detectGoogleDriveInstallSource,
+  fallbackChromiumAppRedirectUrl,
   GoogleDriveSyncError,
   isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
-  selectGoogleDriveAuthFlow
+  selectGoogleDriveAuthFlow,
+  webOAuthRedirectPath
 } from "./googleDriveSync";
 
 const CHROME_EXTENSION_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
@@ -436,5 +438,29 @@ describe("Google Drive OAuth error handling", () => {
 
     expect(isGoogleDriveAuthorizationUnavailable(error)).toBe(false);
     expect(mapDriveError(error)).toBe("The user did not approve access.");
+  });
+});
+
+describe("Google Drive Web OAuth redirect URI", () => {
+  it("uses the canonical root chromiumapp.org redirect by default", () => {
+    expect(webOAuthRedirectPath()).toBe("");
+  });
+
+  it("builds a root chromiumapp.org fallback URL when no custom path is used", () => {
+    const originalChrome = globalThis.chrome;
+    Object.defineProperty(globalThis, "chrome", {
+      configurable: true,
+      value: {
+        runtime: {
+          id: "pdhhnnmcampmmklkbbtfbmnijmgjliabi"
+        }
+      }
+    });
+
+    try {
+      expect(fallbackChromiumAppRedirectUrl("")).toBe("https://pdhhnnmcampmmklkbbtfbmnijmgjliabi.chromiumapp.org/");
+    } finally {
+      Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
+    }
   });
 });
