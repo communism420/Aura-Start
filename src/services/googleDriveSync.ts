@@ -542,6 +542,15 @@ async function getCachedWebAuthToken(): Promise<string | undefined> {
   return cachedWebAuthToken() ?? await readStoredWebAuthToken();
 }
 
+async function getCachedWebAuthTokenBeforeLaunch(interactive: boolean): Promise<string | undefined> {
+  const cached = cachedWebAuthToken();
+  if (cached || interactive) {
+    return cached;
+  }
+
+  return await readStoredWebAuthToken();
+}
+
 async function getNonInteractiveCachedToken(): Promise<string | undefined> {
   const installSource = detectGoogleDriveInstallSource();
   const webOAuthClientId = configuredWebOAuthClientId();
@@ -661,7 +670,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const cached = await getCachedWebAuthToken();
+  const cached = await getCachedWebAuthTokenBeforeLaunch(interactive);
   if (cached) {
     return cached;
   }
