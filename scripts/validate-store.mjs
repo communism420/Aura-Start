@@ -240,6 +240,11 @@ for (const file of codeFiles) {
   }
 
   if (!isManifest) {
+    const webOAuthRedirectPathMatch = text.match(/WEB_OAUTH_REDIRECT_PATH\s*=\s*"([^"]*)"\.trim\(\)/);
+    if (webOAuthRedirectPathMatch?.[1]) {
+      fail(`${displayPath} contains a non-root Web OAuth redirect path (${webOAuthRedirectPathMatch[1]}). Chrome Web Store builds must use the root chromiumapp.org redirect.`);
+    }
+
     const bundledOAuthClientIds = Array.from(new Set(text.match(/\b[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com\b/gi) ?? []));
     const unexpectedOAuthClientIds = bundledOAuthClientIds.filter((clientId) => !allowedRuntimeOAuthClientIds.has(clientId));
     if (unexpectedOAuthClientIds.length) {

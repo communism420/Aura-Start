@@ -53,11 +53,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const googleOAuthClientId = env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
   const storeBuild = process.env.AURA_STORE_BUILD === "true" || env.AURA_STORE_BUILD === "true";
-  const googleWebOAuthClientId = env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+  const googleWebOAuthClientId = storeBuild
+    ? process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? ""
+    : env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
   const enableGoogleWebOAuthFallback =
     Boolean(googleWebOAuthClientId) && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK !== "false";
   const googleWebOAuthRedirectPath = enableGoogleWebOAuthFallback
-    ? env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? ""
+    ? (storeBuild ? "" : env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? "")
     : "";
 
   if (enableGoogleWebOAuthFallback && !googleWebOAuthClientId) {
