@@ -385,10 +385,10 @@ export function webOAuthRedirectPath(): string {
     return WEB_OAUTH_REDIRECT_PATH;
   }
 
-  // Use Chrome's canonical extension redirect URL by default:
-  // https://<extension-id>.chromiumapp.org/
-  // This is the least surprising URI to register in Google Cloud Web clients
-  // and avoids mismatches caused by custom paths such as /oauth2.
+  // Use the extension origin as the default Web OAuth redirect URI:
+  // https://<extension-id>.chromiumapp.org
+  // Google Web OAuth matching is strict, and the root URL with Chrome's
+  // trailing slash can be rejected even when the origin is authorized.
   return "";
 }
 
@@ -412,11 +412,19 @@ export function fallbackChromiumAppRedirectUrl(path: string): string | undefined
   }
 
   const normalizedPath = normalizeWebOAuthRedirectPath(path);
+  if (!normalizedPath) {
+    return `https://${extensionId}.chromiumapp.org`;
+  }
+
   return `https://${extensionId}.chromiumapp.org/${normalizedPath}`;
 }
 
 function webOAuthRedirectUri(identity: typeof chrome.identity, path: string): string {
   const normalizedPath = normalizeWebOAuthRedirectPath(path);
+  if (!normalizedPath) {
+    return fallbackChromiumAppRedirectUrl(normalizedPath) ?? identity.getRedirectURL(normalizedPath);
+  }
+
   const browserRedirectUrl = identity.getRedirectURL(normalizedPath);
   if (isChromiumAppRedirectUrl(browserRedirectUrl)) {
     return browserRedirectUrl;

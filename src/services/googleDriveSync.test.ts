@@ -446,7 +446,7 @@ describe("Google Drive Web OAuth redirect URI", () => {
     expect(webOAuthRedirectPath()).toBe(__AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__.trim());
   });
 
-  it("builds a root chromiumapp.org fallback URL when no custom path is used", () => {
+  it("builds a root chromiumapp.org fallback URL without a trailing slash when no custom path is used", () => {
     const originalChrome = globalThis.chrome;
     Object.defineProperty(globalThis, "chrome", {
       configurable: true,
@@ -458,7 +458,7 @@ describe("Google Drive Web OAuth redirect URI", () => {
     });
 
     try {
-      expect(fallbackChromiumAppRedirectUrl("")).toBe("https://pdhhnnmcampmmklkbbtfbmnijmgjliabi.chromiumapp.org/");
+      expect(fallbackChromiumAppRedirectUrl("")).toBe("https://pdhhnnmcampmmklkbbtfbmnijmgjliabi.chromiumapp.org");
     } finally {
       Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
     }
