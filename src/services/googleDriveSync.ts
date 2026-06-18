@@ -613,14 +613,12 @@ function isBrowserSigninDisabledError(error: unknown): boolean {
   return message.includes("browser signin") || message.includes("browser sign-in");
 }
 
-function isChromeIdentityUnsupportedError(error: unknown): boolean {
+export function isChromeIdentityUnsupportedError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   return isBrowserSigninDisabledError(error)
     || message.includes("did not respond")
     || message.includes("custom uri scheme")
-    || message.includes("not supported on chrome apps")
-    || message.includes("oauth2 request failed: invalid_request")
-    || message.includes("redirect_uri_mismatch");
+    || message.includes("not supported on chrome apps");
 }
 
 async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Promise<string> {

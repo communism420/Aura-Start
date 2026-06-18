@@ -5,6 +5,7 @@ import {
   detectGoogleDriveInstallSource,
   fallbackChromiumAppRedirectUrl,
   GoogleDriveSyncError,
+  isChromeIdentityUnsupportedError,
   isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
   selectGoogleDriveAuthFlow,
@@ -210,6 +211,19 @@ describe("Google Drive OAuth flow selection", () => {
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("unavailable");
+  });
+});
+
+describe("Google Drive Chrome identity error classification", () => {
+  it("does not hide Google OAuth configuration errors behind Web OAuth fallback", () => {
+    expect(isChromeIdentityUnsupportedError(new Error("OAuth2 request failed: redirect_uri_mismatch"))).toBe(false);
+    expect(isChromeIdentityUnsupportedError(new Error("OAuth2 request failed: invalid_request"))).toBe(false);
+  });
+
+  it("still treats real browser identity support failures as unsupported", () => {
+    expect(isChromeIdentityUnsupportedError(new Error("The user did not respond"))).toBe(true);
+    expect(isChromeIdentityUnsupportedError(new Error("Custom URI scheme is not supported on Chrome apps."))).toBe(true);
+    expect(isChromeIdentityUnsupportedError(new Error("Browser sign-in is disabled"))).toBe(true);
   });
 });
 
