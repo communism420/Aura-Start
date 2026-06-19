@@ -19,7 +19,8 @@ const requiredFiles = [
 
 const allowedPermissions = new Set(["storage", "identity"]);
 const allowedHostPermissions = new Set([
-  "https://www.googleapis.com/*"
+  "https://www.googleapis.com/*",
+  "https://oauth2.googleapis.com/*"
 ]);
 const expectedLocaleDirs = new Set(["de", "en", "es", "fr", "pt_BR", "ru", "uk"]);
 const oauthClientIdPattern = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
@@ -29,6 +30,9 @@ const exampleOAuthClientIds = new Set([
 ]);
 const webOAuthFallbackDisabled = process.env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK === "false";
 const configuredWebOAuthClientId = process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+const deviceOAuthDisabled = process.env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH === "false";
+const configuredDeviceOAuthClientId = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID?.trim() ?? "";
+const configuredDeviceOAuthClientSecret = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET?.trim() ?? "";
 const hardFailures = [];
 const warnings = [];
 
@@ -105,6 +109,17 @@ if (!webOAuthFallbackDisabled) {
     fail("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID must be a real Google OAuth Web Client ID ending with .apps.googleusercontent.com.");
   } else if (webOAuthClientId) {
     allowedRuntimeOAuthClientIds.add(webOAuthClientId);
+  }
+}
+if (!deviceOAuthDisabled) {
+  const deviceOAuthClientId = configuredDeviceOAuthClientId || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID");
+  const deviceOAuthClientSecret = configuredDeviceOAuthClientSecret || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET");
+  if ((deviceOAuthClientId || deviceOAuthClientSecret) && !(deviceOAuthClientId && deviceOAuthClientSecret)) {
+    fail("Google Device OAuth fallback requires both AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID and AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET.");
+  } else if (deviceOAuthClientId && (!oauthClientIdPattern.test(deviceOAuthClientId) || looksLikeExampleOAuthClientId(deviceOAuthClientId))) {
+    fail("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID must be a real Google OAuth client ID ending with .apps.googleusercontent.com.");
+  } else if (deviceOAuthClientId) {
+    allowedRuntimeOAuthClientIds.add(deviceOAuthClientId);
   }
 }
 
@@ -248,7 +263,7 @@ for (const file of codeFiles) {
     const bundledOAuthClientIds = Array.from(new Set(text.match(/\b[0-9]+-[a-z0-9-]+\.apps\.googleusercontent\.com\b/gi) ?? []));
     const unexpectedOAuthClientIds = bundledOAuthClientIds.filter((clientId) => !allowedRuntimeOAuthClientIds.has(clientId));
     if (unexpectedOAuthClientIds.length) {
-      fail(`${displayPath} contains unexpected bundled OAuth Client ID(s): ${unexpectedOAuthClientIds.join(", ")}. Store runtime code may only embed the configured AURA_GOOGLE_WEB_OAUTH_CLIENT_ID fallback client.`);
+      fail(`${displayPath} contains unexpected bundled OAuth Client ID(s): ${unexpectedOAuthClientIds.join(", ")}. Store runtime code may only embed explicitly configured fallback OAuth client IDs.`);
     }
 
     if (text.includes("accounts.google.com/o/oauth2/v2/auth") && unexpectedOAuthClientIds.length) {

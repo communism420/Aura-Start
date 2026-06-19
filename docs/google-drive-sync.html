@@ -73,8 +73,8 @@
         <p>
           Google Chrome uses the extension manifest OAuth configuration through
           <code>chrome.identity.getAuthToken</code>. Compatible Chromium builds can
-          use a configured Web OAuth fallback when the browser rejects the built-in
-          identity token flow. In both cases Aura Start asks only for the
+          use Google's device-code OAuth fallback when the browser rejects the built-in
+          identity token flow. That fallback avoids redirect URI matching entirely. In both cases Aura Start asks only for the
           <code>drive.appdata</code> scope and users do not enter OAuth client IDs in
           Aura Start settings.
         </p>

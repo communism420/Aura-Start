@@ -35,7 +35,7 @@
 <li>Improved search and keyboard navigation.</li>
 <li>Added Command Palette, visible palette access, and keyboard shortcuts help.</li>
 <li>Added Duplicate Finder with read-only scan and user-confirmed deletion.</li>
-<li>Improved Google Drive sync behavior, including manifest OAuth first in Google Chrome, Web OAuth fallback for compatible Chromium browsers, automatic backup after connection, and onboarding restore from Drive.</li>
+<li>Improved Google Drive sync behavior, including manifest OAuth first in Google Chrome, redirect-free device-code OAuth fallback for compatible Chromium browsers, automatic backup after connection, and onboarding restore from Drive.</li>
 <li>Improved Chrome Web Store submission notes, refreshed screenshots, and migration/comparison documentation.</li>
 </ul>
 <h2>Migration From A Fine Start</h2>
@@ -63,7 +63,7 @@ npm run build</code></pre>
 <h2>Google Drive OAuth Setup</h2>
 <p>For release builds with Google Drive sync, build with a real Chrome Extension OAuth client ID:</p>
 <pre><code class="language-bash">AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store</code></pre>
-<p>Google Chrome should use the Chrome Extension OAuth client in <code>manifest.oauth2</code> through <code>chrome.identity.getAuthToken</code>. For Brave/Chromium fallback support, set a real <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> whose authorized JavaScript origin is <code>https://&lt;extension-id&gt;.chromiumapp.org</code> and whose exact authorized redirect URI is <code>https://&lt;extension-id&gt;.chromiumapp.org/</code>. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.</p>
+<p>Google Chrome should use the Chrome Extension OAuth client in <code>manifest.oauth2</code> through <code>chrome.identity.getAuthToken</code>. For Brave/Chromium fallback support, set <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID</code> and <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET</code> from a Google OAuth client of type "TVs and Limited Input devices". Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.</p>
 <p>When testing the release, verify that onboarding can restore an existing <code>aura-start-sync.json</code> file from Google Drive and that it shows a clear no-file message without changing local data when no sync file exists.</p>
 <h2>Fresh Chrome Web Store ZIP</h2>
 <p>Create the Chrome Web Store ZIP from the contents of <code>dist</code> after <code>npm run build:store</code>. The archive root should contain <code>manifest.json</code>, <code>newtab.html</code>, <code>options.html</code>, <code>popup.html</code>, <code>logo.png</code>, <code>_locales/</code>, <code>icons/</code>, and <code>assets/</code>.</p>

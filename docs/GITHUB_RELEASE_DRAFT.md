@@ -15,7 +15,7 @@ Aura Start 1.2.0 focuses on migration, local-first data ownership, safer recover
 - Improved search and keyboard navigation.
 - Added Command Palette, visible palette access, and keyboard shortcuts help.
 - Added Duplicate Finder with read-only scan and user-confirmed deletion.
-- Improved Google Drive sync behavior, including manifest OAuth first in Google Chrome, Web OAuth fallback for compatible Chromium browsers, automatic backup after connection, and onboarding restore from Drive.
+- Improved Google Drive sync behavior, including manifest OAuth first in Google Chrome, redirect-free device-code OAuth fallback for compatible Chromium browsers, automatic backup after connection, and onboarding restore from Drive.
 - Improved Chrome Web Store submission notes, refreshed screenshots, and migration/comparison documentation.
 
 ## Migration From A Fine Start
@@ -63,7 +63,7 @@ For release builds with Google Drive sync, build with a real Chrome Extension OA
 AURA_GOOGLE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com npm run build:store
 ```
 
-Google Chrome should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. For Brave/Chromium fallback support, set a real `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` whose authorized JavaScript origin is `https://<extension-id>.chromiumapp.org` and whose exact authorized redirect URI is `https://<extension-id>.chromiumapp.org/`. Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.
+Google Chrome should use the Chrome Extension OAuth client in `manifest.oauth2` through `chrome.identity.getAuthToken`. For Brave/Chromium fallback support, set `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET` from a Google OAuth client of type "TVs and Limited Input devices". Do not publish a package containing placeholder OAuth values or an unapproved bundled OAuth client ID.
 
 When testing the release, verify that onboarding can restore an existing `aura-start-sync.json` file from Google Drive and that it shows a clear no-file message without changing local data when no sync file exists.
 

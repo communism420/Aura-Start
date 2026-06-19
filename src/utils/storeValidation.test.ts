@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 const VALID_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
 const BUNDLED_WEB_CLIENT_ID = "391557451047-i97jn2iuqfoc0igquhgo2lpp3q4vabim.apps.googleusercontent.com";
 const VALID_WEB_CLIENT_ID = "391557451047-safewebfallbackclient.apps.googleusercontent.com";
+const VALID_DEVICE_CLIENT_ID = "391557451047-safedevicefallbackclient.apps.googleusercontent.com";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const VALID_MANIFEST = {
   manifest_version: 3,
@@ -16,7 +17,7 @@ const VALID_MANIFEST = {
   default_locale: "en",
   chrome_url_overrides: { newtab: "newtab.html" },
   permissions: ["storage", "identity"],
-  host_permissions: ["https://www.googleapis.com/*"],
+  host_permissions: ["https://www.googleapis.com/*", "https://oauth2.googleapis.com/*"],
   oauth2: {
     client_id: VALID_CLIENT_ID,
     scopes: [DRIVE_APPDATA_SCOPE]
@@ -131,6 +132,20 @@ describe("Chrome Web Store validation OAuth guards", () => {
       `const webClient = "${VALID_WEB_CLIENT_ID}"; const url = "https://accounts.google.com/o/oauth2/v2/auth";`,
       {
         AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: VALID_WEB_CLIENT_ID
+      }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
+  });
+
+  it("allows the configured Device OAuth fallback client", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code";`,
+      {
+        AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID: VALID_DEVICE_CLIENT_ID,
+        AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET: "device-secret"
       }
     );
 

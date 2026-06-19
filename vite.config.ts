@@ -57,10 +57,21 @@ export default defineConfig(({ mode }) => {
     ? process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? ""
     : env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
   const enableGoogleWebOAuthFallback =
-    Boolean(googleWebOAuthClientId) && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK !== "false";
+    !storeBuild && Boolean(googleWebOAuthClientId) && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK !== "false";
   const googleWebOAuthRedirectPath = enableGoogleWebOAuthFallback
     ? (storeBuild ? "" : env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? "")
     : "";
+  const googleDeviceOAuthClientId = storeBuild
+    ? process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID?.trim() ?? ""
+    : env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID?.trim() ?? "";
+  const googleDeviceOAuthClientSecret = storeBuild
+    ? process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET?.trim() ?? ""
+    : env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET?.trim() ?? "";
+  const deviceOAuthDisabled = storeBuild
+    ? process.env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH === "false"
+    : env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH === "false";
+  const enableGoogleDeviceOAuth =
+    !deviceOAuthDisabled && Boolean(googleDeviceOAuthClientId) && Boolean(googleDeviceOAuthClientSecret);
 
   if (enableGoogleWebOAuthFallback && !googleWebOAuthClientId) {
     throw new Error("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
@@ -75,12 +86,28 @@ export default defineConfig(({ mode }) => {
     }
   }
 
+  if ((googleDeviceOAuthClientId || googleDeviceOAuthClientSecret) && !enableGoogleDeviceOAuth) {
+    throw new Error("Google Device OAuth fallback requires both AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID and AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET.");
+  }
+
+  if (googleDeviceOAuthClientId) {
+    if (!OAUTH_CLIENT_ID_PATTERN.test(googleDeviceOAuthClientId)) {
+      throw new Error("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID must be a real Google OAuth Client ID ending with .apps.googleusercontent.com.");
+    }
+    if (looksLikeExampleOAuthClientId(googleDeviceOAuthClientId)) {
+      throw new Error("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID points to an example value. Create a real OAuth client for TVs and Limited Input devices in Google Cloud Console and use that value.");
+    }
+  }
+
   return {
     plugins: [react(), googleOAuthClientPlugin(googleOAuthClientId)],
     define: {
       __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__: JSON.stringify(enableGoogleWebOAuthFallback),
       __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__: JSON.stringify(enableGoogleWebOAuthFallback ? googleWebOAuthClientId : ""),
-      __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__: JSON.stringify(googleWebOAuthRedirectPath)
+      __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__: JSON.stringify(googleWebOAuthRedirectPath),
+      __AURA_ENABLE_GOOGLE_DEVICE_OAUTH__: JSON.stringify(enableGoogleDeviceOAuth),
+      __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID__: JSON.stringify(enableGoogleDeviceOAuth ? googleDeviceOAuthClientId : ""),
+      __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__: JSON.stringify(enableGoogleDeviceOAuth ? googleDeviceOAuthClientSecret : "")
     },
     build: {
       rollupOptions: {
