@@ -139,7 +139,7 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 
-  it("allows the configured Device OAuth fallback client", async () => {
+  it("rejects Device OAuth fallback because Google device flow rejects drive.appdata", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
       `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code";`,
@@ -149,7 +149,7 @@ describe("Chrome Web Store validation OAuth guards", () => {
       }
     );
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Chrome Web Store validation passed.");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Device OAuth fallback is not supported");
   });
 });

@@ -79,7 +79,7 @@ Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 rele
 | A Fine Start comparison docs | Existing comparison doc is cautious, but now that public A Fine Start docs were checked, it could be more precise. | Honest comparison builds credibility. | Update comparison with verified AFS strengths too, not just unknown statuses. | P2 |
 | Multi-browser support | Aura Start is Chromium-focused. | A Fine Start advertises Chrome, Firefox, Edge, and Web options. | Treat Firefox/Edge packaging as a future roadmap, not launch blocker. | P2 |
 | Automated tests | No dedicated unit/integration tests were found for import/export, duplicates, restore, sync comparison, or search. | High-risk data paths currently depend on TypeScript/build validation and manual testing. | Add focused tests for parsers, exporters, duplicate finder, restore point behavior, and validators. | P1 |
-| Google Drive OAuth complexity | Requires a real Chrome Extension OAuth client and, for Chromium variants that reject Chrome identity, a separate Google OAuth client for TVs and Limited Input devices. | Store review and user support can fail on OAuth setup more than on UI. | Keep reviewer notes tight, test final extension ID, and verify the device-code fallback before release. | P1 |
+| Google Drive OAuth complexity | Requires a real Chrome Extension OAuth client and, for Chromium variants that reject Chrome identity, a carefully configured Web OAuth fallback with the exact extension redirect URI. | Store review and user support can fail on OAuth setup more than on UI. | Keep reviewer notes tight, test final extension ID, and verify the Web OAuth fallback before release. Do not use Device OAuth because Google rejects `drive.appdata` in that flow. | P1 |
 | Developer-only docs still published | Developer/release HTML pages remain under `docs/` even if not in main user navigation. | Public site visitors can still find internal release docs. | Keep them unlinked or move under a clearly developer-only path if needed. | P2 |
 
 ## Feature-by-feature comparison
@@ -354,7 +354,7 @@ Recommended manual check: open the gallery on GitHub Pages and verify image clar
 2. Verify final OAuth client configuration.
    - `build:store` can inject a real client ID from local env.
    - The uploaded ZIP must be built with the real Chrome Extension OAuth client ID for the final extension ID.
-   - If the device-code OAuth fallback is used, verify the Google OAuth client is type "TVs and Limited Input devices" and that the build includes the intended client ID.
+   - If the Web OAuth fallback is used, verify that the Google OAuth client has the exact `https://<extension-id>.chromiumapp.org/` redirect URI used by the installed build.
 
 3. Run installed-extension manual testing.
    - new tab override

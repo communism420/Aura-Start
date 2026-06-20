@@ -55,13 +55,13 @@ Requested permissions:
 Requested host permission:
 
 - `https://www.googleapis.com/*`: used only for optional Google Drive API calls to read and write Aura Start's hidden app data file.
-- `https://oauth2.googleapis.com/*`: used only for Google's OAuth token/device-code endpoints when a Chromium browser cannot use Chrome's built-in identity token flow.
+- `https://oauth2.googleapis.com/*`: used only to revoke cached Google OAuth tokens during disconnect.
 
 Requested OAuth scope:
 
 - `https://www.googleapis.com/auth/drive.appdata`: lets Aura Start read and write only its own hidden Google Drive app data.
 
-Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive in Google Chrome. The Chrome Web Store build must use the Chrome Extension OAuth client configured in `manifest.oauth2`; a manual `launchWebAuthFlow` URL must never be the primary auth path in Google Chrome. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. To support Brave, Helium, ungoogled Chromium, and other Chromium browsers that reject `chrome.identity.getAuthToken`, build with a Google OAuth client for **TVs and Limited Input devices** by setting `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET`. This fallback uses Google's device-code OAuth flow and does not depend on `chromiumapp.org` redirect URI matching. The older Web OAuth redirect fallback is disabled in Chrome Web Store builds to avoid `redirect_uri_mismatch`. Example and placeholder IDs are rejected by validation because Google returns `invalid_client` for them. This does not grant access to normal Google Drive files.
+Aura Start connects through Chrome's built-in `chrome.identity.getAuthToken` OAuth flow when the user clicks Connect Google Drive in Google Chrome. The Chrome Web Store build must use the Chrome Extension OAuth client configured in `manifest.oauth2`; a manual `launchWebAuthFlow` URL must never be the primary auth path in Google Chrome. Users do not paste OAuth client IDs into Aura Start settings. Google requires a real OAuth client ID for Drive authorization; Aura Start does not use full Drive permission to avoid this. The submitted package must include Aura Start's configured Chrome Extension OAuth client ID in `dist/manifest.json`; set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store` to inject it automatically. To support Brave, Helium, ungoogled Chromium, and other Chromium browsers that reject `chrome.identity.getAuthToken`, use the configured Web OAuth fallback with an exact `https://<extension-id>.chromiumapp.org/` redirect URI. Do not use Google's TVs and Limited Input devices OAuth flow for Aura Start: Google rejects the required `drive.appdata` scope in that flow. Example and placeholder IDs are rejected by validation because Google returns `invalid_client` for them. This does not grant access to normal Google Drive files.
 
 The Google OAuth consent is used only to read, create, update, or delete Aura Start's hidden `aura-start-sync.json` app data file. Aura Start does not use Google authorization for analytics, tracking, advertising, account profiling, or access to visible Google Drive files. Importing local JSON data preserves the local Google Drive connection metadata for the installed extension, so changing groups or links does not disconnect sync by itself.
 
@@ -138,7 +138,7 @@ The final ZIP must include `manifest.json` at archive root, include `background.
 
 - Publish GitHub Pages from the `docs` folder and use the resulting `docs/privacy-policy.html` URL as the Chrome Web Store privacy policy URL.
 - Build the store package with a real Chrome Extension `AURA_GOOGLE_OAUTH_CLIENT_ID` for the final published extension ID.
-- For Brave/Chromium fallback support, also build with `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET` from a Google OAuth client of type "TVs and Limited Input devices"; do not use Web OAuth redirect fallback for the Chrome Web Store package.
+- For Brave/Chromium fallback support, use a Web OAuth client with the exact extension redirect URI. Do not use a "TVs and Limited Input devices" client because Google Device Flow rejects Aura Start's required `drive.appdata` scope.
 - Verify the Google Cloud project has Google Drive API enabled and a Chrome Extension OAuth client for the final extension ID.
 - Inspect `dist/manifest.json` and the ZIP manifest after build; the only OAuth scope must be `https://www.googleapis.com/auth/drive.appdata`.
 - Capture fresh Chrome Web Store screenshots from the current local build.

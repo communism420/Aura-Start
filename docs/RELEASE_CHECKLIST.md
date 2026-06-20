@@ -14,7 +14,7 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Run `npm run build:store`.
 - Set a real `AURA_GOOGLE_OAUTH_CLIENT_ID` for release builds.
 - Store builds must use manifest OAuth through `chrome.identity.getAuthToken` in Google Chrome.
-- For Brave/Helium/ungoogled Chromium fallback support, set `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET` from a Google OAuth client of type "TVs and Limited Input devices".
+- For Brave/Helium/ungoogled Chromium fallback support, configure the Web OAuth fallback with an exact `https://<extension-id>.chromiumapp.org/` redirect URI. Do not use a Google OAuth client of type "TVs and Limited Input devices"; Google rejects Aura Start's required `drive.appdata` scope in Device Flow.
 - Confirm the Chrome Web Store build does not bundle or prefer the old Web OAuth redirect fallback.
 - Inspect `dist/manifest.json`.
 - Confirm `manifest_version` is `3`.
@@ -44,10 +44,10 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 ## Google Drive OAuth Release Verification
 
 - Create a Chrome Extension OAuth client for the final published extension ID.
-- Create a separate Google OAuth client of type "TVs and Limited Input devices" if the release should support Chromium browsers that reject Chrome's built-in identity token flow.
+- Create or verify a separate Web OAuth client if the release should support Chromium browsers that reject Chrome's built-in identity token flow.
 - Enable the Google Drive API for the Google Cloud project used by Aura Start.
 - Set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store`.
-- Set `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET` before `npm run build:store` when the device-code fallback should be active.
+- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` before `npm run build:store` when the Web OAuth fallback should be active, and verify the exact redirect URI in Google Cloud.
 - Confirm the Chrome Web Store package does not contain an active Web OAuth fallback client or manual redirect URI path.
 - Confirm Google Chrome still uses manifest OAuth first through the Chrome Extension OAuth client.
 - Inspect `dist/manifest.json` and the final ZIP manifest after build.

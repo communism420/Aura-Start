@@ -6,7 +6,6 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { DuplicateFinderDialog } from "./DuplicateFinderDialog";
 import { EmptyState } from "./EmptyState";
 import { GroupGrid } from "./GroupGrid";
-import { GoogleDriveDeviceAuthDialog } from "./GoogleDriveDeviceAuthDialog";
 import { Header } from "./Header";
 import { ImportDialog, type ImportDialogFormat } from "./ImportDialog";
 import { OnboardingDialog } from "./OnboardingDialog";
@@ -16,10 +15,6 @@ import { SettingsDialog } from "./SettingsDialog";
 import { Toasts } from "./Toasts";
 import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
-import {
-  setGoogleDriveDeviceAuthPromptHandler,
-  type GoogleDriveDeviceAuthPrompt
-} from "../services/googleDriveSync";
 import { useAuraStore } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
 import { exportJsonBackup } from "../utils/exportJson";
@@ -129,7 +124,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger>(null);
-  const [deviceAuthPrompt, setDeviceAuthPrompt] = useState<GoogleDriveDeviceAuthPrompt | null>(null);
   const keyboardFocusRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const autoOnboardingCheckedRef = useRef(false);
@@ -157,20 +151,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     autoOnboardingCheckedRef.current = true;
     setOnboardingOpen(true);
   }, [data, hasUserGroupsOrLinks, onboardingCompleted]);
-
-  useEffect(() => {
-    setGoogleDriveDeviceAuthPromptHandler((prompt) => {
-      setDeviceAuthPrompt(prompt);
-      window.open(prompt.verificationUrlComplete ?? prompt.verificationUrl, "_blank", "noopener,noreferrer");
-    });
-    return () => setGoogleDriveDeviceAuthPromptHandler(undefined);
-  }, []);
-
-  useEffect(() => {
-    if (syncStatus !== "connecting") {
-      setDeviceAuthPrompt(null);
-    }
-  }, [syncStatus]);
 
   useEffect(() => {
     if (!data) return;
@@ -275,7 +255,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restoreOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
-        deviceAuthPrompt !== null ||
         pendingDanger;
       const modalOpen = blockingModalOpen || commandPaletteOpen;
       const searchInputFocused = event.target === searchInputRef.current;
@@ -362,7 +341,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   }, [
     groupDialogOpen,
     commandPaletteOpen,
-    deviceAuthPrompt,
     duplicateFinderOpen,
     importOpen,
     linkDialogOpen,
@@ -388,7 +366,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restoreOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
-        deviceAuthPrompt ||
         pendingDanger
     );
 
@@ -405,7 +382,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     return () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
   }, [
     duplicateFinderOpen,
-    deviceAuthPrompt,
     groupDialogOpen,
     importOpen,
     linkDialogOpen,
@@ -865,11 +841,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
             showError(caught instanceof Error ? caught.message : t(language, "couldNotCompleteAction"));
           }
         }}
-      />
-      <GoogleDriveDeviceAuthDialog
-        language={language}
-        prompt={deviceAuthPrompt}
-        onClose={() => setDeviceAuthPrompt(null)}
       />
       <Toasts />
     </div>

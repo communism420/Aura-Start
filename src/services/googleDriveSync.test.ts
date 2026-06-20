@@ -14,8 +14,6 @@ import {
 
 const CHROME_EXTENSION_CLIENT_ID = "391557451047-aid8m01fhcbbbsqdbrqsjon58dp0q9kv.apps.googleusercontent.com";
 const WEB_CLIENT_ID = "391557451047-i97jn2iuqfoc0igquhgo2lpp3q4vabim.apps.googleusercontent.com";
-const DEVICE_CLIENT_ID = "391557451047-devicefallbackclient.apps.googleusercontent.com";
-const DEVICE_CLIENT_SECRET = "device-client-secret";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 
 describe("Google Drive OAuth flow selection", () => {
@@ -64,7 +62,7 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("web_oauth");
   });
 
-  it("uses redirect-free Device OAuth in ambiguous Chrome-like browsers when fallback is configured", () => {
+  it("uses Web OAuth in ambiguous Chrome-like browsers because Device OAuth rejects drive.appdata", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -73,14 +71,12 @@ describe("Google Drive OAuth flow selection", () => {
         manifestScopes: [DRIVE_APPDATA_SCOPE],
         chromeIdentityUnsupported: true,
         installSource: "chrome_web_store",
-        deviceOAuthClientId: DEVICE_CLIENT_ID,
-        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("device_oauth");
+    ).toBe("web_oauth");
   });
 
-  it("uses redirect-free Device OAuth in known non-Chrome Chromium browsers when fallback is configured", () => {
+  it("uses Web OAuth in known non-Chrome Chromium browsers when fallback is configured", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -88,11 +84,9 @@ describe("Google Drive OAuth flow selection", () => {
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
         manifestScopes: [DRIVE_APPDATA_SCOPE],
         chromeIdentityUnsupported: true,
-        deviceOAuthClientId: DEVICE_CLIENT_ID,
-        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("device_oauth");
+    ).toBe("web_oauth");
   });
 
   it("keeps Chrome Web Store installs on manifest OAuth in supported Chrome identity environments", () => {
@@ -108,7 +102,7 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("chrome_identity");
   });
 
-  it("uses Device OAuth for Chrome Web Store installs when Chrome identity is unsupported", () => {
+  it("uses Web OAuth for Chrome Web Store installs when Chrome identity is unsupported", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -117,14 +111,12 @@ describe("Google Drive OAuth flow selection", () => {
         manifestScopes: [DRIVE_APPDATA_SCOPE],
         chromeIdentityUnsupported: true,
         installSource: "chrome_web_store",
-        deviceOAuthClientId: DEVICE_CLIENT_ID,
-        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("device_oauth");
+    ).toBe("web_oauth");
   });
 
-  it("uses Device OAuth for Chrome Web Store installs without getAuthToken when fallback is configured", () => {
+  it("uses Web OAuth for Chrome Web Store installs without getAuthToken when fallback is configured", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -132,14 +124,12 @@ describe("Google Drive OAuth flow selection", () => {
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
         manifestScopes: [DRIVE_APPDATA_SCOPE],
         installSource: "chrome_web_store",
-        deviceOAuthClientId: DEVICE_CLIENT_ID,
-        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("device_oauth");
+    ).toBe("web_oauth");
   });
 
-  it("prefers Device OAuth for unpacked dev installs when fallback is configured", () => {
+  it("prefers Web OAuth for unpacked dev installs when fallback is configured", () => {
     expect(
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
@@ -147,11 +137,19 @@ describe("Google Drive OAuth flow selection", () => {
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
         manifestScopes: [DRIVE_APPDATA_SCOPE],
         installSource: "unpacked",
-        deviceOAuthClientId: DEVICE_CLIENT_ID,
-        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         webOAuthClientId: WEB_CLIENT_ID
       })
-    ).toBe("device_oauth");
+    ).toBe("web_oauth");
+  });
+
+  it("returns unavailable when Chrome identity is unavailable and no Web OAuth fallback is configured", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: false,
+        manifestScopes: [DRIVE_APPDATA_SCOPE]
+      })
+    ).toBe("unavailable");
   });
 
   it("can still use manifest OAuth for unpacked installs without a Web OAuth fallback", () => {
@@ -357,7 +355,7 @@ describe("Google Drive browser OAuth capability detection", () => {
     expect(capability).toBe("chrome_identity");
   });
 
-  it("identifies plain Chromium and uses Device OAuth", async () => {
+  it("identifies plain Chromium and uses Web OAuth fallback", async () => {
     const navigatorValue = {
       userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Chromium/125.0.0.0 Safari/537.36",
       userAgentData: {
@@ -374,10 +372,10 @@ describe("Google Drive browser OAuth capability detection", () => {
     );
 
     expect(variant).toBe("chromium");
-    expect(capability).toBe("device_oauth");
+    expect(capability).toBe("web_oauth");
   });
 
-  it("identifies ungoogled Chromium variants such as Helium and uses Device OAuth", async () => {
+  it("identifies ungoogled Chromium variants such as Helium and uses Web OAuth fallback", async () => {
     const navigatorValue = {
       userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) Helium/125.0.0.0 Chromium/125.0.0.0 Safari/537.36",
       userAgentData: {
@@ -397,7 +395,7 @@ describe("Google Drive browser OAuth capability detection", () => {
     );
 
     expect(variant).toBe("ungoogled_chromium");
-    expect(capability).toBe("device_oauth");
+    expect(capability).toBe("web_oauth");
   });
 
   it("uses high entropy browser brands when low entropy brands are masked", async () => {
@@ -447,7 +445,7 @@ describe("Google Drive browser OAuth capability detection", () => {
     );
 
     expect(variant).toBe("unknown");
-    expect(capability).toBe("device_oauth");
+    expect(capability).toBe("web_oauth");
   });
 });
 

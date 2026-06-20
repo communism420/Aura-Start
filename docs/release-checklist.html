@@ -34,8 +34,8 @@
 <li>Run <code>npm run build:store</code>.</li>
 <li>Set a real <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> for release builds.</li>
 <li>Store builds must use manifest OAuth through <code>chrome.identity.getAuthToken</code> in Google Chrome.</li>
-<li>For Brave/Helium/ungoogled Chromium fallback support, set <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID</code> and <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET</code> from a Google OAuth client of type "TVs and Limited Input devices".</li>
-<li>Confirm the Chrome Web Store build does not bundle or prefer the old Web OAuth redirect fallback.</li>
+<li>For Brave/Helium/ungoogled Chromium fallback support, configure the Web OAuth fallback with an exact <code>https://&lt;extension-id&gt;.chromiumapp.org/</code> redirect URI. Do not use a Google OAuth client of type "TVs and Limited Input devices"; Google rejects Aura Start's required <code>drive.appdata</code> scope in Device Flow.</li>
+<li>Confirm Google Chrome uses manifest OAuth first through the Chrome Extension OAuth client.</li>
 <li>Inspect <code>dist/manifest.json</code>.</li>
 <li>Confirm <code>manifest_version</code> is <code>3</code>.</li>
 <li>Confirm <code>background.service_worker</code> and <code>commands</code> in <code>dist/manifest.json</code> match <code>public/manifest.json</code>.</li>
@@ -62,11 +62,11 @@
 <h2>Google Drive OAuth Release Verification</h2>
 <ul>
 <li>Create a Chrome Extension OAuth client for the final published extension ID.</li>
-<li>Create a separate Google OAuth client of type "TVs and Limited Input devices" if the release should support Chromium browsers that reject Chrome's built-in identity token flow.</li>
+<li>Create or verify a separate Web OAuth client if the release should support Chromium browsers that reject Chrome's built-in identity token flow.</li>
 <li>Enable the Google Drive API for the Google Cloud project used by Aura Start.</li>
 <li>Set <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> before <code>npm run build:store</code>.</li>
-<li>Set <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID</code> and <code>AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET</code> before <code>npm run build:store</code> when the device-code fallback should be active.</li>
-<li>Confirm the Chrome Web Store package does not contain an active Web OAuth fallback client or manual redirect URI path.</li>
+<li>Set <code>AURA_GOOGLE_WEB_OAUTH_CLIENT_ID</code> before <code>npm run build:store</code> when the Web OAuth fallback should be active, and make sure the Google Cloud redirect URI exactly matches the extension redirect URI.</li>
+<li>Confirm the Chrome Web Store package does not contain Device OAuth code or a bundled unsupported device client.</li>
 <li>Confirm Google Chrome still uses manifest OAuth first through the Chrome Extension OAuth client.</li>
 <li>Inspect <code>dist/manifest.json</code> and the final ZIP manifest after build.</li>
 <li>Confirm the OAuth scope is only <code>https://www.googleapis.com/auth/drive.appdata</code>.</li>

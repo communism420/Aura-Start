@@ -1,6 +1,3 @@
 declare const __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__: boolean;
 declare const __AURA_GOOGLE_WEB_OAUTH_CLIENT_ID__: string;
 declare const __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__: string;
-declare const __AURA_ENABLE_GOOGLE_DEVICE_OAUTH__: boolean;
-declare const __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID__: string;
-declare const __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__: string;
