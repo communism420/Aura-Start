@@ -172,10 +172,6 @@ export function SettingsDialog({
             <table className="settings-info-table mt-3">
               <tbody>
                 <tr>
-                  <th scope="row">{t(language, "appName")}</th>
-                  <td>Aura Start</td>
-                </tr>
-                <tr>
                   <th scope="row">{t(language, "appVersion")}</th>
                   <td>
                     <code>v{appVersion}</code>
