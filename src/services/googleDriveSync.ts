@@ -1,4 +1,5 @@
 import type { AuraStartData, AuraSyncSettings } from "../types";
+import { getAuraStartVersion } from "../utils/appVersion";
 import { nowIso } from "../utils/dates";
 import { validateAuraData } from "../utils/importJson";
 
@@ -153,7 +154,7 @@ function requireIdentityApi(): typeof chrome.identity {
 }
 
 function appVersion(): string {
-  return globalThis.chrome?.runtime?.getManifest?.().version ?? "1.2.5";
+  return getAuraStartVersion();
 }
 
 function looksLikeExampleOAuthClientId(clientId: string): boolean {

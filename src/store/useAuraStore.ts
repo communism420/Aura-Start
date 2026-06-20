@@ -31,6 +31,7 @@ import type {
   AuraStartSettings,
   ImportMode
 } from "../types";
+import { getAuraStartVersion } from "../utils/appVersion";
 import { nowIso } from "../utils/dates";
 import { createId } from "../utils/ids";
 import { mergeImportedData } from "../utils/importJson";
@@ -1459,7 +1460,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       payload: {
         schemaVersion: 1,
         app: "Aura Start",
-        appVersion: "1.2.0",
+        appVersion: getAuraStartVersion(),
         updatedAt: conflict.cloudUpdatedAt,
         deviceId: conflict.cloudData.settings.sync.deviceId,
         data: conflict.cloudData

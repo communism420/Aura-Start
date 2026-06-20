@@ -125,6 +125,7 @@ function normalizeSettings(value: unknown): AuraStartSettings {
     openLinksInNewTab: asBoolean(value.openLinksInNewTab, DEFAULT_SETTINGS.openLinksInNewTab),
     showDescriptions: asBoolean(value.showDescriptions, DEFAULT_SETTINGS.showDescriptions),
     showSearch: asBoolean(value.showSearch, DEFAULT_SETTINGS.showSearch),
+    showVersionInHeader: asBoolean(value.showVersionInHeader, DEFAULT_SETTINGS.showVersionInHeader),
     autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints),
     sync: normalizeSyncSettings(value.sync)
   };

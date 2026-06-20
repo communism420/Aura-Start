@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
   openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
+  showVersionInHeader: true,
   autoRestorePoints: true,
   sync: {
     mode: "off",

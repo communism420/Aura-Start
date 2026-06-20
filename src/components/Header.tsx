@@ -2,6 +2,7 @@ import { AlertCircle, Cloud, Command, FolderPlus, LinkIcon, Pencil, RefreshCw, S
 import type { RefObject } from "react";
 import { t } from "../i18n";
 import type { AuraStartData, AuraSyncStatus } from "../types";
+import { getAuraStartVersion } from "../utils/appVersion";
 import { formatDateTime } from "../utils/dates";
 import { ExportMenu } from "./ExportMenu";
 import { SearchBar } from "./SearchBar";
@@ -49,6 +50,7 @@ export function Header({
   const sync = data.settings.sync;
   const showSyncMarker = sync.mode !== "off" && Boolean(sync.connected);
   const syncMarkerLabel = sync.accountName ?? sync.accountEmail ?? t(language, "googleDriveConnectedShort");
+  const appVersion = getAuraStartVersion();
   const syncMarkerTitle = [
     syncStatus === "syncing"
       ? t(language, "googleDriveSyncing")
@@ -70,6 +72,11 @@ export function Header({
           <div className="aura-brand-line">
             <img className="aura-logo" src="/logo.png" alt="" aria-hidden="true" />
             <span>Aura Start</span>
+            {data.settings.showVersionInHeader ? (
+              <span className="aura-version-badge" aria-label={t(language, "appVersion")}>
+                v{appVersion}
+              </span>
+            ) : null}
             <span className="aura-inspired">{t(language, "inspiredBy")}</span>
           </div>
         </div>

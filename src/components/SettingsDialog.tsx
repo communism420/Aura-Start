@@ -17,6 +17,7 @@ import type {
   AuraSyncConflictChoice,
   AuraSyncStatus
 } from "../types";
+import { getAuraStartVersion } from "../utils/appVersion";
 import { ExportMenu } from "./ExportMenu";
 import { GoogleDriveSyncPanel } from "./GoogleDriveSyncPanel";
 import { Modal } from "./Modal";
@@ -69,6 +70,7 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const settings = data.settings;
   const language = settings.language;
+  const appVersion = getAuraStartVersion();
   const privacyPromises = [
     t(language, "noAnalytics"),
     t(language, "noTracking"),
@@ -140,6 +142,7 @@ export function SettingsDialog({
               ["compactMode", t(language, "compactMode")],
               ["showDescriptions", t(language, "showDescriptions")],
               ["showSearch", t(language, "showSearch")],
+              ["showVersionInHeader", t(language, "showVersionInHeader")],
               ["openLinksInNewTab", t(language, "openLinksInNewTab")]
             ].map(([key, label]) => (
               <label className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] p-3" key={key}>
@@ -147,6 +150,9 @@ export function SettingsDialog({
                   <span className="block text-sm font-semibold">{label}</span>
                   {key === "openLinksInNewTab" ? (
                     <span className="muted block text-xs">{t(language, "openLinksInNewTabDescription")}</span>
+                  ) : null}
+                  {key === "showVersionInHeader" ? (
+                    <span className="muted block text-xs">{t(language, "showVersionInHeaderDescription")}</span>
                   ) : null}
                 </span>
                 <input
@@ -161,6 +167,23 @@ export function SettingsDialog({
           </div>
         </section>
         <section className="space-y-3">
+          <div className="surface-flat rounded-xl p-4">
+            <h3 className="font-semibold">{t(language, "aboutAuraStart")}</h3>
+            <table className="settings-info-table mt-3">
+              <tbody>
+                <tr>
+                  <th scope="row">{t(language, "appName")}</th>
+                  <td>Aura Start</td>
+                </tr>
+                <tr>
+                  <th scope="row">{t(language, "appVersion")}</th>
+                  <td>
+                    <code>v{appVersion}</code>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div className="surface-flat rounded-xl p-4">
             <h3 className="font-semibold">{t(language, "dataOwnership")}</h3>
             <p className="muted mt-1 text-sm leading-6">{t(language, "dataOwnershipDescription")}</p>

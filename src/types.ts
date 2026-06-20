@@ -30,6 +30,7 @@ export type AuraStartSettings = {
   openLinksInNewTab: boolean;
   showDescriptions: boolean;
   showSearch: boolean;
+  showVersionInHeader: boolean;
   autoRestorePoints: boolean;
   sync: AuraSyncSettings;
 };

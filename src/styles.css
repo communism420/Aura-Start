@@ -295,6 +295,17 @@ select.field {
   white-space: nowrap;
 }
 
+.aura-version-badge {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.06rem 0.42rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
 .aura-inspired::before {
   content: "·";
   margin-right: 0.45rem;
@@ -697,6 +708,37 @@ select.field {
   padding: 0.16rem 0.38rem;
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+.settings-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.settings-info-table th,
+.settings-info-table td {
+  border-top: 1px solid var(--border);
+  padding: 0.55rem 0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.settings-info-table th {
+  width: 42%;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.settings-info-table code {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  background: rgb(255 255 255 / 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .command-palette-input {

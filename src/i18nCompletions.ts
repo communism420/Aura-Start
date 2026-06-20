@@ -217,6 +217,11 @@ export const translationCompletions: Record<"ru" | "es" | "de" | "fr" | "pt" | "
     "groupTitleRequired": "El título del grupo es obligatorio.",
     "linkTitleRequired": "El título del enlace es obligatorio.",
     "restorePointNameRequired": "El nombre del punto de restauración es obligatorio.",
+    "aboutAuraStart": "Acerca de Aura Start",
+    "appName": "Aplicación",
+    "appVersion": "Versión",
+    "showVersionInHeader": "Mostrar versión en el encabezado",
+    "showVersionInHeaderDescription": "Muestra la versión de Aura Start junto al nombre en la esquina superior izquierda.",
     "validImport": "Importación válida: {groups} grupos, {links} enlaces."
   },
   "de": {
@@ -457,6 +462,11 @@ export const translationCompletions: Record<"ru" | "es" | "de" | "fr" | "pt" | "
     "groupTitleRequired": "Gruppentitel ist erforderlich.",
     "linkTitleRequired": "Linktitel ist erforderlich.",
     "restorePointNameRequired": "Name des Wiederherstellungspunkts ist erforderlich.",
+    "aboutAuraStart": "Über Aura Start",
+    "appName": "App",
+    "appVersion": "Version",
+    "showVersionInHeader": "Version in der Kopfzeile anzeigen",
+    "showVersionInHeaderDescription": "Zeigt die Aura Start-Version neben dem Namen oben links an.",
     "validImport": "Gültiger Import: {groups} Gruppen, {links} Links."
   },
   "fr": {
@@ -697,6 +707,11 @@ export const translationCompletions: Record<"ru" | "es" | "de" | "fr" | "pt" | "
     "groupTitleRequired": "Le titre du groupe est obligatoire.",
     "linkTitleRequired": "Le titre du lien est obligatoire.",
     "restorePointNameRequired": "Le nom du point de restauration est obligatoire.",
+    "aboutAuraStart": "À propos d'Aura Start",
+    "appName": "Application",
+    "appVersion": "Version",
+    "showVersionInHeader": "Afficher la version dans l'en-tête",
+    "showVersionInHeaderDescription": "Affiche la version d'Aura Start à côté du nom en haut à gauche.",
     "validImport": "Importation valide : groupes {groups}, liens {links}."
   },
   "pt": {
@@ -938,6 +953,11 @@ export const translationCompletions: Record<"ru" | "es" | "de" | "fr" | "pt" | "
     "groupTitleRequired": "O título do grupo é obrigatório.",
     "linkTitleRequired": "O título do link é obrigatório.",
     "restorePointNameRequired": "O nome do ponto de restauração é obrigatório.",
+    "aboutAuraStart": "Sobre o Aura Start",
+    "appName": "Aplicativo",
+    "appVersion": "Versão",
+    "showVersionInHeader": "Mostrar versão no cabeçalho",
+    "showVersionInHeaderDescription": "Mostra a versão do Aura Start ao lado do nome no canto superior esquerdo.",
     "validImport": "Importação válida: {groups} grupos, {links} links."
   },
   "uk": {
@@ -1167,6 +1187,11 @@ export const translationCompletions: Record<"ru" | "es" | "de" | "fr" | "pt" | "
     "groupTitleRequired": "Назва групи обов’язкова.",
     "linkTitleRequired": "Назва посилання обов’язкова.",
     "restorePointNameRequired": "Назва точки відновлення обов’язкова.",
+    "aboutAuraStart": "Про Aura Start",
+    "appName": "Застосунок",
+    "appVersion": "Версія",
+    "showVersionInHeader": "Показувати версію в шапці",
+    "showVersionInHeaderDescription": "Показує версію Aura Start поруч із назвою у верхньому лівому куті.",
     "validImport": "Дійсний імпорт: {groups} груп, {links} посилань."
   }
 };
