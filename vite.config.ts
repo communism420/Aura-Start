@@ -22,9 +22,14 @@ function looksLikeExampleOAuthClientId(clientId: string): boolean {
 }
 
 function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
+  let manifestPath = resolve(__dirname, "dist", "manifest.json");
+
   return {
     name: "aura-google-oauth-client",
     apply: "build",
+    configResolved(config) {
+      manifestPath = resolve(config.root, config.build.outDir, "manifest.json");
+    },
     async closeBundle() {
       if (!clientId) return;
       const normalizedClientId = normalizeOAuthClientId(clientId);
@@ -35,7 +40,6 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
         throw new Error("AURA_GOOGLE_OAUTH_CLIENT_ID points to an example value. Create a real OAuth Client ID in Google Cloud Console and use that value.");
       }
 
-      const manifestPath = resolve(__dirname, "dist", "manifest.json");
       const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
         oauth2?: { client_id?: string; scopes?: string[] };
       };
@@ -44,7 +48,7 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
         client_id: normalizedClientId
       };
       await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
-      console.log("Injected Google OAuth Client ID into dist/manifest.json.");
+      console.log(`Injected Google OAuth Client ID into ${manifestPath}.`);
     }
   };
 }
