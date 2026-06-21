@@ -60,12 +60,15 @@ export default defineConfig(({ mode }) => {
   const googleWebOAuthClientId = storeBuild
     ? process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? ""
     : env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+  const webOAuthFallbackSetting = storeBuild
+    ? process.env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK
+    : process.env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK ?? env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK;
   const enableGoogleWebOAuthFallback =
-    !storeBuild && Boolean(googleWebOAuthClientId) && env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK !== "false";
+    Boolean(googleWebOAuthClientId) && webOAuthFallbackSetting !== "false";
   const googleWebOAuthRedirectPath = enableGoogleWebOAuthFallback
     ? (storeBuild ? "" : env.AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH?.trim() ?? "")
     : "";
-  if (enableGoogleWebOAuthFallback && !googleWebOAuthClientId) {
+  if (webOAuthFallbackSetting === "true" && !googleWebOAuthClientId) {
     throw new Error("AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK=true requires AURA_GOOGLE_WEB_OAUTH_CLIENT_ID.");
   }
 
