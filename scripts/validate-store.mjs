@@ -204,7 +204,7 @@ if (await exists(manifestPath)) {
     fail("Google Drive sync must request only the drive.appdata OAuth scope.");
   }
   if (oauthScopes.includes("https://www.googleapis.com/auth/drive") || oauthScopes.includes("https://www.googleapis.com/auth/drive.file")) {
-    fail("Do not request full Google Drive or drive.file OAuth scopes.");
+    fail("Do not request full Google Drive or drive.file OAuth scopes in manifest.oauth2.");
   }
 
   const csp = manifest.content_security_policy?.extension_pages ?? "";
@@ -240,6 +240,7 @@ const benignUrlFragments = [
   "www.googleapis.com",
   "oauth2.googleapis.com",
   "googleapis.com/auth/drive.appdata",
+  "googleapis.com/auth/drive.file",
   "github.com",
   "developer.chrome.com",
   "news.ycombinator.com",

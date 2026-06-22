@@ -5,6 +5,7 @@ import {
   detectGoogleDriveInstallSource,
   fallbackChromiumAppRedirectUrl,
   GoogleDriveSyncError,
+  googleDriveDeviceOAuthScopes,
   isChromeIdentityUnsupportedError,
   isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
@@ -17,6 +18,7 @@ const WEB_CLIENT_ID = "391557451047-i97jn2iuqfoc0igquhgo2lpp3q4vabim.apps.google
 const DEVICE_CLIENT_ID = "391557451047-h4efr7kge7volhd277qmai8lrfj1mc1j.apps.googleusercontent.com";
 const DEVICE_CLIENT_SECRET = "device-client-secret";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 
 describe("Google Drive OAuth flow selection", () => {
   it("uses chrome.identity.getAuthToken when manifest OAuth is valid", () => {
@@ -78,6 +80,11 @@ describe("Google Drive OAuth flow selection", () => {
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("device_oauth");
+  });
+
+  it("uses the Google Drive file scope for Device OAuth", () => {
+    expect(googleDriveDeviceOAuthScopes()).toEqual([DRIVE_FILE_SCOPE]);
+    expect(googleDriveDeviceOAuthScopes()).not.toContain(DRIVE_APPDATA_SCOPE);
   });
 
   it("uses Device OAuth in known non-Chrome Chromium browsers when fallback is configured", () => {

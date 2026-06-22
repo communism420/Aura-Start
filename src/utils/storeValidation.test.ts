@@ -9,6 +9,7 @@ const BUNDLED_WEB_CLIENT_ID = "391557451047-i97jn2iuqfoc0igquhgo2lpp3q4vabim.app
 const VALID_WEB_CLIENT_ID = "391557451047-safewebfallbackclient.apps.googleusercontent.com";
 const VALID_DEVICE_CLIENT_ID = "391557451047-safedevicefallbackclient.apps.googleusercontent.com";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const VALID_MANIFEST = {
   manifest_version: 3,
   name: "__MSG_extensionName__",
@@ -142,7 +143,7 @@ describe("Chrome Web Store validation OAuth guards", () => {
   it("allows the configured Device OAuth fallback client", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
-      `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code";`,
+      `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code"; const scope = "${DRIVE_FILE_SCOPE}";`,
       {
         AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID: VALID_DEVICE_CLIENT_ID,
         AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET: "device-secret"
@@ -156,7 +157,7 @@ describe("Chrome Web Store validation OAuth guards", () => {
   it("fails when Device OAuth code is bundled without explicit fallback configuration", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
-      `const endpoint = "https://oauth2.googleapis.com/device/code";`
+      `const endpoint = "https://oauth2.googleapis.com/device/code"; const scope = "${DRIVE_FILE_SCOPE}";`
     );
 
     expect(result.status).not.toBe(0);

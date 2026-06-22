@@ -10,7 +10,10 @@ const GOOGLE_DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const SYNC_FILE_NAME = "aura-start-sync.json";
+const SYNC_FILE_APP_PROPERTY = "auraStartSync";
+const SYNC_FILE_APP_PROPERTY_VALUE = "true";
 const CLOUD_SCHEMA_VERSION = 1;
 const CLOUD_APP_NAME = "Aura Start";
 const PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID = "pdhhnnmcampmmklkbbtfbmnijmgjliabi";
@@ -59,6 +62,7 @@ type CachedToken = {
 type CachedDeviceToken = CachedToken & {
   refreshToken: string;
 };
+type GoogleDriveStorageMode = "app_data_folder" | "drive_file";
 
 export type GoogleDeviceAuthEventDetail = {
   userCode: string;
@@ -521,6 +525,14 @@ function oauthScopes(): string[] {
   return scopes?.length ? scopes : [DRIVE_APPDATA_SCOPE];
 }
 
+export function googleDriveDeviceOAuthScopes(): string[] {
+  return [DRIVE_FILE_SCOPE];
+}
+
+function storageModeForToken(token: string): GoogleDriveStorageMode {
+  return deviceAuthTokenCache?.token === token ? "drive_file" : "app_data_folder";
+}
+
 function cachedWebAuthToken(): string | undefined {
   if (!webAuthTokenCache) return undefined;
   if (Date.now() + TOKEN_EXPIRY_SAFETY_MS >= webAuthTokenCache.expiresAt) {
@@ -892,7 +904,7 @@ async function requestGoogleDeviceCode(clientId: string): Promise<Required<Pick<
 }> {
   const body = new URLSearchParams({
     client_id: clientId,
-    scope: oauthScopes().join(" ")
+    scope: googleDriveDeviceOAuthScopes().join(" ")
   });
   const response = await fetch(GOOGLE_DEVICE_CODE_URL, {
     method: "POST",
@@ -1436,15 +1448,66 @@ export async function getConnectedAccountInfo(): Promise<{
   });
 }
 
-export async function findSyncFile(token?: string): Promise<GoogleDriveFileMetadata | undefined> {
-  const authToken = token ?? await getAuthToken(false);
-  const query = `name = '${SYNC_FILE_NAME}' and 'appDataFolder' in parents and trashed = false`;
+function syncFileQuery(storageMode: GoogleDriveStorageMode): string {
+  const nameQuery = `name = '${SYNC_FILE_NAME}' and trashed = false`;
+  if (storageMode === "drive_file") {
+    return `${nameQuery} and appProperties has { key='${SYNC_FILE_APP_PROPERTY}' and value='${SYNC_FILE_APP_PROPERTY_VALUE}' }`;
+  }
+
+  return `${nameQuery} and 'appDataFolder' in parents`;
+}
+
+function syncFileListParams(storageMode: GoogleDriveStorageMode): URLSearchParams {
   const params = new URLSearchParams({
-    spaces: "appDataFolder",
-    q: query,
+    q: syncFileQuery(storageMode),
     fields: "files(id,name,modifiedTime,size)",
     pageSize: "10"
   });
+
+  if (storageMode === "app_data_folder") {
+    params.set("spaces", "appDataFolder");
+  }
+
+  return params;
+}
+
+function syncFileCreateMetadata(storageMode: GoogleDriveStorageMode): RecordValue {
+  const metadata: RecordValue = {
+    name: SYNC_FILE_NAME,
+    mimeType: "application/json"
+  };
+
+  if (storageMode === "app_data_folder") {
+    metadata.parents = ["appDataFolder"];
+  } else {
+    metadata.appProperties = {
+      [SYNC_FILE_APP_PROPERTY]: SYNC_FILE_APP_PROPERTY_VALUE,
+      app: CLOUD_APP_NAME
+    };
+  }
+
+  return metadata;
+}
+
+function syncFileUpdateMetadata(storageMode: GoogleDriveStorageMode): RecordValue {
+  const metadata: RecordValue = {
+    name: SYNC_FILE_NAME,
+    mimeType: "application/json"
+  };
+
+  if (storageMode === "drive_file") {
+    metadata.appProperties = {
+      [SYNC_FILE_APP_PROPERTY]: SYNC_FILE_APP_PROPERTY_VALUE,
+      app: CLOUD_APP_NAME
+    };
+  }
+
+  return metadata;
+}
+
+export async function findSyncFile(token?: string): Promise<GoogleDriveFileMetadata | undefined> {
+  const authToken = token ?? await getAuthToken(false);
+  const params = syncFileListParams(storageModeForToken(authToken));
   const result = await driveFetch<{ files?: GoogleDriveFileMetadata[] }>(
     authToken,
     `${DRIVE_API_BASE}/files?${params.toString()}`
@@ -1464,14 +1527,7 @@ export async function createSyncFile(
 ): Promise<GoogleDriveFileMetadata> {
   const authToken = token ?? await getAuthToken(false);
   const payload = cloudPayload(data, deviceId);
-  const multipart = createMultipartBody(
-    {
-      name: SYNC_FILE_NAME,
-      parents: ["appDataFolder"],
-      mimeType: "application/json"
-    },
-    payload
-  );
+  const multipart = createMultipartBody(syncFileCreateMetadata(storageModeForToken(authToken)), payload);
   const params = new URLSearchParams({
     uploadType: "multipart",
     fields: "id,name,modifiedTime,size"
@@ -1492,10 +1548,7 @@ export async function uploadSyncFile(
 ): Promise<GoogleDriveFileMetadata> {
   const token = options.token ?? await getAuthToken(false);
   const payload = cloudPayload(data, options.deviceId);
-  const metadata = {
-    name: SYNC_FILE_NAME,
-    mimeType: "application/json"
-  };
+  const metadata = syncFileUpdateMetadata(storageModeForToken(token));
   const multipart = createMultipartBody(metadata, payload);
   const params = new URLSearchParams({
     uploadType: "multipart",
@@ -1651,7 +1704,7 @@ export function mapDriveError(error: unknown): string {
         || message.includes("insufficient authentication scopes")
         || message.includes("insufficient permission")
       ) {
-        return "Google authorized Aura Start without the required drive.appdata permission. Disconnect Google Account, connect again, and make sure the OAuth consent screen includes the Google Drive appdata scope.";
+        return "Google authorized Aura Start without the required Google Drive sync permission. Disconnect Google Account, connect again, and make sure the OAuth consent screen includes the requested Drive sync scope.";
       }
 
       return `Google Drive denied access: ${error.message}`;
