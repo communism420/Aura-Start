@@ -8,6 +8,7 @@ import { EmptyState } from "./EmptyState";
 import { GroupGrid } from "./GroupGrid";
 import { Header } from "./Header";
 import { ImportDialog, type ImportDialogFormat } from "./ImportDialog";
+import { Modal } from "./Modal";
 import { OnboardingDialog } from "./OnboardingDialog";
 import { RecoveryScreen } from "./RecoveryScreen";
 import { RestorePointsDialog } from "./RestorePointsDialog";
@@ -15,6 +16,7 @@ import { SettingsDialog } from "./SettingsDialog";
 import { Toasts } from "./Toasts";
 import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
+import { GOOGLE_DEVICE_AUTH_EVENT, type GoogleDeviceAuthEventDetail } from "../services/googleDriveSync";
 import { useAuraStore } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
 import { exportJsonBackup } from "../utils/exportJson";
@@ -123,6 +125,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [deviceAuth, setDeviceAuth] = useState<GoogleDeviceAuthEventDetail | null>(null);
   const [pendingDanger, setPendingDanger] = useState<PendingDanger>(null);
   const keyboardFocusRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -132,6 +135,18 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const handleDeviceAuth = (event: Event) => {
+      const detail = (event as CustomEvent<GoogleDeviceAuthEventDetail>).detail;
+      if (detail?.userCode && detail.verificationUrl) {
+        setDeviceAuth(detail);
+      }
+    };
+
+    globalThis.addEventListener?.(GOOGLE_DEVICE_AUTH_EVENT, handleDeviceAuth);
+    return () => globalThis.removeEventListener?.(GOOGLE_DEVICE_AUTH_EVENT, handleDeviceAuth);
+  }, []);
 
   const hasUserGroupsOrLinks = Boolean(data && data.groups.length > 0);
   const hasTrackedDemoData = useMemo(() => {
@@ -815,6 +830,45 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onClose={() => setCommandPaletteOpen(false)}
         onError={showError}
       />
+      <Modal
+        closeLabel={t(language, "closeDialog")}
+        description={t(language, "googleDriveDeviceAuthDescription")}
+        open={Boolean(deviceAuth)}
+        size="sm"
+        title={t(language, "googleDriveDeviceAuthTitle")}
+        onClose={() => setDeviceAuth(null)}
+      >
+        <div className="space-y-4">
+          <div>
+            <div className="muted mb-2 text-sm font-semibold">{t(language, "googleDriveDeviceAuthCodeLabel")}</div>
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3 text-center font-mono text-2xl font-semibold">
+              {deviceAuth?.userCode}
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <a
+              className="btn btn-primary flex-1"
+              href={deviceAuth?.verificationUrlComplete ?? deviceAuth?.verificationUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {t(language, "googleDriveDeviceAuthOpen")}
+            </a>
+            <button
+              className="btn btn-secondary"
+              type="button"
+              onClick={() => {
+                if (deviceAuth?.userCode) {
+                  void navigator.clipboard?.writeText(deviceAuth.userCode);
+                }
+              }}
+            >
+              {t(language, "copy")}
+            </button>
+          </div>
+          <p className="muted text-sm">{t(language, "googleDriveDeviceAuthWaiting")}</p>
+        </div>
+      </Modal>
       <ConfirmDialog
         cancelLabel={t(language, "cancel")}
         confirmLabel={dangerConfirmLabel}

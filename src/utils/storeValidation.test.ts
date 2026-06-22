@@ -139,7 +139,7 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 
-  it("rejects Device OAuth fallback because Google device flow rejects drive.appdata", async () => {
+  it("allows the configured Device OAuth fallback client", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,
       `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code";`,
@@ -149,7 +149,30 @@ describe("Chrome Web Store validation OAuth guards", () => {
       }
     );
 
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
+  });
+
+  it("fails when Device OAuth code is bundled without explicit fallback configuration", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const endpoint = "https://oauth2.googleapis.com/device/code";`
+    );
+
     expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("Device OAuth fallback is not supported");
+    expect(result.stderr).toContain("Device OAuth fallback was not explicitly configured");
+  });
+
+  it("fails when Device OAuth fallback is missing its secret", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const deviceClient = "${VALID_DEVICE_CLIENT_ID}"; const endpoint = "https://oauth2.googleapis.com/device/code";`,
+      {
+        AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID: VALID_DEVICE_CLIENT_ID
+      }
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID and AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET");
   });
 });

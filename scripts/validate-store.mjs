@@ -30,7 +30,7 @@ const exampleOAuthClientIds = new Set([
 ]);
 const webOAuthFallbackDisabled = process.env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK === "false";
 const configuredWebOAuthClientId = process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
-const deviceOAuthDisabled = process.env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH === "false";
+const deviceOAuthFallbackDisabled = process.env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH_FALLBACK === "false";
 const configuredDeviceOAuthClientId = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID?.trim() ?? "";
 const configuredDeviceOAuthClientSecret = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET?.trim() ?? "";
 const hardFailures = [];
@@ -103,6 +103,7 @@ function looksLikeExampleOAuthClientId(clientId) {
 }
 
 const allowedRuntimeOAuthClientIds = new Set();
+let configuredDeviceOAuthEnabled = false;
 if (!webOAuthFallbackDisabled) {
   const webOAuthClientId = configuredWebOAuthClientId || await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID");
   if (webOAuthClientId && (!oauthClientIdPattern.test(webOAuthClientId) || looksLikeExampleOAuthClientId(webOAuthClientId))) {
@@ -111,11 +112,18 @@ if (!webOAuthFallbackDisabled) {
     allowedRuntimeOAuthClientIds.add(webOAuthClientId);
   }
 }
-if (!deviceOAuthDisabled) {
+if (!deviceOAuthFallbackDisabled) {
   const deviceOAuthClientId = configuredDeviceOAuthClientId || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID");
   const deviceOAuthClientSecret = configuredDeviceOAuthClientSecret || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET");
   if (deviceOAuthClientId || deviceOAuthClientSecret) {
-    fail("Google Device OAuth fallback is not supported for Aura Start because Google's device flow rejects the drive.appdata scope. Use Chrome identity or the Web OAuth fallback instead.");
+    if (!deviceOAuthClientId || !deviceOAuthClientSecret) {
+      fail("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID and AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET must both be set when the Device OAuth fallback is enabled.");
+    } else if (!oauthClientIdPattern.test(deviceOAuthClientId) || looksLikeExampleOAuthClientId(deviceOAuthClientId)) {
+      fail("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID must be a real Google OAuth Device Client ID ending with .apps.googleusercontent.com.");
+    } else {
+      allowedRuntimeOAuthClientIds.add(deviceOAuthClientId);
+      configuredDeviceOAuthEnabled = true;
+    }
   }
 }
 
@@ -266,8 +274,8 @@ for (const file of codeFiles) {
       fail(`${displayPath} contains manual Google OAuth URL construction with an unexpected bundled OAuth Client ID.`);
     }
 
-    if (text.includes("oauth2.googleapis.com/device/code")) {
-      fail(`${displayPath} contains Google Device OAuth code. Google's device flow rejects the drive.appdata scope used by Aura Start.`);
+    if (text.includes("oauth2.googleapis.com/device/code") && !configuredDeviceOAuthEnabled) {
+      fail(`${displayPath} contains Google Device OAuth code, but the Device OAuth fallback was not explicitly configured for validation.`);
     }
   }
 
