@@ -5,6 +5,7 @@ import {
   detectGoogleDriveInstallSource,
   fallbackChromiumAppRedirectUrl,
   GoogleDriveSyncError,
+  googleDriveDeviceOAuthPollDelayMs,
   googleDriveDeviceOAuthScopes,
   isChromeIdentityUnsupportedError,
   isGoogleDriveAuthorizationUnavailable,
@@ -254,6 +255,54 @@ describe("Google Drive OAuth flow selection", () => {
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("unavailable");
+  });
+});
+
+describe("Google Drive Device OAuth polling", () => {
+  it("polls quickly after showing the device code", () => {
+    expect(
+      googleDriveDeviceOAuthPollDelayMs({
+        firstPoll: true,
+        recommendedIntervalMs: 5000,
+        startedAt: 10_000,
+        now: 10_000,
+        slowedDown: false
+      })
+    ).toBe(1000);
+  });
+
+  it("keeps a short fast-poll window before returning to Google's recommended interval", () => {
+    expect(
+      googleDriveDeviceOAuthPollDelayMs({
+        firstPoll: false,
+        recommendedIntervalMs: 5000,
+        startedAt: 10_000,
+        now: 12_000,
+        slowedDown: false
+      })
+    ).toBe(1500);
+
+    expect(
+      googleDriveDeviceOAuthPollDelayMs({
+        firstPoll: false,
+        recommendedIntervalMs: 5000,
+        startedAt: 10_000,
+        now: 26_000,
+        slowedDown: false
+      })
+    ).toBe(5000);
+  });
+
+  it("uses the Google backoff interval after slow_down", () => {
+    expect(
+      googleDriveDeviceOAuthPollDelayMs({
+        firstPoll: false,
+        recommendedIntervalMs: 10_000,
+        startedAt: 10_000,
+        now: 12_000,
+        slowedDown: true
+      })
+    ).toBe(10_000);
   });
 });
 

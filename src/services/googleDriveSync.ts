@@ -19,6 +19,9 @@ const CLOUD_APP_NAME = "Aura Start";
 const PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID = "pdhhnnmcampmmklkbbtfbmnijmgjliabi";
 const TOKEN_EXPIRY_SAFETY_MS = 60_000;
 const CHROME_IDENTITY_PROBE_TIMEOUT_MS = 2_500;
+const DEVICE_OAUTH_INITIAL_POLL_DELAY_MS = 1_000;
+const DEVICE_OAUTH_FAST_POLL_DELAY_MS = 1_500;
+const DEVICE_OAUTH_FAST_POLL_WINDOW_MS = 15_000;
 const WEB_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-web-auth-token";
 const DEVICE_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-device-auth-token";
 export const GOOGLE_DEVICE_AUTH_EVENT = "aura-start:google-device-auth";
@@ -936,6 +939,29 @@ function emitGoogleDeviceAuthEvent(detail: GoogleDeviceAuthEventDetail): void {
   globalThis.dispatchEvent?.(new CustomEvent<GoogleDeviceAuthEventDetail>(GOOGLE_DEVICE_AUTH_EVENT, { detail }));
 }
 
+export function googleDriveDeviceOAuthPollDelayMs(input: {
+  firstPoll: boolean;
+  recommendedIntervalMs: number;
+  startedAt: number;
+  now: number;
+  slowedDown: boolean;
+}): number {
+  const recommendedIntervalMs = Math.max(input.recommendedIntervalMs, DEVICE_OAUTH_INITIAL_POLL_DELAY_MS);
+  if (input.slowedDown) {
+    return recommendedIntervalMs;
+  }
+
+  if (input.firstPoll) {
+    return Math.min(DEVICE_OAUTH_INITIAL_POLL_DELAY_MS, recommendedIntervalMs);
+  }
+
+  if (input.now - input.startedAt <= DEVICE_OAUTH_FAST_POLL_WINDOW_MS) {
+    return Math.min(DEVICE_OAUTH_FAST_POLL_DELAY_MS, recommendedIntervalMs);
+  }
+
+  return recommendedIntervalMs;
+}
+
 function openGoogleDeviceVerificationPage(url: string): void {
   const tabs = globalThis.chrome?.tabs;
   if (typeof tabs?.create === "function") {
@@ -1076,14 +1102,30 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
   openGoogleDeviceVerificationPage(verificationUrl);
 
   let intervalMs = Math.max(code.interval, 5) * 1000;
+  const startedAt = Date.now();
   const expiresAt = Date.now() + code.expires_in * 1000;
+  let firstPoll = true;
+  let slowedDown = false;
   while (Date.now() < expiresAt) {
-    await new Promise((resolve) => globalThis.setTimeout(resolve, intervalMs));
+    const now = Date.now();
+    const delayMs = Math.min(
+      googleDriveDeviceOAuthPollDelayMs({
+        firstPoll,
+        recommendedIntervalMs: intervalMs,
+        startedAt,
+        now,
+        slowedDown
+      }),
+      Math.max(expiresAt - now, 0)
+    );
+    await new Promise((resolve) => globalThis.setTimeout(resolve, delayMs));
+    firstPoll = false;
     const result = await exchangeGoogleDeviceCode(client, code.device_code);
     if (result === "authorization_pending") {
       continue;
     }
     if (result === "slow_down") {
+      slowedDown = true;
       intervalMs += 5000;
       continue;
     }
