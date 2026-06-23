@@ -130,6 +130,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const keyboardFocusRef = useRef<HTMLInputElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const autoOnboardingCheckedRef = useRef(false);
+  const deviceAuthSawActiveSyncRef = useRef(false);
   const fallbackLanguage = DEFAULT_SETTINGS.language;
 
   useEffect(() => {
@@ -140,6 +141,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     const handleDeviceAuth = (event: Event) => {
       const detail = (event as CustomEvent<GoogleDeviceAuthEventDetail>).detail;
       if (detail?.userCode && detail.verificationUrl) {
+        deviceAuthSawActiveSyncRef.current = false;
         setDeviceAuth(detail);
       }
     };
@@ -147,6 +149,22 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     globalThis.addEventListener?.(GOOGLE_DEVICE_AUTH_EVENT, handleDeviceAuth);
     return () => globalThis.removeEventListener?.(GOOGLE_DEVICE_AUTH_EVENT, handleDeviceAuth);
   }, []);
+
+  useEffect(() => {
+    if (!deviceAuth) {
+      deviceAuthSawActiveSyncRef.current = false;
+      return;
+    }
+
+    if (syncStatus === "connecting" || syncStatus === "syncing") {
+      deviceAuthSawActiveSyncRef.current = true;
+      return;
+    }
+
+    if (deviceAuthSawActiveSyncRef.current) {
+      setDeviceAuth(null);
+    }
+  }, [deviceAuth, syncStatus]);
 
   const hasUserGroupsOrLinks = Boolean(data && data.groups.length > 0);
   const hasTrackedDemoData = useMemo(() => {
@@ -270,6 +288,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restoreOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
+        deviceAuth ||
         pendingDanger;
       const modalOpen = blockingModalOpen || commandPaletteOpen;
       const searchInputFocused = event.target === searchInputRef.current;
@@ -356,6 +375,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   }, [
     groupDialogOpen,
     commandPaletteOpen,
+    deviceAuth,
     duplicateFinderOpen,
     importOpen,
     linkDialogOpen,
@@ -381,6 +401,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         restoreOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
+        deviceAuth ||
         pendingDanger
     );
 
@@ -397,6 +418,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     return () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
   }, [
     duplicateFinderOpen,
+    deviceAuth,
     groupDialogOpen,
     importOpen,
     linkDialogOpen,
@@ -832,6 +854,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       />
       <Modal
         closeLabel={t(language, "closeDialog")}
+        closeOnBackdrop={false}
         description={t(language, "googleDriveDeviceAuthDescription")}
         open={Boolean(deviceAuth)}
         size="sm"

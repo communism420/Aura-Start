@@ -7,6 +7,7 @@ type ModalProps = {
   description?: string;
   children: ReactNode;
   closeLabel?: string;
+  closeOnBackdrop?: boolean;
   onClose: () => void;
   size?: "sm" | "md" | "lg" | "xl";
 };
@@ -18,7 +19,16 @@ const sizeClass = {
   xl: "max-w-6xl"
 };
 
-export function Modal({ open, title, description, children, closeLabel = "Close dialog", onClose, size = "md" }: ModalProps) {
+export function Modal({
+  open,
+  title,
+  description,
+  children,
+  closeLabel = "Close dialog",
+  closeOnBackdrop = true,
+  onClose,
+  size = "md"
+}: ModalProps) {
   useEffect(() => {
     if (!open) return;
 
@@ -39,7 +49,7 @@ export function Modal({ open, title, description, children, closeLabel = "Close 
       className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/34 px-4 py-8 backdrop-blur-sm"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (closeOnBackdrop && event.target === event.currentTarget) {
           onClose();
         }
       }}
