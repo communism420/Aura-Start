@@ -140,6 +140,20 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 
+  it("fails when a Chrome Web Store build enables Web OAuth fallback", async () => {
+    const result = await runValidateStore(
+      VALID_MANIFEST,
+      `const webClient = "${VALID_WEB_CLIENT_ID}"; const url = "https://accounts.google.com/o/oauth2/v2/auth";`,
+      {
+        AURA_STORE_BUILD: "true",
+        AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: VALID_WEB_CLIENT_ID
+      }
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Chrome Web Store builds must not enable Web OAuth fallback");
+  });
+
   it("allows the configured Device OAuth fallback client", async () => {
     const result = await runValidateStore(
       VALID_MANIFEST,

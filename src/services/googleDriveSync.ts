@@ -11,6 +11,7 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const DEVICE_OAUTH_DRIVE_SCOPE = DRIVE_FILE_SCOPE;
 const SYNC_FILE_NAME = "aura-start-sync.json";
 const SYNC_FILE_APP_PROPERTY = "auraStartSync";
 const SYNC_FILE_APP_PROPERTY_VALUE = "true";
@@ -529,7 +530,7 @@ function oauthScopes(): string[] {
 }
 
 export function googleDriveDeviceOAuthScopes(): string[] {
-  return [DRIVE_FILE_SCOPE];
+  return [DEVICE_OAUTH_DRIVE_SCOPE];
 }
 
 function storageModeForToken(token: string): GoogleDriveStorageMode {
@@ -905,9 +906,17 @@ async function requestGoogleDeviceCode(clientId: string): Promise<Required<Pick<
   expires_in: number;
   interval: number;
 }> {
+  const scopes = googleDriveDeviceOAuthScopes();
+  if (scopes.includes(DRIVE_APPDATA_SCOPE)) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "Google Device OAuth cannot request the appDataFolder scope. Rebuild Aura Start with the device-code Drive file scope."
+    );
+  }
+
   const body = new URLSearchParams({
     client_id: clientId,
-    scope: googleDriveDeviceOAuthScopes().join(" ")
+    scope: scopes.join(" ")
   });
   const response = await fetch(GOOGLE_DEVICE_CODE_URL, {
     method: "POST",

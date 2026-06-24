@@ -30,6 +30,7 @@ const exampleOAuthClientIds = new Set([
 ]);
 const webOAuthFallbackDisabled = process.env.AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK === "false";
 const configuredWebOAuthClientId = process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? "";
+const storeBuild = process.env.AURA_STORE_BUILD === "true";
 const deviceOAuthFallbackDisabled = process.env.AURA_ENABLE_GOOGLE_DEVICE_OAUTH_FALLBACK === "false";
 const configuredDeviceOAuthClientId = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID?.trim() ?? "";
 const configuredDeviceOAuthClientSecret = process.env.AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET?.trim() ?? "";
@@ -104,8 +105,11 @@ function looksLikeExampleOAuthClientId(clientId) {
 
 const allowedRuntimeOAuthClientIds = new Set();
 let configuredDeviceOAuthEnabled = false;
+if (storeBuild && !webOAuthFallbackDisabled) {
+  fail("Chrome Web Store builds must not enable Web OAuth fallback. Use Chrome identity in Google Chrome and Device OAuth fallback in Chromium browsers without Chrome sign-in.");
+}
 if (!webOAuthFallbackDisabled) {
-  const webOAuthClientId = configuredWebOAuthClientId || await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID");
+  const webOAuthClientId = configuredWebOAuthClientId || (storeBuild ? "" : await readEnvValue("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID"));
   if (webOAuthClientId && (!oauthClientIdPattern.test(webOAuthClientId) || looksLikeExampleOAuthClientId(webOAuthClientId))) {
     fail("AURA_GOOGLE_WEB_OAUTH_CLIENT_ID must be a real Google OAuth Web Client ID ending with .apps.googleusercontent.com.");
   } else if (webOAuthClientId) {
@@ -113,8 +117,8 @@ if (!webOAuthFallbackDisabled) {
   }
 }
 if (!deviceOAuthFallbackDisabled) {
-  const deviceOAuthClientId = configuredDeviceOAuthClientId || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID");
-  const deviceOAuthClientSecret = configuredDeviceOAuthClientSecret || await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET");
+  const deviceOAuthClientId = configuredDeviceOAuthClientId || (storeBuild ? "" : await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID"));
+  const deviceOAuthClientSecret = configuredDeviceOAuthClientSecret || (storeBuild ? "" : await readEnvValue("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET"));
   if (deviceOAuthClientId || deviceOAuthClientSecret) {
     if (!deviceOAuthClientId || !deviceOAuthClientSecret) {
       fail("AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID and AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET must both be set when the Device OAuth fallback is enabled.");
