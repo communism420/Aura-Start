@@ -20,6 +20,7 @@ export type AuraSyncSettings = {
   accountAvatarUrl?: string;
   cloudFileId?: string;
   connected?: boolean;
+  deleteCloudFileOnDisconnect: boolean;
 };
 
 export type AuraStartSettings = {

@@ -105,7 +105,8 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     accountName: optionalTrimmedString(sync.accountName),
     accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
-    connected: mode !== "off" && asBoolean(sync.connected, false)
+    connected: mode !== "off" && asBoolean(sync.connected, false),
+    deleteCloudFileOnDisconnect: asBoolean(sync.deleteCloudFileOnDisconnect, DEFAULT_SETTINGS.sync.deleteCloudFileOnDisconnect)
   };
 }
 

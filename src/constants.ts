@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
   sync: {
     mode: "off",
     deviceId: "",
-    connected: false
+    connected: false,
+    deleteCloudFileOnDisconnect: true
   }
 };
