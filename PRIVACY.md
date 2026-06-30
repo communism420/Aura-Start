@@ -1,6 +1,6 @@
 # Aura Start Privacy Policy
 
-Effective date: May 24, 2026
+Effective date: June 30, 2026
 
 Aura Start is a local-first browser extension. It replaces the new tab page with user-created groups of links and keeps those groups under the user's control. Aura Start works without an account, and Google Drive sync is optional and off by default.
 
