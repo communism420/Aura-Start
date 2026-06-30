@@ -1,5 +1,22 @@
 import type { AuraStartData, AuraSyncSettings } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
+import {
+  createExtensionTab,
+  getExtensionAuthToken,
+  getExtensionManifest,
+  getExtensionProfileUserInfo,
+  getExtensionRedirectUrl,
+  getExtensionRuntimeId,
+  getExtensionStorageArea,
+  hasExtensionIdentityApi,
+  hasExtensionIdentityGetAuthToken,
+  hasExtensionWebAuthFlow,
+  launchExtensionWebAuthFlow,
+  removeCachedExtensionAuthToken,
+  requestExtensionDataCollectionPermissions,
+  type ExtensionDataCollectionPermission,
+  type ExtensionStorageArea
+} from "../utils/browserApi";
 import { nowIso } from "../utils/dates";
 import { validateAuraData } from "../utils/importJson";
 
@@ -26,6 +43,10 @@ const DEVICE_OAUTH_FAST_POLL_WINDOW_MS = 15_000;
 const WEB_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-web-auth-token";
 const DEVICE_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-device-auth-token";
 export const GOOGLE_DEVICE_AUTH_EVENT = "aura-start:google-device-auth";
+const FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS: ExtensionDataCollectionPermission[] = [
+  "browsingActivity",
+  "technicalAndInteraction"
+];
 const OAUTH_CLIENT_ID_PATTERN = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
 const WEB_OAUTH_FALLBACK_ENABLED =
   typeof __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__ === "boolean"
@@ -51,6 +72,10 @@ const DEVICE_OAUTH_CLIENT_SECRET =
   DEVICE_OAUTH_FALLBACK_ENABLED && typeof __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__ === "string"
     ? __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__.trim()
     : "";
+const TARGET_BROWSER =
+  typeof __AURA_TARGET_BROWSER__ === "string"
+    ? __AURA_TARGET_BROWSER__.trim().toLowerCase()
+    : "chromium";
 type RecordValue = Record<string, unknown>;
 type ManifestWithOAuth = chrome.runtime.Manifest & {
   oauth2?: {
@@ -77,6 +102,7 @@ export type GoogleDeviceAuthEventDetail = {
 
 export type GoogleDriveAuthFlow = "chrome_identity" | "device_oauth" | "web_oauth" | "unavailable";
 export type GoogleDriveBrowserOAuthCapability = "chrome_identity" | "web_oauth";
+export type GoogleDriveTargetBrowser = "chromium" | "firefox";
 export type GoogleDriveChromiumVariant =
   | "google_chrome"
   | "chromium"
@@ -95,6 +121,7 @@ export type GoogleDriveAuthFlowInput = {
   deviceOAuthClientId?: string;
   deviceOAuthClientSecret?: string;
   webOAuthClientId?: string;
+  targetBrowser?: GoogleDriveTargetBrowser;
 };
 
 type GoogleApiErrorDetail = {
@@ -175,19 +202,13 @@ function isRecord(value: unknown): value is RecordValue {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function getChromeLastErrorMessage(): string | undefined {
-  return globalThis.chrome?.runtime?.lastError?.message;
-}
-
-function requireIdentityApi(): typeof chrome.identity {
-  if (!globalThis.chrome?.identity) {
+function requireIdentityApi(): void {
+  if (!hasExtensionIdentityApi()) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
-      "Google Drive sync is available only inside the installed Chromium extension."
+      "Google Drive sync is available only inside the installed browser extension."
     );
   }
-
-  return chrome.identity;
 }
 
 function appVersion(): string {
@@ -225,6 +246,10 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
     : canUseWebOAuth
       ? "web_oauth"
       : "unavailable";
+
+  if (input.targetBrowser === "firefox") {
+    return fallbackFlow;
+  }
 
   if (input.installSource === "chrome_web_store") {
     if (input.chromeIdentityUnsupported || !input.hasGetAuthToken) {
@@ -269,13 +294,12 @@ function isChromeWebStoreUpdateUrl(value: string): boolean {
 }
 
 export function detectGoogleDriveInstallSource(): GoogleDriveInstallSource {
-  const runtime = globalThis.chrome?.runtime;
-  if (!runtime) {
+  const extensionId = getExtensionRuntimeId()?.trim() ?? "";
+  if (!extensionId) {
     return "unknown";
   }
 
-  const extensionId = typeof runtime.id === "string" ? runtime.id.trim() : "";
-  const manifest = runtime.getManifest?.() as ManifestWithOAuth | undefined;
+  const manifest = getExtensionManifest() as ManifestWithOAuth | undefined;
   const updateUrl = typeof manifest?.update_url === "string" ? manifest.update_url.trim() : "";
 
   if (
@@ -369,7 +393,7 @@ export async function detectGoogleDriveBrowserOAuthCapability(): Promise<GoogleD
 }
 
 async function detectChromeIdentitySupport(): Promise<boolean> {
-  if (typeof globalThis.chrome?.identity?.getAuthToken !== "function") {
+  if (!hasExtensionIdentityGetAuthToken()) {
     return false;
   }
 
@@ -451,7 +475,7 @@ function isChromiumAppRedirectUrl(value: string): boolean {
 }
 
 export function fallbackChromiumAppRedirectUrl(path: string): string | undefined {
-  const extensionId = globalThis.chrome?.runtime?.id;
+  const extensionId = getExtensionRuntimeId();
   if (!extensionId) {
     return undefined;
   }
@@ -460,9 +484,15 @@ export function fallbackChromiumAppRedirectUrl(path: string): string | undefined
   return `https://${extensionId}.chromiumapp.org/${normalizedPath}`;
 }
 
-function webOAuthRedirectUri(identity: typeof chrome.identity, path: string): string {
+function webOAuthRedirectUri(path: string): string {
   const normalizedPath = normalizeWebOAuthRedirectPath(path);
-  const browserRedirectUrl = identity.getRedirectURL(normalizedPath);
+  const browserRedirectUrl = getExtensionRedirectUrl(normalizedPath);
+  if (!browserRedirectUrl) {
+    throw new GoogleDriveSyncError(
+      "identity_unavailable",
+      "This browser does not support the Google OAuth redirect URL required for Drive sync."
+    );
+  }
   if (isChromiumAppRedirectUrl(browserRedirectUrl)) {
     return browserRedirectUrl;
   }
@@ -487,7 +517,7 @@ function oauthClientConfigurationError(clientId: string | undefined): string {
 }
 
 function manifestOAuthConfig(): { clientId?: string; scopes?: string[] } {
-  const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
+  const manifest = getExtensionManifest() as ManifestWithOAuth | undefined;
   return {
     clientId: manifest?.oauth2?.client_id?.trim(),
     scopes: manifest?.oauth2?.scopes?.filter((scope) => typeof scope === "string" && scope.trim())
@@ -524,7 +554,7 @@ function configuredDeviceOAuthClient(): { clientId: string; clientSecret: string
 }
 
 function oauthScopes(): string[] {
-  const manifest = globalThis.chrome?.runtime?.getManifest?.() as ManifestWithOAuth | undefined;
+  const manifest = getExtensionManifest() as ManifestWithOAuth | undefined;
   const scopes = manifest?.oauth2?.scopes?.filter((scope) => typeof scope === "string" && scope.trim());
   return scopes?.length ? scopes : [DRIVE_APPDATA_SCOPE];
 }
@@ -562,23 +592,24 @@ function normalizeCachedToken(value: unknown): CachedToken | undefined {
   };
 }
 
-function authTokenStorageAreas(): chrome.storage.StorageArea[] {
-  const storage = globalThis.chrome?.storage;
-  const areas: chrome.storage.StorageArea[] = [];
-  if (storage?.local) {
-    areas.push(storage.local);
+function authTokenStorageAreas(): ExtensionStorageArea[] {
+  const areas: ExtensionStorageArea[] = [];
+  const local = getExtensionStorageArea("local");
+  const session = getExtensionStorageArea("session");
+  if (local) {
+    areas.push(local);
   }
-  if (storage?.session) {
-    areas.push(storage.session);
+  if (session) {
+    areas.push(session);
   }
   return areas;
 }
 
-function webAuthTokenStorageAreas(): chrome.storage.StorageArea[] {
+function webAuthTokenStorageAreas(): ExtensionStorageArea[] {
   return authTokenStorageAreas();
 }
 
-function deviceAuthTokenStorageAreas(): chrome.storage.StorageArea[] {
+function deviceAuthTokenStorageAreas(): ExtensionStorageArea[] {
   return authTokenStorageAreas();
 }
 
@@ -692,17 +723,17 @@ async function getNonInteractiveCachedToken(): Promise<string | undefined> {
 
   const { chromeIdentityUnsupported } = await detectNonInteractiveAuthContext();
   const manifestConfig = manifestOAuthConfig();
-  const identity = globalThis.chrome?.identity;
   const flow = selectGoogleDriveAuthFlow({
-    hasIdentityApi: Boolean(identity),
-    hasGetAuthToken: typeof identity?.getAuthToken === "function",
+    hasIdentityApi: hasExtensionIdentityApi(),
+    hasGetAuthToken: hasExtensionIdentityGetAuthToken(),
     manifestClientId: manifestConfig.clientId,
     manifestScopes: manifestConfig.scopes,
     chromeIdentityUnsupported,
     installSource,
     deviceOAuthClientId: deviceOAuthClient?.clientId,
     deviceOAuthClientSecret: deviceOAuthClient?.clientSecret,
-    webOAuthClientId
+    webOAuthClientId,
+    targetBrowser: TARGET_BROWSER === "firefox" ? "firefox" : "chromium"
   });
 
   if (flow === "device_oauth") {
@@ -757,7 +788,7 @@ export function isChromeIdentityUnsupportedError(error: unknown): boolean {
 }
 
 async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Promise<string> {
-  const identity = requireIdentityApi();
+  requireIdentityApi();
   return await new Promise<string>((resolve, reject) => {
     let settled = false;
     const timeout = timeoutMs && timeoutMs > 0
@@ -776,21 +807,19 @@ async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Pro
       callback();
     };
 
-    identity.getAuthToken({ interactive }, (token) => {
-      const lastError = getChromeLastErrorMessage();
-      if (lastError) {
-        finish(() => reject(new GoogleDriveSyncError("auth_cancelled", lastError)));
-        return;
-      }
+    void getExtensionAuthToken(interactive)
+      .then((token) => {
+        const resolvedToken = authResultToken(token);
+        if (!resolvedToken) {
+          finish(() => reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token.")));
+          return;
+        }
 
-      const resolvedToken = authResultToken(token);
-      if (!resolvedToken) {
-        finish(() => reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not return a token.")));
-        return;
-      }
-
-      finish(() => resolve(resolvedToken));
-    });
+        finish(() => resolve(resolvedToken));
+      })
+      .catch((error) => {
+        finish(() => reject(new GoogleDriveSyncError("auth_cancelled", error instanceof Error ? error.message : "Google authorization failed.")));
+      });
   });
 }
 
@@ -808,15 +837,15 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     return cached;
   }
 
-  const identity = requireIdentityApi();
-  if (!identity.launchWebAuthFlow || !identity.getRedirectURL) {
+  requireIdentityApi();
+  if (!hasExtensionWebAuthFlow()) {
     throw new GoogleDriveSyncError(
       "identity_unavailable",
       "This browser does not support the Google OAuth web auth flow required for Drive sync."
     );
   }
 
-  const redirectUri = webOAuthRedirectUri(identity, webOAuthRedirectPath());
+  const redirectUri = webOAuthRedirectUri(webOAuthRedirectPath());
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
   authUrl.searchParams.set("client_id", clientId);
@@ -829,22 +858,13 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     authUrl.searchParams.set("prompt", "select_account consent");
   }
 
-  const redirectResult = await new Promise<string>((resolve, reject) => {
-    identity.launchWebAuthFlow({ interactive, url: authUrl.toString() }, (redirectedTo) => {
-      const lastError = getChromeLastErrorMessage();
-      if (lastError) {
-        reject(new GoogleDriveSyncError("auth_cancelled", lastError));
-        return;
-      }
-
-      if (!redirectedTo) {
-        reject(new GoogleDriveSyncError("auth_cancelled", "Google authorization did not complete."));
-        return;
-      }
-
-      resolve(redirectedTo);
+  const redirectResult = await launchExtensionWebAuthFlow({ interactive, url: authUrl.toString() })
+    .catch((error) => {
+      throw new GoogleDriveSyncError(
+        "auth_cancelled",
+        error instanceof Error ? error.message : "Google authorization did not complete."
+      );
     });
-  });
 
   const redirectedUrl = new URL(redirectResult);
   const fragmentParams = new URLSearchParams(redirectedUrl.hash.startsWith("#") ? redirectedUrl.hash.slice(1) : "");
@@ -972,15 +992,7 @@ export function googleDriveDeviceOAuthPollDelayMs(input: {
 }
 
 function openGoogleDeviceVerificationPage(url: string): void {
-  const tabs = globalThis.chrome?.tabs;
-  if (typeof tabs?.create === "function") {
-    void tabs.create({ url }).catch(() => {
-      globalThis.open?.(url, "_blank", "noopener,noreferrer");
-    });
-    return;
-  }
-
-  globalThis.open?.(url, "_blank", "noopener,noreferrer");
+  void createExtensionTab({ url });
 }
 
 function deviceTokenFromResponse(json: GoogleDeviceTokenResponse, fallbackRefreshToken?: string): CachedDeviceToken {
@@ -1292,7 +1304,23 @@ function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
   }
 }
 
+async function requestFirefoxDriveSyncDataCollectionConsent(interactive: boolean): Promise<void> {
+  if (!interactive || TARGET_BROWSER !== "firefox") {
+    return;
+  }
+
+  const granted = await requestExtensionDataCollectionPermissions(FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS);
+  if (!granted) {
+    throw new GoogleDriveSyncError(
+      "auth_cancelled",
+      "Firefox data collection consent is required before Aura Start can sync saved links and settings with Google Drive."
+    );
+  }
+}
+
 export async function getAuthToken(interactive: boolean): Promise<string> {
+  await requestFirefoxDriveSyncDataCollectionConsent(interactive);
+
   const installSource = detectGoogleDriveInstallSource();
   if (!interactive && installSource !== "chrome_web_store") {
     const cachedWebToken = await getCachedWebAuthToken();
@@ -1302,7 +1330,8 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
   }
 
   const manifestConfig = manifestOAuthConfig();
-  const identity = globalThis.chrome?.identity;
+  const hasIdentityApi = hasExtensionIdentityApi();
+  const hasGetAuthToken = hasExtensionIdentityGetAuthToken();
   const deviceOAuthClient = configuredDeviceOAuthClient();
   const webOAuthClientId = configuredWebOAuthClientId();
 
@@ -1331,15 +1360,16 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
     ? await detectInteractiveAuthContext()
     : await detectNonInteractiveAuthContext();
   const flow = selectGoogleDriveAuthFlow({
-    hasIdentityApi: Boolean(identity),
-    hasGetAuthToken: typeof identity?.getAuthToken === "function",
+    hasIdentityApi,
+    hasGetAuthToken,
     manifestClientId: manifestConfig.clientId,
     manifestScopes: manifestConfig.scopes,
     chromeIdentityUnsupported,
     installSource,
     deviceOAuthClientId: deviceOAuthClient?.clientId,
     deviceOAuthClientSecret: deviceOAuthClient?.clientSecret,
-    webOAuthClientId
+    webOAuthClientId,
+    targetBrowser: TARGET_BROWSER === "firefox" ? "firefox" : "chromium"
   });
 
   if (flow === "device_oauth") {
@@ -1422,21 +1452,8 @@ export async function clearAuthToken(token?: string): Promise<void> {
   }
   await removeStoredDeviceAuthToken();
 
-  const identity = globalThis.chrome?.identity;
-  if (!identity?.removeCachedAuthToken) {
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    identity.removeCachedAuthToken({ token: tokenToClear }, () => {
-      const lastError = getChromeLastErrorMessage();
-      if (lastError) {
-        reject(new GoogleDriveSyncError("unknown", lastError));
-        return;
-      }
-
-      resolve();
-    });
+  await removeCachedExtensionAuthToken(tokenToClear).catch((error) => {
+    throw new GoogleDriveSyncError("unknown", error instanceof Error ? error.message : "Could not clear cached auth token.");
   });
 }
 
@@ -1486,17 +1503,9 @@ export async function getConnectedAccountInfo(): Promise<{
   name?: string;
   avatarUrl?: string;
 } | undefined> {
-  const identity = requireIdentityApi();
-  if (!identity.getProfileUserInfo) {
-    return undefined;
-  }
-
-  return await new Promise((resolve) => {
-    identity.getProfileUserInfo((info) => {
-      const email = typeof info.email === "string" && info.email ? info.email : undefined;
-      resolve(email ? { email } : undefined);
-    });
-  });
+  const info = await getExtensionProfileUserInfo();
+  const email = typeof info?.email === "string" && info.email ? info.email : undefined;
+  return email ? { email } : undefined;
 }
 
 function syncFileQuery(storageMode: GoogleDriveStorageMode): string {

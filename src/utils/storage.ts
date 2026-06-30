@@ -1,28 +1,12 @@
 import { STORAGE_KEY } from "../constants";
 import type { AuraStartData } from "../types";
+import { getExtensionStorageArea } from "./browserApi";
 import { validateAuraData } from "./importJson";
 
 export type StorageLoadResult =
   | { status: "missing"; fallback: boolean }
   | { status: "ready"; data: AuraStartData; fallback: boolean }
   | { status: "corrupt"; raw: string; message: string; fallback: boolean };
-
-function hasChromeStorage(): boolean {
-  return Boolean(globalThis.chrome?.storage?.local);
-}
-
-async function chromeGet(key: string): Promise<unknown> {
-  const result = await chrome.storage.local.get(key);
-  return result[key];
-}
-
-async function chromeSet(key: string, value: unknown): Promise<void> {
-  await chrome.storage.local.set({ [key]: value });
-}
-
-async function chromeRemove(key: string): Promise<void> {
-  await chrome.storage.local.remove(key);
-}
 
 function localGet(key: string): unknown {
   const value = localStorage.getItem(key);
@@ -38,9 +22,10 @@ function localRemove(key: string): void {
 }
 
 export async function loadAuraData(): Promise<StorageLoadResult> {
-  const fallback = !hasChromeStorage();
+  const storage = getExtensionStorageArea("local");
+  const fallback = !storage;
   try {
-    const rawValue = fallback ? localGet(STORAGE_KEY) : await chromeGet(STORAGE_KEY);
+    const rawValue = storage ? (await storage.get(STORAGE_KEY))[STORAGE_KEY] : localGet(STORAGE_KEY);
     if (rawValue === undefined) {
       return { status: "missing", fallback };
     }
@@ -67,16 +52,18 @@ export async function loadAuraData(): Promise<StorageLoadResult> {
 
 export async function saveAuraData(data: AuraStartData): Promise<void> {
   const validated = validateAuraData(data);
-  if (hasChromeStorage()) {
-    await chromeSet(STORAGE_KEY, validated);
+  const storage = getExtensionStorageArea("local");
+  if (storage) {
+    await storage.set({ [STORAGE_KEY]: validated });
   } else {
     localSet(STORAGE_KEY, validated);
   }
 }
 
 export async function clearAuraData(): Promise<void> {
-  if (hasChromeStorage()) {
-    await chromeRemove(STORAGE_KEY);
+  const storage = getExtensionStorageArea("local");
+  if (storage) {
+    await storage.remove(STORAGE_KEY);
   } else {
     localRemove(STORAGE_KEY);
   }

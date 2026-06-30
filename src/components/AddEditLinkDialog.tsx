@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { t } from "../i18n";
 import type { AuraLanguage, AuraStartGroup, AuraStartLink } from "../types";
+import { buildGroupTree, flattenGroupTree, groupTitlePath } from "../utils/groupTree";
 import { Modal } from "./Modal";
 
 export type EditingLink = {
@@ -40,7 +41,7 @@ export function AddEditLinkDialog({
   onUpdate,
   onError
 }: AddEditLinkDialogProps) {
-  const sortedGroups = useMemo(() => groups.slice().sort((a, b) => a.order - b.order), [groups]);
+  const sortedGroups = useMemo(() => flattenGroupTree(buildGroupTree(groups)), [groups]);
   const [groupId, setGroupId] = useState("");
   const [newGroupTitle, setNewGroupTitle] = useState(t(language, "startGroupTitle"));
   const [form, setForm] = useState<LinkFormState>({ title: "", url: "", description: "", tags: "" });
@@ -96,7 +97,7 @@ export function AddEditLinkDialog({
             <select className="field" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
               {sortedGroups.map((group) => (
                 <option key={group.id} value={group.id}>
-                  {group.title}
+                  {groupTitlePath(groups, group)}
                 </option>
               ))}
             </select>

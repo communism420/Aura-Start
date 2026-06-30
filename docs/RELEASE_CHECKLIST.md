@@ -3,7 +3,7 @@
 > Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
 
 
-Use this checklist before preparing a Chrome Web Store upload. Do not publish from automation; upload manually through the Chrome Web Store Developer Dashboard.
+Use this checklist before preparing a Chrome Web Store or Firefox package. Do not publish from automation; upload manually through the relevant store dashboard.
 
 ## Pre-Build
 
@@ -11,10 +11,12 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Run `npm run test`.
 - Run `npm run typecheck`.
 - Run `npm run build`.
+- Run `npm run build:firefox` with real Firefox Device OAuth credentials.
 - Run `npm run build:store`.
 - Set a real `AURA_GOOGLE_OAUTH_CLIENT_ID` for release builds.
 - Store builds must use manifest OAuth through `chrome.identity.getAuthToken` in Google Chrome.
-- For Brave/Helium/ungoogled Chromium fallback support, configure the Web OAuth fallback with an exact `https://<extension-id>.chromiumapp.org/` redirect URI. Do not use a Google OAuth client of type "TVs and Limited Input devices"; Google rejects Aura Start's required `drive.appdata` scope in Device Flow.
+- For Brave/Helium/ungoogled Chromium fallback support, configure the Device OAuth fallback used by store builds.
+- For Firefox support, configure `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID`, `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET`, and the final `AURA_FIREFOX_EXTENSION_ID`.
 - Confirm the Chrome Web Store build does not bundle or prefer the old Web OAuth redirect fallback.
 - Inspect `dist/manifest.json`.
 - Confirm `manifest_version` is `3`.
@@ -22,6 +24,10 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 - Confirm no remote hosted code or remote scripts are present.
 - Confirm permissions are least-privilege.
 - Confirm there is no full Google Drive scope.
+- Inspect `dist-firefox/manifest.json`.
+- Confirm Firefox `background.scripts` references `background.js`.
+- Confirm Firefox `browser_specific_settings.gecko.id` is the intended add-on ID.
+- Confirm Firefox build removes Chrome-only `manifest.oauth2`.
 
 ## Fresh Chrome Web Store ZIP
 
@@ -39,21 +45,25 @@ Use this checklist before preparing a Chrome Web Store upload. Do not publish fr
 
 ## Installed Extension Test Matrix
 
-Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md`](./INSTALLED_EXTENSION_TEST_MATRIX.md) against the same `dist`/ZIP build that will be uploaded. Build checks are not enough; import, replace, restore, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.
+Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md`](./INSTALLED_EXTENSION_TEST_MATRIX.md) against the same `dist-google` / `dist-firefox` folder or ZIP build that will be uploaded. Build checks are not enough; nested groups, fuzzy search, Save open tabs permission flow, backgrounds/widgets, import, replace, Restore Timeline, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.
 
 ## Google Drive OAuth Release Verification
 
 - Create a Chrome Extension OAuth client for the final published extension ID.
-- Create or verify a separate Web OAuth client if the release should support Chromium browsers that reject Chrome's built-in identity token flow.
+- Create or verify Device OAuth credentials for Firefox and Chromium browsers that reject Chrome's built-in identity token flow.
 - Enable the Google Drive API for the Google Cloud project used by Aura Start.
 - Set `AURA_GOOGLE_OAUTH_CLIENT_ID` before `npm run build:store`.
-- Set `AURA_GOOGLE_WEB_OAUTH_CLIENT_ID` before `npm run build:store` when the Web OAuth fallback should be active, and verify the exact redirect URI in Google Cloud.
+- Set `AURA_GOOGLE_STORE_DEVICE_OAUTH_CLIENT_SECRET` before `npm run build:store`.
+- Set `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID` and `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET` before `npm run build:firefox`.
 - Confirm the Chrome Web Store package does not contain an active Web OAuth fallback client or manual redirect URI path.
 - Confirm Google Chrome still uses manifest OAuth first through the Chrome Extension OAuth client.
+- Confirm Firefox uses Device OAuth and the `drive.file` scope.
 - Inspect `dist/manifest.json` and the final ZIP manifest after build.
-- Confirm the OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
-- Confirm there is no full Drive scope and no `drive.file` scope.
+- Confirm the Chrome manifest OAuth scope is only `https://www.googleapis.com/auth/drive.appdata`.
+- Confirm the Chrome manifest has no full Drive scope and no `drive.file` scope.
+- Confirm the Firefox build has no full Drive scope and uses Device OAuth only.
 - Install the final build as unpacked, then test connect, automatic backup after local edits, first-run restore from an existing Drive sync file, no-file messaging when no Drive sync file exists, disconnect, and delete-backup flows.
+- Install `dist-firefox` in Firefox (`about:debugging` -> This Firefox -> Load Temporary Add-on -> choose `manifest.json`) and repeat the Google Drive connect, automatic backup, restore, disconnect, and delete-backup flows through the device-code UI.
 - Re-check `Chrome Submit/REVIEWER_NOTES.md` and the Chrome Web Store privacy form before submission.
 - If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.
 
@@ -65,7 +75,7 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Upload screenshots using `docs/SCREENSHOTS.md`.
 - Set category.
 - Set privacy practices.
-- Add privacy policy URL from published GitHub Pages `docs/privacy-policy.html`.
+- Add privacy policy URL `https://aurastart.pages.dev/privacy-policy.html`.
 - Add support URL.
 - Add source code URL.
 - Add reviewer notes from `docs/STORE_LISTING.md` or `STORE_SUBMISSION.md`.
@@ -77,8 +87,8 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Test install from the Chrome Web Store listing.
 - Confirm Google Drive OAuth works for the published extension ID.
 - Collect feedback through GitHub Issues or the chosen support URL.
-- Triage bugs, especially import/export, restore, duplicate deletion, and Drive sync.
-- Prepare 1.2.1 if launch feedback finds release-blocking issues.
+- Triage bugs, especially nested groups, search, open-tabs capture, import/export, restore, duplicate deletion, widgets, backgrounds, and Drive sync.
+- Prepare 2.0.1 if launch feedback finds release-blocking issues.
 
 ## Release Blockers
 

@@ -18,6 +18,7 @@ const requiredFiles = [
 ];
 
 const allowedPermissions = new Set(["storage", "identity"]);
+const allowedOptionalPermissions = new Set(["tabs"]);
 const allowedHostPermissions = new Set([
   "https://www.googleapis.com/*",
   "https://oauth2.googleapis.com/*"
@@ -180,6 +181,13 @@ if (await exists(manifestPath)) {
     }
   }
 
+  const optionalPermissions = Array.isArray(manifest.optional_permissions) ? manifest.optional_permissions : [];
+  for (const permission of optionalPermissions) {
+    if (!allowedOptionalPermissions.has(permission)) {
+      fail(`Unexpected optional permission requested: ${permission}`);
+    }
+  }
+
   const hostPermissions = Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [];
   for (const hostPermission of hostPermissions) {
     if (!allowedHostPermissions.has(hostPermission)) {
@@ -192,7 +200,7 @@ if (await exists(manifestPath)) {
   }
 
   if (manifest.permissions?.includes("bookmarks") || manifest.permissions?.includes("history") || manifest.permissions?.includes("tabs")) {
-    fail("Do not request bookmarks, history, or tabs permissions for this local-first bookmark database.");
+    fail("Do not request bookmarks, history, or tabs as required permissions. Use optional_permissions for explicit runtime access.");
   }
 
   const oauthClientId = typeof manifest.oauth2?.client_id === "string" ? manifest.oauth2.client_id.trim() : "";

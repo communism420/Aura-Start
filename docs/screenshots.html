@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Chrome Web Store screenshot checklist and capture notes.">
+    <meta name="description" content="Aura Start screenshot plan for Chrome Web Store, Firefox Add-ons, and the public website.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start Screenshot Plan — Aura Start</title>
+    <title>Aura Start Screenshot Plan - Aura Start</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -23,146 +23,58 @@
       <main class="doc">
         <div class="kicker">Aura Start Docs</div>
         <h1>Aura Start Screenshot Plan</h1>
-<section class="summary" aria-label="Maintainer-only note"><p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p></section>
-<p>This plan prepares Chrome Web Store and GitHub screenshots from the current Aura Start 1.2.0 feature set. It avoids unsupported claims, fake statistics, competitor criticism, and visual use of third-party brands beyond plain text references needed for migration.</p>
-<p>Recommended base sizes:</p>
-<ul>
-<li>Chrome Web Store screenshots: 1280 x 800 or 1280 x 720 PNG</li>
-<li>GitHub/social crops: 1600 x 900 PNG</li>
-<li>Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data and should reflect the latest Google Drive sync and shortcut layout changes.</li>
-<li>Final publishable screenshots live in <code>Photo/</code>; GitHub Pages copies live in <code>docs/assets/screenshots/</code>. The public site references the <code>*-20260524.png</code> copies so browsers and GitHub Pages do not keep showing stale cached images with the old filenames.</li>
-<li><code>docs/screenshot-gallery.html</code> displays the real captured screenshots. It is not a mockup renderer.</li>
-</ul>
-<h2>General Capture Rules</h2>
-<ul>
-<li>Use the demo data from <code>docs/SCREENSHOT_DEMO_DATA.md</code>.</li>
-<li>Do not show personal bookmarks, email addresses, OAuth tokens, browser profiles, or real Drive files.</li>
-<li>Do not show a fake Chrome Web Store listing URL.</li>
-<li>Mention A Fine Start only on the migration screenshot and only as an import/export compatibility path.</li>
-<li>Keep wording factual: no &quot;best&quot;, &quot;#1&quot;, &quot;guaranteed&quot;, &quot;forever&quot;, or aggressive comparisons.</li>
-<li>Verify the screen exists in the current local build before publishing a screenshot as product UI.</li>
-</ul>
-<h2>1. Main New Tab</h2>
-<ul>
-<li>Goal: show the core value: clean grouped links on the Chromium new tab page.</li>
-<li>Screen: real extension new tab page with demo groups.</li>
-<li>Demo data: Work, Development, Design, Research, Reading, Tools.</li>
-<li>Overlay text: &quot;Clean groups of links on every new tab&quot;</li>
-<li>Theme recommendation: light theme for the main store screenshot.</li>
-<li>What not to show: browser bookmarks bar, private user links, debug panels, or unpublished store links.</li>
-<li>Manual verification: confirm groups open, links are visible, drag handles/edit controls are not distracting unless edit mode is intentionally shown.</li>
-<li>Chrome Web Store-safe wording: &quot;Clean groups of links&quot; is factual and matches the product.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: Aura Start is organized, calm, and useful immediately.</li>
-</ul>
-<h2>2. Import from A Fine Start</h2>
-<ul>
-<li>Goal: show a clear migration path without implying affiliation.</li>
-<li>Screen: Settings / Import / Import from A Fine Start flow with preview.</li>
-<li>Demo data: a small valid A Fine Start-compatible export code with 3-4 groups.</li>
-<li>Overlay text: &quot;Import from A Fine Start in seconds&quot;</li>
-<li>Theme recommendation: light theme.</li>
-<li>What not to show: A Fine Start UI, A Fine Start logos, or claims that Aura Start includes every A Fine Start feature.</li>
-<li>Manual verification: confirm preview counts appear, Merge/Replace choices are visible, and invalid data does not apply changes.</li>
-<li>Chrome Web Store-safe wording: include a small note if space allows: &quot;Independent project, not affiliated with A Fine Start.&quot;</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: users can migrate their own export code in a controlled way.</li>
-</ul>
-<h2>3. Export / Backup</h2>
-<ul>
-<li>Goal: make data ownership obvious.</li>
-<li>Screen: Export / Backup area in Settings.</li>
-<li>Demo data: populated demo groups so all export formats are meaningful.</li>
-<li>Overlay text: &quot;Export anytime: JSON, HTML, Markdown, CSV&quot;</li>
-<li>Theme recommendation: light or system theme.</li>
-<li>What not to show: local filesystem paths, user downloads folder, or fake cloud upload.</li>
-<li>Manual verification: confirm Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export are visible where supported.</li>
-<li>Chrome Web Store-safe wording: export is local browser-generated backup/export, not a hosted service.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: users are not locked in.</li>
-</ul>
-<h2>4. Restore Points</h2>
-<ul>
-<li>Goal: show protection around destructive operations.</li>
-<li>Screen: Settings / Restore Points manager.</li>
-<li>Demo data: several restore points with readable reasons and counts.</li>
-<li>Overlay text: &quot;Restore points before destructive changes&quot;</li>
-<li>Theme recommendation: dark theme can work well if contrast is checked.</li>
-<li>What not to show: stack traces, raw storage JSON, or corrupted data unless documenting support.</li>
-<li>Manual verification: confirm Restore, Export restore point, Delete restore point, and Delete old restore points are visible if included in the UI.</li>
-<li>Chrome Web Store-safe wording: restore points are local safety snapshots, not a guarantee against every browser/profile failure.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: replace, restore, reset, and duplicate deletion are guarded.</li>
-</ul>
-<h2>5. Privacy Promise</h2>
-<ul>
-<li>Goal: build trust with concrete privacy claims.</li>
-<li>Screen: Settings / Privacy Promise.</li>
-<li>Demo data: not required.</li>
-<li>Overlay text: &quot;No account. No analytics. No tracking.&quot;</li>
-<li>Theme recommendation: light theme with high readability.</li>
-<li>What not to show: unsupported privacy claims, full Google Drive access, or unrelated browser permissions.</li>
-<li>Manual verification: confirm wording matches <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
-<li>Chrome Web Store-safe wording: &quot;No account. No analytics. No tracking.&quot; matches the local-first implementation and docs.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: Aura Start has no backend and does not monetize user data.</li>
-</ul>
-<h2>6. Command Palette</h2>
-<ul>
-<li>Goal: show power-user navigation.</li>
-<li>Screen: Command Palette opened from the UI or with Ctrl+K/Cmd+K when the browser has assigned the shortcut.</li>
-<li>Demo data: populated groups so commands feel useful.</li>
-<li>Overlay text: &quot;Press Ctrl+K and move faster&quot;</li>
-<li>Theme recommendation: dark theme for contrast around the palette.</li>
-<li>What not to show: disabled or fake commands.</li>
-<li>Manual verification: confirm Enter runs selected command, arrows move selection, and Esc closes the palette.</li>
-<li>Chrome Web Store-safe wording: &quot;move faster&quot; is a workflow claim, not a performance guarantee.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: Aura Start is efficient without adding tracking or heavy services.</li>
-</ul>
-<h2>7. Duplicate Finder</h2>
-<ul>
-<li>Goal: show cleanup with user control.</li>
-<li>Screen: Settings / Tools / Duplicate Finder.</li>
-<li>Demo data: include exact duplicates and possible http/https variants.</li>
-<li>Overlay text: &quot;Find duplicate links before they become a mess&quot;</li>
-<li>Theme recommendation: light theme.</li>
-<li>What not to show: auto-selected mass deletion, destructive action without confirmation, or all copies selected.</li>
-<li>Manual verification: confirm scan is read-only, exact/possible duplicates are separated, and deletion requires selection, restore point, and confirmation.</li>
-<li>Chrome Web Store-safe wording: &quot;Find duplicate links&quot; is accurate; do not claim automatic cleanup.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI.</li>
-<li>Trust message: cleanup is visible, reversible where supported, and never automatic.</li>
-</ul>
-<h2>8. Optional Google Drive Backup</h2>
-<ul>
-<li>Goal: explain optional backup without implying required account or full Drive access.</li>
-<li>Screen: Settings / Google Drive sync.</li>
-<li>Demo data: local groups populated; sync disconnected or connected with non-personal account details hidden.</li>
-<li>Overlay text: &quot;Optional backup through Google Drive appDataFolder&quot;</li>
-<li>Theme recommendation: light theme.</li>
-<li>What not to show: real Google account email, OAuth client IDs, tokens, visible Drive files, or a fake success state.</li>
-<li>Manual verification: confirm Google Drive sync is optional/off by default, Drive access is limited to <code>drive.appdata</code>, local changes auto-sync after connection, and no redundant Sync now button is shown.</li>
-<li>Chrome Web Store-safe wording: &quot;Optional backup&quot; and &quot;appDataFolder&quot; match the implemented permission model.</li>
-<li>Recommended size: 1280 x 800.</li>
-<li>Capture source: real extension UI. Hide account data if a connected account is used.</li>
-<li>Trust message: cloud backup is opt-in and least-privilege.</li>
-</ul>
-<h2>Publishing Checklist</h2>
-<ul>
-<li>Screenshots match the current local build.</li>
-<li>No private data appears.</li>
-<li>No competitor logo or UI appears.</li>
-<li>No unsupported claims appear.</li>
-<li>Privacy claims match <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
-<li>The Chrome Web Store listing uses the same terminology as <code>docs/STORE_LISTING.md</code>.</li>
-</ul>
+        <section class="summary" aria-label="Maintainer-only note">
+          <p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p>
+        </section>
+        <p>This plan prepares Chrome Web Store, Firefox Add-ons, and public website screenshots from the current Aura Start 2.0.0 feature set. It avoids unsupported claims, fake statistics, competitor criticism, and visual use of third-party brands beyond plain text references needed for migration.</p>
+        <p>Recommended base sizes:</p>
+        <ul>
+          <li>Chrome Web Store and Firefox Add-ons screenshots: 1280 x 800 PNG</li>
+          <li>Public website screenshots: 1280 x 800 PNG</li>
+          <li>Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data.</li>
+          <li>Store screenshots live in <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code>.</li>
+          <li>Public site copies live in <code>docs/assets/screenshots/</code> and use <code>*-20260630.png</code> filenames to avoid stale cached images after the 2.0.0 design refresh.</li>
+          <li><code>docs/screenshot-gallery.html</code> displays the real captured screenshots. It is not a mockup renderer.</li>
+        </ul>
+        <h2>General Capture Rules</h2>
+        <ul>
+          <li>Use non-personal demo data.</li>
+          <li>Do not show personal bookmarks, email addresses, OAuth tokens, browser profiles, or real Drive files.</li>
+          <li>Do not show a fake store listing URL.</li>
+          <li>Mention A Fine Start only as an import/export compatibility path.</li>
+          <li>Keep wording factual: no "best", "#1", "guaranteed", "forever", or aggressive comparisons.</li>
+          <li>Verify the screen exists in the current local build before publishing a screenshot as product UI.</li>
+        </ul>
+        <h2>Store Screenshot Set</h2>
+        <p>Chrome Web Store allows a maximum of 5 screenshots. Use these files in filename order for Chrome Web Store and Firefox Add-ons:</p>
+        <ol>
+          <li><code>01-new-tab-overview-1280x800.png</code> - nested groups, background, widgets, and connected sync marker.</li>
+          <li><code>02-search-mode-1280x800.png</code> - fuzzy search with typo-tolerant results and count.</li>
+          <li><code>03-import-export-1280x800.png</code> - import/export and migration workflow.</li>
+          <li><code>04-settings-1280x800.png</code> - background and widget settings.</li>
+          <li><code>05-restore-points-1280x800.png</code> - Restore Timeline with grouped snapshots.</li>
+        </ol>
+        <h2>Public Website Screenshot Set</h2>
+        <p>The public website can show more than 5 screenshots. Use these files:</p>
+        <ol>
+          <li><code>01-new-tab-overview-20260630.png</code> - nested groups, background, widgets, and sync status.</li>
+          <li><code>02-fuzzy-search-20260630.png</code> - fuzzy search and quick filters.</li>
+          <li><code>03-import-export-20260630.png</code> - import/export workflow.</li>
+          <li><code>04-backgrounds-widgets-20260630.png</code> - personalization settings.</li>
+          <li><code>05-restore-timeline-20260630.png</code> - Restore Timeline.</li>
+          <li><code>06-save-open-tabs-20260630.png</code> - optional tabs preview and duplicate filtering.</li>
+          <li><code>07-command-palette-20260630.png</code> - fuzzy Command Palette search.</li>
+        </ol>
+        <p>Run <code>node scripts/generate-store-photos.mjs</code> after building the screenshot dist to refresh all of these images.</p>
+        <h2>Publishing Checklist</h2>
+        <ul>
+          <li>Screenshots match the current local build.</li>
+          <li>No private data appears.</li>
+          <li>No competitor logo or UI appears.</li>
+          <li>No unsupported claims appear.</li>
+          <li>Privacy claims match <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
+          <li>Store listing text uses the same terminology as <code>Chrome Submit/STORE_LISTING.md</code> and <code>Firefox Submit/ADDON_LISTING.md</code>.</li>
+        </ul>
       </main>
       <footer class="site-footer">
         <p>Aura Start is independent and open-source under the MIT License.</p>

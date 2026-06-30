@@ -4,11 +4,15 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const cwd = process.cwd();
-const photoDir = path.join(cwd, "Chrome Submit", "Photo");
+const chromePhotoDir = path.join(cwd, "Chrome Submit", "Photo");
+const firefoxPhotoDir = path.join(cwd, "Firefox Submit", "Photo");
+const docsScreenshotDir = path.join(cwd, "docs", "assets", "screenshots");
+const previewDistDir = process.env.AURA_SCREENSHOT_DIST_DIR?.trim() || "dist-google";
 const previewPort = 4173;
 const debugPort = 9241;
 const profileDir = path.join(cwd, ".tmp-cws-screenshot-profile");
 const baseUrl = `http://127.0.0.1:${previewPort}/newtab.html`;
+const siteScreenshotDate = "20260630";
 
 const chromeCandidates = [
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -27,11 +31,28 @@ const now = "2026-05-10T10:00:00.000Z";
 const settings = {
   theme: "dark",
   language: "en",
-  columns: 1,
-  compactMode: true,
+  columns: 2,
+  compactMode: false,
   openLinksInNewTab: false,
   showDescriptions: true,
   showSearch: true,
+  showVersionInHeader: true,
+  captureOpenTabs: true,
+  background: {
+    preset: "forest",
+    blur: 4,
+    dim: 38,
+    position: "center"
+  },
+  widgets: {
+    clock: true,
+    notes: true,
+    pomodoro: true
+  },
+  pomodoro: {
+    focusMinutes: 25,
+    breakMinutes: 5
+  },
   autoRestorePoints: true,
   sync: {
     mode: "auto",
@@ -39,7 +60,8 @@ const settings = {
     connected: true,
     accountName: "Google Drive",
     lastSyncedAt: "2026-05-10T10:04:00.000Z",
-    lastCloudUpdatedAt: "2026-05-10T10:04:00.000Z"
+    lastCloudUpdatedAt: "2026-05-10T10:04:00.000Z",
+    deleteCloudFileOnDisconnect: true
   }
 };
 
@@ -58,6 +80,7 @@ const groups = [
   {
     id: "group-daily",
     title: "Daily",
+    parentId: null,
     collapsed: false,
     order: 0,
     links: [
@@ -69,6 +92,7 @@ const groups = [
   {
     id: "group-research",
     title: "Research",
+    parentId: null,
     collapsed: false,
     order: 1,
     links: [
@@ -78,8 +102,20 @@ const groups = [
     ]
   },
   {
+    id: "group-research-deep",
+    title: "Deep dives",
+    parentId: "group-research",
+    collapsed: false,
+    order: 0,
+    links: [
+      link("link-mdn", "MDN Web Docs", "https://developer.mozilla.org", 0, "API references", ["docs", "web"]),
+      link("link-wiki", "Wikipedia", "https://wikipedia.org", 1, "Background reading", ["research"])
+    ]
+  },
+  {
     id: "group-tools",
     title: "Tools",
+    parentId: null,
     collapsed: false,
     order: 2,
     links: [
@@ -91,6 +127,7 @@ const groups = [
   {
     id: "group-personal",
     title: "Personal",
+    parentId: null,
     collapsed: false,
     order: 3,
     links: [
@@ -111,9 +148,37 @@ const sampleData = {
       name: "Before import",
       createdAt: now,
       reason: "before_import",
+      context: {
+        entity: "import",
+        source: "Aura JSON",
+        count: 4,
+        description: "4 groups, 11 links"
+      },
       data: { version: 1, updatedAt: now, settings, groups: [] }
+    },
+    {
+      id: "restore-before-link-move",
+      name: "Before moving GitHub",
+      createdAt: "2026-05-10T09:30:00.000Z",
+      reason: "before_link_move",
+      context: {
+        entity: "link",
+        title: "GitHub",
+        from: "Daily",
+        to: "Tools"
+      },
+      data: { version: 1, updatedAt: now, settings, groups }
     }
   ]
+};
+
+const uiState = {
+  onboardingCompleted: true,
+  demoData: { groupIds: [], linkIds: [] },
+  lastSearchQuery: "",
+  searchFilter: "all",
+  customBackgroundImage: null,
+  widgetNotes: "# Launch notes\n- Review screenshots\n- Verify Chrome and Firefox packages\n- Test Google Drive sync"
 };
 
 function delay(ms) {
@@ -161,7 +226,7 @@ async function waitForHttp(url, child, timeout = 30_000) {
 async function startPreview() {
   const preview = spawn(
     process.execPath,
-    ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort)],
+    ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort), "--outDir", previewDistDir],
     { cwd, stdio: ["ignore", "pipe", "pipe"] }
   );
 
@@ -314,31 +379,66 @@ function chromeStorageMockSource() {
   return `
     (() => {
       const STORE_KEY = "aura-start-data-v1";
+      const UI_STATE_KEY = "aura-start-ui-state-v1";
       const initialData = ${JSON.stringify(sampleData)};
-      const store = { [STORE_KEY]: initialData };
+      const initialUiState = ${JSON.stringify(uiState)};
+      const store = { [STORE_KEY]: initialData, [UI_STATE_KEY]: initialUiState };
       const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
       const chromeApi = globalThis.chrome && typeof globalThis.chrome === "object" ? globalThis.chrome : {};
       chromeApi.storage = {
         local: {
-          get: async (key) => {
-            if (typeof key === "string") return { [key]: clone(store[key]) };
-            if (Array.isArray(key)) return Object.fromEntries(key.map((item) => [item, clone(store[item])]));
-            if (key && typeof key === "object") {
-              return Object.fromEntries(Object.entries(key).map(([item, fallback]) => [
+          get: (key, callback) => {
+            let result;
+            if (typeof key === "string") result = { [key]: clone(store[key]) };
+            else if (Array.isArray(key)) result = Object.fromEntries(key.map((item) => [item, clone(store[item])]));
+            else if (key && typeof key === "object") {
+              result = Object.fromEntries(Object.entries(key).map(([item, fallback]) => [
                 item,
                 store[item] === undefined ? fallback : clone(store[item])
               ]));
+            } else {
+              result = clone(store);
             }
-            return clone(store);
+            callback?.(result);
+            return Promise.resolve(result);
           },
-          set: async (items) => Object.assign(store, clone(items)),
-          remove: async (key) => {
+          set: (items, callback) => {
+            Object.assign(store, clone(items));
+            callback?.();
+            return Promise.resolve();
+          },
+          remove: (key, callback) => {
             for (const item of Array.isArray(key) ? key : [key]) delete store[item];
+            callback?.();
+            return Promise.resolve();
           }
         }
       };
       chromeApi.runtime = chromeApi.runtime ?? { openOptionsPage: () => {} };
-      chromeApi.tabs = chromeApi.tabs ?? { create: () => {} };
+      chromeApi.permissions = chromeApi.permissions ?? {
+        contains: (_request, callback) => {
+          callback?.(true);
+          return Promise.resolve(true);
+        },
+        request: (_request, callback) => {
+          callback?.(true);
+          return Promise.resolve(true);
+        }
+      };
+      chromeApi.tabs = chromeApi.tabs ?? {
+        create: () => {},
+        query: (_queryInfo, callback) => {
+          const tabs = [
+            { title: "Aura Start repository", url: "https://github.com/communism420/Aura-Start" },
+            { title: "Cloudflare Pages docs", url: "https://developers.cloudflare.com/pages/" },
+            { title: "Project dashboard", url: "https://example.com/dashboard" },
+            { title: "Firefox Add-ons Developer Hub", url: "https://addons.mozilla.org/developers/" },
+            { title: "Browser settings", url: "chrome://extensions" }
+          ];
+          callback?.(tabs);
+          return Promise.resolve(tabs);
+        }
+      };
       if (!globalThis.chrome) {
         Object.defineProperty(globalThis, "chrome", { configurable: true, value: chromeApi });
       }
@@ -404,6 +504,30 @@ async function clickByText(page, text) {
   }
 }
 
+async function clickByAnyText(page, labels) {
+  for (const label of labels) {
+    const clicked = await evaluate(
+      page,
+      `(() => {
+        const text = ${JSON.stringify(label)};
+        const button = Array.from(document.querySelectorAll("button")).find((element) => {
+          const label = ((element.getAttribute("aria-label") || "") + " " + (element.textContent || "")).trim();
+          return label.includes(text);
+        });
+        if (!button) return false;
+        button.click();
+        return true;
+      })()`
+    );
+
+    if (clicked) {
+      return;
+    }
+  }
+
+  throw new Error(`Button not found: ${labels.join(" / ")}`);
+}
+
 async function assertEditModeOff(page) {
   const editPressed = await evaluate(
     page,
@@ -417,7 +541,8 @@ async function assertEditModeOff(page) {
   }
 }
 
-async function screenshot(page, name) {
+async function screenshot(page, { storeName, docsName }) {
+  await evaluate(page, `window.scrollTo(0, 0)`);
   await assertEditModeOff(page);
   await delay(350);
   const result = await page.send("Page.captureScreenshot", {
@@ -426,7 +551,16 @@ async function screenshot(page, name) {
     captureBeyondViewport: false
   });
 
-  await writeFile(path.join(photoDir, name), Buffer.from(result.data, "base64"));
+  const buffer = Buffer.from(result.data, "base64");
+  const targets = [];
+  if (storeName) {
+    targets.push(path.join(chromePhotoDir, storeName), path.join(firefoxPhotoDir, storeName));
+  }
+  if (docsName) {
+    targets.push(path.join(docsScreenshotDir, docsName));
+  }
+
+  await Promise.all(targets.map((target) => writeFile(target, buffer)));
 }
 
 let preview;
@@ -435,7 +569,11 @@ let browserClient;
 let page;
 
 try {
-  await mkdir(photoDir, { recursive: true });
+  await Promise.all([
+    mkdir(chromePhotoDir, { recursive: true }),
+    mkdir(firefoxPhotoDir, { recursive: true }),
+    mkdir(docsScreenshotDir, { recursive: true })
+  ]);
   preview = await startPreview();
   const chromeStart = await startChrome();
   chrome = chromeStart.chrome;
@@ -444,7 +582,10 @@ try {
   page = created.page;
 
   await navigateFresh(page);
-  await screenshot(page, "01-new-tab-overview-1280x800.png");
+  await screenshot(page, {
+    storeName: "01-new-tab-overview-1280x800.png",
+    docsName: `01-new-tab-overview-${siteScreenshotDate}.png`
+  });
 
   await navigateFresh(page);
   await clickByText(page, "Search");
@@ -452,7 +593,19 @@ try {
     page,
     `document.querySelector('input[type="search"]')?.placeholder === "Search title, URL, description, tags"`
   );
-  await screenshot(page, "02-search-mode-1280x800.png");
+  await evaluate(page, `(() => {
+    const input = document.querySelector('input[type="search"]');
+    if (!(input instanceof HTMLInputElement)) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setter?.call(input, "githb");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  })()`);
+  await waitForExpression(page, `document.body.innerText.includes("GitHub")`);
+  await screenshot(page, {
+    storeName: "02-search-mode-1280x800.png",
+    docsName: `02-fuzzy-search-${siteScreenshotDate}.png`
+  });
 
   await navigateFresh(page);
   await clickByText(page, "Import");
@@ -460,34 +613,69 @@ try {
     page,
     `document.body.innerText.includes("Import backup") && document.body.innerText.includes("Import format")`
   );
-  await screenshot(page, "03-import-export-1280x800.png");
+  await screenshot(page, {
+    storeName: "03-import-export-1280x800.png",
+    docsName: `03-import-export-${siteScreenshotDate}.png`
+  });
 
   await navigateFresh(page);
   await clickByText(page, "Settings");
   await waitForExpression(
     page,
-    `document.body.innerText.includes("Settings") && document.body.innerText.includes("Data ownership") && document.body.innerText.includes("Language")`
+    `document.body.innerText.includes("Settings") && document.body.innerText.includes("Backgrounds") && document.body.innerText.includes("Widgets")`
   );
   await evaluate(page, `(() => {
     const scroller = document.querySelector('[role="presentation"]');
     if (scroller instanceof HTMLElement) {
-      scroller.scrollTop = 280;
+      scroller.scrollTop = 180;
     }
   })()`);
   await delay(250);
-  await screenshot(page, "04-settings-1280x800.png");
+  await screenshot(page, {
+    storeName: "04-settings-1280x800.png",
+    docsName: `04-backgrounds-widgets-${siteScreenshotDate}.png`
+  });
 
   await navigateFresh(page);
   await clickByText(page, "Settings");
-  await waitForExpression(page, `document.body.innerText.includes("Restore points")`);
-  await clickByText(page, "Restore points");
+  await waitForExpression(page, `document.body.innerText.includes("Restore Timeline")`);
+  await clickByText(page, "Restore Timeline");
   await waitForExpression(
     page,
     `document.body.innerText.includes("Before import") && Array.from(document.querySelectorAll("input")).some((input) => input.value === "Manual checkpoint")`
   );
-  await screenshot(page, "05-restore-points-1280x800.png");
+  await screenshot(page, {
+    storeName: "05-restore-points-1280x800.png",
+    docsName: `05-restore-timeline-${siteScreenshotDate}.png`
+  });
 
-  console.log("Store screenshots generated in Chrome Submit/Photo.");
+  await navigateFresh(page);
+  await clickByAnyText(page, ["Save tabs", "Tabs", "Save open tabs"]);
+  await waitForExpression(page, `document.body.innerText.includes("Save open tabs")`);
+  await clickByText(page, "Review open tabs");
+  await waitForExpression(page, `document.body.innerText.includes("tabs will be saved")`);
+  await screenshot(page, {
+    docsName: `06-save-open-tabs-${siteScreenshotDate}.png`
+  });
+
+  await navigateFresh(page);
+  await clickByText(page, "Command Palette");
+  await waitForExpression(page, `document.querySelector(".command-palette-input") instanceof HTMLInputElement`);
+  await evaluate(page, `(() => {
+    const input = document.querySelector('.command-palette-input');
+    if (!(input instanceof HTMLInputElement)) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setter?.call(input, "tabs");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return true;
+  })()`);
+  await waitForExpression(page, `document.body.innerText.includes("Save open tabs")`);
+  await screenshot(page, {
+    docsName: `07-command-palette-${siteScreenshotDate}.png`
+  });
+
+  console.log("Store screenshots generated in Chrome Submit/Photo and Firefox Submit/Photo.");
+  console.log("Site screenshots generated in docs/assets/screenshots.");
 } finally {
   try {
     await browserClient?.send("Browser.close");

@@ -4,12 +4,9 @@ import { createRoot } from "react-dom/client";
 import { DEFAULT_SETTINGS } from "./constants";
 import { t } from "./i18n";
 import { useAuraStore } from "./store/useAuraStore";
+import { createExtensionTab, hasExtensionRuntime, openExtensionOptionsPage } from "./utils/browserApi";
 import { exportJsonBackup } from "./utils/exportJson";
 import "./styles.css";
-
-function hasChromeRuntime(): boolean {
-  return typeof chrome !== "undefined" && Boolean(chrome.runtime);
-}
 
 function PopupApp() {
   const data = useAuraStore((state) => state.data);
@@ -24,9 +21,10 @@ function PopupApp() {
   }, [load]);
 
   const openNewTab = () => {
-    if (typeof chrome !== "undefined" && chrome.tabs?.create) {
-      void chrome.tabs.create({});
-      window.close();
+    if (hasExtensionRuntime()) {
+      void createExtensionTab({}).then(() => {
+        window.close();
+      });
       return;
     }
 
@@ -34,9 +32,13 @@ function PopupApp() {
   };
 
   const openSettings = () => {
-    if (hasChromeRuntime() && chrome.runtime.openOptionsPage) {
-      void chrome.runtime.openOptionsPage();
-      window.close();
+    if (hasExtensionRuntime()) {
+      void openExtensionOptionsPage().then((opened) => {
+        if (!opened) {
+          window.open("options.html", "_blank", "noopener");
+        }
+        window.close();
+      });
       return;
     }
 

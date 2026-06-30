@@ -3,11 +3,13 @@ import {
   ExternalLink,
   FileUp,
   HelpCircle,
+  Image as ImageIcon,
   Keyboard,
   RotateCcw,
   SearchCheck,
   ShieldCheck,
-  Upload
+  Upload,
+  X
 } from "lucide-react";
 import { languageOptions, t } from "../i18n";
 import type {
@@ -18,6 +20,7 @@ import type {
   AuraSyncStatus
 } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
+import { BUILTIN_BACKGROUNDS } from "../utils/backgrounds";
 import { ExportMenu } from "./ExportMenu";
 import { GoogleDriveSyncPanel } from "./GoogleDriveSyncPanel";
 import { Modal } from "./Modal";
@@ -37,6 +40,8 @@ type SettingsDialogProps = {
   onOpenOnboarding: () => void;
   onReset: () => void;
   hasDemoData: boolean;
+  customBackgroundImage: string | null;
+  onSetCustomBackgroundImage: (image: string | null) => void;
   onRemoveDemoData: () => void;
   onConnectGoogleDrive: () => Promise<void>;
   onDisconnectGoogleDrive: () => Promise<void>;
@@ -47,6 +52,7 @@ type SettingsDialogProps = {
 
 const columnOptions = ["auto", 1, 2, 3, 4, 5, 6] as const;
 const privacyPolicyUrl = "https://github.com/communism420/Aura-Start/blob/main/PRIVACY.md";
+const maxCustomBackgroundBytes = 2_000_000;
 
 export function SettingsDialog({
   open,
@@ -63,6 +69,8 @@ export function SettingsDialog({
   onOpenOnboarding,
   onReset,
   hasDemoData,
+  customBackgroundImage,
+  onSetCustomBackgroundImage,
   onRemoveDemoData,
   onConnectGoogleDrive,
   onDisconnectGoogleDrive,
@@ -98,6 +106,44 @@ export function SettingsDialog({
     void onUpdateSettings(settingsPatch).catch((error: unknown) =>
       onError(error instanceof Error ? error.message : t(language, "couldNotUpdateSettings"))
     );
+  }
+
+  function updateBackground(backgroundPatch: Partial<AuraStartSettings["background"]>) {
+    update({ background: { ...settings.background, ...backgroundPatch } });
+  }
+
+  function updateWidgets(widgetPatch: Partial<AuraStartSettings["widgets"]>) {
+    update({ widgets: { ...settings.widgets, ...widgetPatch } });
+  }
+
+  function updatePomodoro(pomodoroPatch: Partial<AuraStartSettings["pomodoro"]>) {
+    update({ pomodoro: { ...settings.pomodoro, ...pomodoroPatch } });
+  }
+
+  function handleBackgroundUpload(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      onError(t(language, "backgroundUploadImageOnly"));
+      return;
+    }
+    if (file.size > maxCustomBackgroundBytes) {
+      onError(t(language, "backgroundUploadTooLarge"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => onError(t(language, "backgroundUploadFailed"));
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : null;
+      if (!result) {
+        onError(t(language, "backgroundUploadFailed"));
+        return;
+      }
+
+      onSetCustomBackgroundImage(result);
+      updateBackground({ preset: "custom" });
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
@@ -145,6 +191,7 @@ export function SettingsDialog({
               ["showDescriptions", t(language, "showDescriptions")],
               ["showSearch", t(language, "showSearch")],
               ["showVersionInHeader", t(language, "showVersionInHeader")],
+              ["captureOpenTabs", t(language, "captureOpenTabs")],
               ["openLinksInNewTab", t(language, "openLinksInNewTab")]
             ].map(([key, label]) => (
               <label className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] p-3" key={key}>
@@ -156,6 +203,9 @@ export function SettingsDialog({
                   {key === "showVersionInHeader" ? (
                     <span className="muted block text-xs">{t(language, "showVersionInHeaderDescription")}</span>
                   ) : null}
+                  {key === "captureOpenTabs" ? (
+                    <span className="muted block text-xs">{t(language, "captureOpenTabsDescription")}</span>
+                  ) : null}
                 </span>
                 <input
                   checked={Boolean(settings[key as keyof AuraStartSettings])}
@@ -166,6 +216,133 @@ export function SettingsDialog({
                 />
               </label>
             ))}
+          </div>
+          <div className="surface-flat rounded-xl p-4">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="text-[var(--accent)]" size={18} />
+              <h3 className="font-semibold">{t(language, "backgrounds")}</h3>
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-sm font-semibold">{t(language, "backgroundImage")}</span>
+              <select
+                className="field"
+                value={settings.background.preset}
+                onChange={(event) => updateBackground({ preset: event.target.value as AuraStartSettings["background"]["preset"] })}
+              >
+                <option value="none">{t(language, "backgroundPresetNone")}</option>
+                {BUILTIN_BACKGROUNDS.map((background) => (
+                  <option key={background.id} value={background.id}>
+                    {t(language, background.labelKey)}
+                  </option>
+                ))}
+                <option value="custom">{t(language, "backgroundPresetCustom")}</option>
+              </select>
+            </label>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{t(language, "backgroundBlur")}</span>
+                <input
+                  className="field"
+                  max={18}
+                  min={0}
+                  type="range"
+                  value={settings.background.blur}
+                  onChange={(event) => updateBackground({ blur: Number(event.target.value) })}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{t(language, "backgroundDim")}</span>
+                <input
+                  className="field"
+                  max={80}
+                  min={0}
+                  type="range"
+                  value={settings.background.dim}
+                  onChange={(event) => updateBackground({ dim: Number(event.target.value) })}
+                />
+              </label>
+            </div>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-sm font-semibold">{t(language, "backgroundPosition")}</span>
+              <select
+                className="field"
+                value={settings.background.position}
+                onChange={(event) => updateBackground({ position: event.target.value as AuraStartSettings["background"]["position"] })}
+              >
+                <option value="center">{t(language, "positionCenter")}</option>
+                <option value="top">{t(language, "positionTop")}</option>
+                <option value="bottom">{t(language, "positionBottom")}</option>
+                <option value="left">{t(language, "positionLeft")}</option>
+                <option value="right">{t(language, "positionRight")}</option>
+              </select>
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <label className="btn btn-secondary cursor-pointer">
+                <Upload size={17} />
+                {t(language, "uploadBackground")}
+                <input
+                  accept="image/*"
+                  className="sr-only"
+                  type="file"
+                  onChange={(event) => {
+                    handleBackgroundUpload(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
+              </label>
+              {customBackgroundImage ? (
+                <button className="btn btn-secondary" type="button" onClick={() => onSetCustomBackgroundImage(null)}>
+                  <X size={17} />
+                  {t(language, "removeBackground")}
+                </button>
+              ) : null}
+            </div>
+          </div>
+          <div className="surface-flat rounded-xl p-4">
+            <h3 className="font-semibold">{t(language, "widgets")}</h3>
+            <div className="mt-3 space-y-3">
+              {[
+                ["clock", t(language, "widgetClock"), t(language, "widgetClockDescription")],
+                ["notes", t(language, "widgetNotes"), t(language, "widgetNotesDescription")],
+                ["pomodoro", t(language, "widgetPomodoro"), t(language, "widgetPomodoroDescription")]
+              ].map(([key, label, description]) => (
+                <label className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] p-3" key={key}>
+                  <span>
+                    <span className="block text-sm font-semibold">{label}</span>
+                    <span className="muted block text-xs">{description}</span>
+                  </span>
+                  <input
+                    checked={Boolean(settings.widgets[key as keyof AuraStartSettings["widgets"]])}
+                    type="checkbox"
+                    onChange={(event) => updateWidgets({ [key]: event.target.checked } as Partial<AuraStartSettings["widgets"]>)}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{t(language, "pomodoroFocusMinutes")}</span>
+                <input
+                  className="field"
+                  max={90}
+                  min={5}
+                  type="number"
+                  value={settings.pomodoro.focusMinutes}
+                  onChange={(event) => updatePomodoro({ focusMinutes: Number(event.target.value) })}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-semibold">{t(language, "pomodoroBreakMinutes")}</span>
+                <input
+                  className="field"
+                  max={30}
+                  min={1}
+                  type="number"
+                  value={settings.pomodoro.breakMinutes}
+                  onChange={(event) => updatePomodoro({ breakMinutes: Number(event.target.value) })}
+                />
+              </label>
+            </div>
           </div>
         </section>
         <section className="space-y-3">
@@ -204,7 +381,7 @@ export function SettingsDialog({
               </button>
               <button className="btn btn-secondary" type="button" onClick={onOpenRestorePoints}>
                 <RotateCcw size={17} />
-                {t(language, "restorePoints")}
+                {t(language, "restoreTimeline")}
               </button>
             </div>
           </div>

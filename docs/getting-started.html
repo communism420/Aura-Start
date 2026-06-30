@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Getting started with Aura Start: install, create groups, add links, search, edit, and choose appearance."
+      content="Getting started with Aura Start: install, create nested groups, add links, use fuzzy search, save open tabs, choose backgrounds, enable widgets, and keep backups."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -31,7 +31,7 @@
         <span class="kicker">User guide</span>
         <h1>Getting Started</h1>
         <p>
-          Aura Start replaces your Chromium new tab page with clean groups of links.
+          Aura Start replaces your browser new tab page with clean nested groups of links.
           It works locally by default and does not require an account.
         </p>
 
@@ -43,9 +43,8 @@
         <ol>
           <li>Open the Aura Start repository on GitHub.</li>
           <li>Follow the build instructions in the README.</li>
-          <li>Open <code>chrome://extensions</code> in a Chromium-based browser.</li>
-          <li>Enable Developer mode.</li>
-          <li>Choose Load unpacked and select the generated <code>dist</code> folder.</li>
+          <li>For Chrome or Chromium testing, open <code>chrome://extensions</code>, enable Developer mode, and load the generated Chrome build folder.</li>
+          <li>For Firefox testing, use <code>about:debugging</code> and load the generated Firefox build manifest.</li>
         </ol>
 
         <h2>Choose how to start</h2>
@@ -63,16 +62,17 @@
         <h2>Create groups and links</h2>
         <ul>
           <li>Create groups for areas like Work, Reading, Tools, or Research.</li>
+          <li>Create nested groups when one level of structure helps, such as Research -> Deep dives.</li>
           <li>Add links with titles, URLs, optional descriptions, and optional tags.</li>
-          <li>Use edit mode when you want to reorder groups or links with drag and drop.</li>
+          <li>Use edit mode when you want to reorder groups or links with drag and drop, including moving a group into or out of a parent group.</li>
           <li>Use compact mode or configurable columns when you want a denser layout.</li>
         </ul>
 
         <h2>Find links quickly</h2>
         <p>
-          Search can match link title, URL, description, and tags. Keyboard shortcuts
-          and the Command Palette help you move faster without changing how your data
-          is stored.
+          Search can match link title, URL, description, and tags. It uses fuzzy
+          matching for small typos, keeps parent groups visible when a nested child
+          matches, shows result counts, and can be narrowed with quick filters.
         </p>
         <p>
           Command Palette is available from the Aura Start UI. Ctrl+K or Cmd+K opens it
@@ -80,6 +80,21 @@
           does not work, check <code>chrome://extensions/shortcuts</code>. Letter
           shortcuts use physical key codes, so they continue to work on Latin and
           Cyrillic keyboard layouts when focus is inside the Aura Start page.
+        </p>
+
+        <h2>Save open tabs</h2>
+        <p>
+          If the Save open tabs feature is enabled in Settings, Aura Start can preview
+          tabs from the current window and save them into a new group. It asks for the
+          optional <code>tabs</code> permission at runtime, filters duplicates and
+          unsupported browser pages, and creates a restore point before saving.
+        </p>
+
+        <h2>Personalize the page</h2>
+        <p>
+          Settings include built-in background images, custom local background upload,
+          blur, dim, and positioning controls. Optional widgets can show a header
+          clock, local Markdown notes, and a lightweight Pomodoro timer.
         </p>
 
         <h2>Keep backups</h2>

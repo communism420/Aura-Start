@@ -1,22 +1,28 @@
-import { AlertCircle, Cloud, Command, FolderPlus, LinkIcon, Pencil, RefreshCw, Search, Settings, Upload } from "lucide-react";
+import { AlertCircle, Cloud, Command, FolderPlus, LinkIcon, Pencil, RefreshCw, Save, Search, Settings, Upload } from "lucide-react";
 import type { RefObject } from "react";
 import { t } from "../i18n";
 import type { AuraStartData, AuraSyncStatus } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
 import { formatDateTime } from "../utils/dates";
+import type { SearchQuickFilter } from "../utils/search";
 import { ExportMenu } from "./ExportMenu";
 import { SearchBar } from "./SearchBar";
+import { ClockWidget } from "./widgets";
 
 type HeaderProps = {
   data: AuraStartData;
   search: string;
+  searchFilter: SearchQuickFilter;
   searchOpen: boolean;
+  searchResultCount: number;
   editMode: boolean;
   syncStatus: AuraSyncStatus;
   syncMessage: string | null;
   searchInputRef: RefObject<HTMLInputElement>;
   onSearchChange: (value: string) => void;
+  onSearchFilterChange: (filter: SearchQuickFilter) => void;
   onOpenSearch: () => void;
+  onOpenSaveTabs: () => void;
   onToggleEditMode: () => void;
   onOpenCommandPalette: () => void;
   onAddGroup: () => void;
@@ -29,13 +35,17 @@ type HeaderProps = {
 export function Header({
   data,
   search,
+  searchFilter,
   searchOpen,
+  searchResultCount,
   editMode,
   syncStatus,
   syncMessage,
   searchInputRef,
   onSearchChange,
+  onSearchFilterChange,
   onOpenSearch,
+  onOpenSaveTabs,
   onToggleEditMode,
   onOpenCommandPalette,
   onAddGroup,
@@ -79,6 +89,7 @@ export function Header({
             ) : null}
             <span className="aura-inspired">{t(language, "inspiredBy")}</span>
           </div>
+          {data.settings.widgets.clock ? <ClockWidget language={language} /> : null}
         </div>
         <div className="aura-action-list">
           {data.settings.showSearch ? (
@@ -106,6 +117,12 @@ export function Header({
             <LinkIcon size={17} />
             {t(language, "add")}
           </button>
+          {data.settings.captureOpenTabs ? (
+            <button className="btn btn-ghost" type="button" onClick={onOpenSaveTabs}>
+              <Save size={17} />
+              {t(language, "saveTabs")}
+            </button>
+          ) : null}
           <button
             aria-label={editMode ? t(language, "disableEditMode") : t(language, "enableEditMode")}
             aria-pressed={editMode}
@@ -151,11 +168,14 @@ export function Header({
       <div className="aura-search-row">
         <SearchBar
           ref={searchInputRef}
+          filter={searchFilter}
           language={language}
           hint={search ? t(language, "pressEscToClear") : t(language, "searchModifiersHint")}
+          resultCount={searchResultCount}
           value={search}
           visible={searchVisible}
           onChange={onSearchChange}
+          onFilterChange={onSearchFilterChange}
         />
         {search ? (
           <span className="search-mode-label">

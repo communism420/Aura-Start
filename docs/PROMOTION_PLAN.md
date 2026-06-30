@@ -7,7 +7,7 @@ This plan supports launch communication after publication without spam, fake rev
 
 ## 1. Positioning
 
-Aura Start is a local-first, open-source, exportable start page for people who want grouped links without account lock-in.
+Aura Start is a local-first, open-source, customizable start page for people who want nested grouped links, fast search, and exportable data without account lock-in.
 
 Core message:
 
@@ -16,15 +16,17 @@ Core message:
 - No analytics or tracking.
 - Export anytime.
 - Import from A Fine Start export codes.
-- Optional Google Drive backup through `appDataFolder`, with automatic backup after connection.
+- Optional Google Drive backup with Chrome `appDataFolder` sync and Firefox/compatible Chromium Device OAuth fallback.
+- Optional Save open tabs with an explicit runtime tabs permission prompt.
+- Backgrounds and lightweight widgets without analytics.
 - Open-source under the MIT License.
 
 ## 2. Target Users
 
-- People who want a clean Chromium new tab page with grouped links.
+- People who want a clean browser new tab page with grouped links.
 - Users who care about local-first software and exportable data.
 - Users migrating from A Fine Start export codes.
-- Power users who value Command Palette, keyboard shortcuts, and Duplicate Finder.
+- Power users who value fuzzy search, Command Palette, keyboard shortcuts, Restore Timeline, and Duplicate Finder.
 - Open-source users who prefer auditable browser extensions.
 
 ## 3. Launch Channels
@@ -46,9 +48,9 @@ Title:
 
 Body:
 
-> Aura Start is a Chromium new tab extension for people who want clean groups of links without a required account. It stores data locally by default, has no analytics or tracking, and supports export to JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code.
+> Aura Start is a browser new tab extension for people who want clean nested groups of links without a required account. It stores data locally by default, has no analytics or tracking, supports fuzzy search, backgrounds, widgets, and export to JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code.
 >
-> Optional Google Drive sync is off by default and uses only the hidden Drive `appDataFolder` scope. After connection, local changes are backed up automatically. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
+> Optional Google Drive sync is off by default. Google Chrome uses the hidden Drive `appDataFolder` scope; Firefox and compatible Chromium fallback builds use Device OAuth only for Aura Start's own sync file. Save open tabs asks for the optional tabs permission only when you preview tabs. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
 
 ## 5. Reddit / Forum Post Draft: Migration From A Fine Start
 
@@ -60,17 +62,17 @@ Body:
 
 > Aura Start is an independent open-source start page inspired by the simple grouped-link workflow. It can import A Fine Start export codes and export an A Fine Start-compatible code for a basic grouped-link format later.
 >
-> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, export formats, restore points, and optional Google Drive `appDataFolder` backup that runs after the user connects it. Feedback from people who use grouped-link start pages would be useful.
+> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, nested groups, export formats, Restore Timeline, optional Google Drive backup, and explicit runtime permission for saving open tabs. Feedback from people who use grouped-link start pages would be useful.
 
 ## 6. Reddit / Forum Post Draft: Power-User Workflow
 
 Title:
 
-> Aura Start 1.2.0 adds Command Palette and Duplicate Finder for grouped links
+> Aura Start 2.0.0 adds nested groups, fuzzy search, Restore Timeline, and widgets
 
 Body:
 
-> Aura Start is a local-first Chromium new tab extension for grouped links. The 1.2.0 release focuses on migration and data ownership, with Command Palette, keyboard shortcuts, Restore Points, Export / Backup, and a Duplicate Finder that scans read-only and deletes only after confirmation.
+> Aura Start is a local-first browser new tab extension for grouped links. The 2.0.0 release adds nested groups, Fuse.js fuzzy search, Restore Timeline, optional Save open tabs, backgrounds, clock/notes/Pomodoro widgets, Command Palette, keyboard shortcuts, Export / Backup, and a Duplicate Finder that scans read-only and deletes only after confirmation.
 >
 > It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.
 
@@ -87,6 +89,7 @@ Focus on:
 - Merge or Replace choice
 - Restore point protection
 - Export back to A Fine Start-compatible code
+- Nested groups and fuzzy search after migration
 - Independent project, not affiliated with A Fine Start
 
 Avoid:
@@ -104,8 +107,9 @@ Focus on:
 - No account
 - No analytics/tracking/ads/backend
 - Least-privilege permissions
-- Optional Google Drive `appDataFolder` backup with automatic backup after connection
-- Export formats and restore points
+- Optional Google Drive sync: Chrome `appDataFolder`, Firefox/compatible Chromium `drive.file` fallback limited to Aura Start's own sync file
+- Optional tabs access only when Save open tabs is used
+- Export formats and Restore Timeline
 
 ## 10. What Not To Say
 
@@ -122,10 +126,14 @@ Focus on:
 - Installation problems
 - Import from A Fine Start errors
 - Export file correctness
-- Restore point clarity
+- Nested group drag-and-drop issues
+- Fuzzy search relevance
+- Save open tabs permission confusion
+- Restore Timeline clarity
 - Duplicate Finder false positives
 - Keyboard shortcut conflicts
 - Google Drive OAuth setup issues
+- Background/widget readability or performance
 - Privacy wording questions
 - Dark/light theme readability
 
@@ -135,7 +143,7 @@ Focus on:
 - Do not ask specifically for five-star ratings.
 - Reply politely to bug reports.
 - Convert repeated feedback into GitHub issues.
-- Prepare a 1.2.1 patch if reviewers find release-blocking issues.
+- Prepare a 2.0.1 patch if reviewers find release-blocking issues.
 
 ## 13. Bug Triage Plan After Launch
 

@@ -170,6 +170,7 @@ export function parseAFineStartExportWithReport(text: string): AFineStartImportR
       groups.push({
         id: createId("group"),
         title,
+        parentId: null,
         collapsed: false,
         order: groups.length,
         links

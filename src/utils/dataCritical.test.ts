@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DATA_VERSION, DEFAULT_SETTINGS, MAX_RESTORE_POINTS } from "../constants";
+import { useAuraStore } from "../store/useAuraStore";
 import type { AuraStartData, AuraStartGroup, AuraStartLink } from "../types";
 import { findDuplicateLinks } from "./duplicates";
 import { createAFineStartExportCode } from "./exportAFineStart";
@@ -9,7 +10,8 @@ import { createJsonBackup } from "./exportJson";
 import { createMarkdownBookmarks } from "./exportMarkdown";
 import { parseAFineStartExportWithReport } from "./importAFineStart";
 import { validateAuraData } from "./importJson";
-import { linkMatchesSearch, parseSearchQuery } from "./search";
+import { linkMatchesSearch, parseSearchQuery, searchAuraGroups } from "./search";
+import { prepareTabsForSaving } from "./tabsCapture";
 
 const ISO = "2026-01-01T00:00:00.000Z";
 
@@ -38,6 +40,7 @@ function group(overrides: Partial<AuraStartGroup> = {}): AuraStartGroup {
   return {
     id: "group_1",
     title: "Work",
+    parentId: null,
     collapsed: false,
     order: 0,
     links: [link()],
@@ -131,6 +134,19 @@ describe("export formats", () => {
     expect(html).toContain('<A HREF="https://github.com/"');
   });
 
+  it("exports nested groups in tree order", () => {
+    const nestedData = data({
+      groups: [
+        group({ id: "parent", title: "Parent", order: 0, links: [] }),
+        group({ id: "child", title: "Child", parentId: "parent", order: 0 })
+      ]
+    });
+
+    expect(createMarkdownBookmarks(nestedData)).toContain("### Child");
+    expect(createCsvBookmarks(nestedData)).toContain("Parent / Child");
+    expect(createHtmlBookmarks(nestedData)).toContain("    <DT><H3>Child</H3>");
+  });
+
   it("creates readable Markdown with descriptions and tags", () => {
     const markdown = createMarkdownBookmarks(data());
 
@@ -197,6 +213,26 @@ describe("duplicate finder", () => {
   });
 });
 
+describe("open tabs capture", () => {
+  it("deduplicates current-window tabs and skips unsupported or already saved URLs", () => {
+    const preview = prepareTabsForSaving(
+      [
+        { title: "GitHub", url: "https://github.com/" },
+        { title: "GitHub duplicate", url: "https://github.com/" },
+        { title: "Docs", url: "https://developer.mozilla.org/" },
+        { title: "Aura", url: "chrome-extension://abc/newtab.html" },
+        { title: "Saved", url: "https://example.com/" }
+      ],
+      ["https://example.com/"]
+    );
+
+    expect(preview.links.map((item) => item.title)).toEqual(["GitHub", "Docs"]);
+    expect(preview.duplicateCount).toBe(1);
+    expect(preview.existingCount).toBe(1);
+    expect(preview.skippedCount).toBe(1);
+  });
+});
+
 describe("search modifiers", () => {
   const searchGroup = group({ title: "Development", links: [link({ title: "MDN Docs", url: "https://developer.mozilla.org", tags: ["docs", "web"] })] });
   const searchLink = searchGroup.links[0];
@@ -208,6 +244,28 @@ describe("search modifiers", () => {
     expect(linkMatchesSearch(searchGroup, searchLink, parseSearchQuery("group:development"))).toBe(true);
     expect(linkMatchesSearch(searchGroup, searchLink, parseSearchQuery("title:docs"))).toBe(true);
     expect(linkMatchesSearch(searchGroup, searchLink, parseSearchQuery("tag:work"))).toBe(false);
+  });
+
+  it("finds typo-tolerant fuzzy matches and returns highlights", () => {
+    const result = searchAuraGroups(data(), "githb");
+
+    expect(result.results[0].link.title).toBe("GitHub");
+    expect(result.highlights.links[result.results[0].link.id].title?.length).toBeGreaterThan(0);
+  });
+
+  it("keeps parent groups when a nested child link matches", () => {
+    const nestedData = data({
+      groups: [
+        group({ id: "parent", title: "Parent", order: 0, links: [] }),
+        group({ id: "child", title: "Child", parentId: "parent", order: 0, links: [link({ id: "nested_link", title: "Nested Docs" })] })
+      ]
+    });
+
+    const result = searchAuraGroups(nestedData, "nested");
+
+    expect(result.groups.map((item) => item.id)).toEqual(["parent", "child"]);
+    expect(result.groups[0].links).toEqual([]);
+    expect(result.groups[1].links[0].title).toBe("Nested Docs");
   });
 });
 
@@ -237,5 +295,113 @@ describe("validation and restore point safety", () => {
 
     expect(validated.restorePoints).toHaveLength(MAX_RESTORE_POINTS);
     expect(validated.restorePoints[0].id).toBe("restore_0");
+  });
+
+  it("preserves restore point timeline context", () => {
+    const snapshotSource = data();
+    const { restorePoints: _restorePoints, ...snapshot } = snapshotSource;
+    const validated = validateAuraData(data({
+      restorePoints: [
+        {
+          id: "restore_move",
+          name: "Before moving link",
+          createdAt: ISO,
+          reason: "before_link_move",
+          context: {
+            entity: "link",
+            title: "GitHub",
+            from: "Work",
+            to: "Tools"
+          },
+          data: snapshot
+        }
+      ]
+    }));
+
+    expect(validated.restorePoints[0].reason).toBe("before_link_move");
+    expect(validated.restorePoints[0].context).toMatchObject({
+      entity: "link",
+      title: "GitHub",
+      from: "Work",
+      to: "Tools"
+    });
+  });
+
+  it("groups restore points into a day timeline", () => {
+    const snapshotSource = data();
+    const { restorePoints: _restorePoints, ...snapshot } = snapshotSource;
+    useAuraStore.setState({
+      data: data({
+        restorePoints: [
+          {
+            id: "restore_new",
+            name: "Newer",
+            createdAt: "2026-01-02T02:00:00.000Z",
+            reason: "before_group_reorder",
+            data: snapshot
+          },
+          {
+            id: "restore_old",
+            name: "Older",
+            createdAt: "2026-01-01T02:00:00.000Z",
+            reason: "manual",
+            data: snapshot
+          }
+        ]
+      })
+    });
+
+    const timeline = useAuraStore.getState().getRestoreTimeline();
+
+    expect(timeline.map((day) => day.day)).toEqual(["2026-01-02", "2026-01-01"]);
+    expect(timeline[0].entries[0].point.id).toBe("restore_new");
+    expect(timeline[0].entries[0].groupCount).toBe(1);
+    expect(timeline[0].entries[0].linkCount).toBe(1);
+    useAuraStore.setState({ data: null });
+  });
+
+  it("migrates old flat groups to top-level groups", () => {
+    const legacyGroup = group();
+    const { parentId: _parentId, ...legacyGroupWithoutParent } = legacyGroup;
+    const validated = validateAuraData(data({ groups: [legacyGroupWithoutParent as AuraStartGroup] }));
+
+    expect(validated.groups[0].parentId).toBeNull();
+  });
+
+  it("migrates and clamps optional background and widget settings", () => {
+    const legacySettings = { ...settings() } as Record<string, unknown>;
+    delete legacySettings.background;
+    delete legacySettings.widgets;
+    delete legacySettings.pomodoro;
+
+    const migrated = validateAuraData(data({ settings: legacySettings as AuraStartData["settings"] }));
+    expect(migrated.settings.background).toEqual(DEFAULT_SETTINGS.background);
+    expect(migrated.settings.widgets).toEqual(DEFAULT_SETTINGS.widgets);
+    expect(migrated.settings.pomodoro).toEqual(DEFAULT_SETTINGS.pomodoro);
+
+    const validated = validateAuraData(data({
+      settings: {
+        ...settings(),
+        background: { preset: "forest", blur: 200, dim: -10, position: "left" },
+        widgets: { clock: true, notes: "yes", pomodoro: true },
+        pomodoro: { focusMinutes: 120, breakMinutes: 0 }
+      } as unknown as AuraStartData["settings"]
+    }));
+
+    expect(validated.settings.background).toEqual({
+      preset: "forest",
+      blur: 18,
+      dim: 0,
+      position: "left"
+    });
+    expect(validated.settings.widgets).toEqual({
+      clock: true,
+      notes: DEFAULT_SETTINGS.widgets.notes,
+      pomodoro: true
+    });
+    expect(validated.settings.pomodoro).toEqual({
+      focusMinutes: 90,
+      breakMinutes: 1
+    });
   });
 });

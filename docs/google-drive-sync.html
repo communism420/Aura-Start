@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start Google Drive sync guide: optional appDataFolder backup, local-first storage, disconnect, and delete backup."
+      content="Aura Start Google Drive sync guide: optional Chrome appDataFolder backup, Firefox and Chromium device OAuth fallback, local-first storage, disconnect, and delete backup."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -37,10 +37,13 @@
 
         <h2>What sync stores</h2>
         <p>
-          When you connect Google Drive, Aura Start stores one hidden sync file named
+          In Google Chrome, Aura Start stores one hidden sync file named
           <code>aura-start-sync.json</code> in Google Drive <code>appDataFolder</code>.
-          This file can include your Aura Start groups, links, settings, restore
-          points, and sync metadata needed to keep the backup current.
+          In Firefox and compatible Chromium fallback builds, Aura Start uses a
+          narrower per-file Google Drive flow and creates or updates only Aura Start's
+          own sync file marked with Aura Start app properties. The sync file can
+          include groups, nested group relationships, links, settings, restore points,
+          and sync metadata needed to keep the backup current.
         </p>
 
         <h2>What Aura Start does not access</h2>
@@ -72,11 +75,14 @@
         <h2>Authorization</h2>
         <p>
           Google Chrome uses the extension manifest OAuth configuration through
-          <code>chrome.identity.getAuthToken</code>. Chromium builds that reject the built-in
-          identity token flow can use Aura Start's configured Web OAuth fallback with an exact
-          <code>chromiumapp.org</code> redirect URI. Google's device-code OAuth flow is not used because it rejects the
-          <code>drive.appdata</code> scope and users do not enter OAuth client IDs in
-          Aura Start settings.
+          <code>chrome.identity.getAuthToken</code> and stores the sync file in the hidden
+          Drive <code>appDataFolder</code> with the <code>drive.appdata</code> scope.
+          Firefox builds and Chromium builds that reject the built-in identity token
+          flow use Aura Start's configured Google Device OAuth fallback. Device OAuth
+          uses the narrower per-file <code>drive.file</code> scope and creates or updates
+          only Aura Start's own <code>aura-start-sync.json</code> file marked with Aura
+          Start app properties. Users do not enter OAuth client IDs in Aura Start
+          settings.
         </p>
 
         <h2>Disconnect and delete backup</h2>
@@ -99,7 +105,7 @@
         <p>For the full privacy details, read the <a href="privacy-policy.html">Privacy Policy</a>.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="export-backup.html">Export / Backup</a>
-          <a href="restore-points.html">Restore Points</a>
+          <a href="restore-points.html">Restore Timeline</a>
           <a href="documentation.html">Documentation</a>
         </div>
       </footer>

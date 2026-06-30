@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1600" viewBox="0 0 2400 1600" role="img" aria-label="Dawn gradient landscape">
+  <defs>
+    <linearGradient id="dawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5cac3"/>
+      <stop offset="0.42" stop-color="#f7ede2"/>
+      <stop offset="0.72" stop-color="#84a59d"/>
+      <stop offset="1" stop-color="#354f52"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="42%" r="28%">
+      <stop offset="0" stop-color="#fff8e8"/>
+      <stop offset="0.36" stop-color="#f6bd60" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#f6bd60" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="2400" height="1600" fill="url(#dawn)"/>
+  <rect width="2400" height="1600" fill="url(#sun)"/>
+  <path d="M0 1110 C250 950 520 970 760 1070 C1020 1180 1280 1020 1505 910 C1740 795 2040 800 2400 980 L2400 1600 L0 1600 Z" fill="#2f3e46" opacity="0.92"/>
+  <path d="M0 1235 C300 1125 540 1160 815 1230 C1130 1310 1340 1190 1610 1110 C1900 1025 2170 1070 2400 1190 L2400 1600 L0 1600 Z" fill="#1f2f35" opacity="0.95"/>
+  <path d="M0 910 C420 870 610 940 950 895 C1250 855 1540 760 1840 830 C2060 880 2225 835 2400 770" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.2"/>
+</svg>

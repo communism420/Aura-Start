@@ -1,4 +1,6 @@
 import { UI_STATE_STORAGE_KEY } from "../constants";
+import { getExtensionStorageArea } from "./browserApi";
+import { isSearchQuickFilter, type SearchQuickFilter } from "./search";
 
 export type DemoDataMarker = {
   groupIds: string[];
@@ -8,6 +10,10 @@ export type DemoDataMarker = {
 export type AuraUiState = {
   onboardingCompleted: boolean;
   demoData: DemoDataMarker;
+  lastSearchQuery: string;
+  searchFilter: SearchQuickFilter;
+  customBackgroundImage: string | null;
+  widgetNotes: string;
 };
 
 const EMPTY_DEMO_DATA: DemoDataMarker = {
@@ -17,21 +23,15 @@ const EMPTY_DEMO_DATA: DemoDataMarker = {
 
 const DEFAULT_UI_STATE: AuraUiState = {
   onboardingCompleted: false,
-  demoData: EMPTY_DEMO_DATA
+  demoData: EMPTY_DEMO_DATA,
+  lastSearchQuery: "",
+  searchFilter: "all",
+  customBackgroundImage: null,
+  widgetNotes: ""
 };
 
-function hasChromeStorage(): boolean {
-  return Boolean(globalThis.chrome?.storage?.local);
-}
-
-async function chromeGet(key: string): Promise<unknown> {
-  const result = await chrome.storage.local.get(key);
-  return result[key];
-}
-
-async function chromeSet(key: string, value: unknown): Promise<void> {
-  await chrome.storage.local.set({ [key]: value });
-}
+const MAX_CUSTOM_BACKGROUND_IMAGE_CHARS = 2_500_000;
+const MAX_WIDGET_NOTES_CHARS = 12_000;
 
 function localGet(key: string): unknown {
   const value = localStorage.getItem(key);
@@ -65,6 +65,18 @@ function normalizeDemoData(value: unknown): DemoDataMarker {
   };
 }
 
+function normalizeCustomBackgroundImage(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  if (value.length > MAX_CUSTOM_BACKGROUND_IMAGE_CHARS) {
+    return null;
+  }
+
+  return /^data:image\/(?:png|jpe?g|webp|gif|svg\+xml);/i.test(value) ? value : null;
+}
+
 function normalizeUiState(value: unknown): AuraUiState {
   if (!isRecord(value)) {
     return DEFAULT_UI_STATE;
@@ -72,13 +84,18 @@ function normalizeUiState(value: unknown): AuraUiState {
 
   return {
     onboardingCompleted: value.onboardingCompleted === true,
-    demoData: normalizeDemoData(value.demoData)
+    demoData: normalizeDemoData(value.demoData),
+    lastSearchQuery: typeof value.lastSearchQuery === "string" ? value.lastSearchQuery.slice(0, 300) : "",
+    searchFilter: isSearchQuickFilter(value.searchFilter) ? value.searchFilter : "all",
+    customBackgroundImage: normalizeCustomBackgroundImage(value.customBackgroundImage),
+    widgetNotes: typeof value.widgetNotes === "string" ? value.widgetNotes.slice(0, MAX_WIDGET_NOTES_CHARS) : ""
   };
 }
 
 export async function loadAuraUiState(): Promise<AuraUiState> {
   try {
-    const rawValue = hasChromeStorage() ? await chromeGet(UI_STATE_STORAGE_KEY) : localGet(UI_STATE_STORAGE_KEY);
+    const storage = getExtensionStorageArea("local");
+    const rawValue = storage ? (await storage.get(UI_STATE_STORAGE_KEY))[UI_STATE_STORAGE_KEY] : localGet(UI_STATE_STORAGE_KEY);
     return normalizeUiState(rawValue);
   } catch {
     return DEFAULT_UI_STATE;
@@ -87,8 +104,9 @@ export async function loadAuraUiState(): Promise<AuraUiState> {
 
 export async function saveAuraUiState(state: AuraUiState): Promise<void> {
   const normalized = normalizeUiState(state);
-  if (hasChromeStorage()) {
-    await chromeSet(UI_STATE_STORAGE_KEY, normalized);
+  const storage = getExtensionStorageArea("local");
+  if (storage) {
+    await storage.set({ [UI_STATE_STORAGE_KEY]: normalized });
   } else {
     localSet(UI_STATE_STORAGE_KEY, normalized);
   }

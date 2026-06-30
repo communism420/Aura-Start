@@ -1,9 +1,14 @@
 node_modules/
 dist/
 dist-local/
+dist-firefox/
+dist-firefox-local/
+dist-google/
+dist-google-local/
 .vite/
 *.local
 *.log
 release-artifacts/
 Chrome Submit/
+Firefox Submit/
 Photo/

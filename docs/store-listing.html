@@ -27,21 +27,24 @@
 <h2>Extension Name</h2>
 <p>Aura Start</p>
 <h2>Short Description</h2>
-<p>A local-first, private, exportable start page for your Chromium new tab.</p>
+<p>A private, local-first, customizable start page for your browser new tab.</p>
 <h2>Detailed Description</h2>
-<p>Aura Start replaces the Chromium new tab page with a clean, local-first start page for groups of links.</p>
-<p>Create focused groups, add links with optional descriptions and tags, search across your saved links, and keep your start page fast without a required account. Aura Start stores your data locally by default and is designed around export-first data ownership: you can export Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code.</p>
+<p>Aura Start replaces the browser new tab page with a clean, local-first start page for groups of links.</p>
+<p>Create nested groups, add links with optional descriptions and tags, search across your saved links with fuzzy matching, and keep your start page fast without a required account. Aura Start stores your data locally by default and is designed around export-first data ownership: you can export Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code.</p>
 <p>Aura Start supports importing A Fine Start export codes for migration and can export an A Fine Start-compatible code if you want a basic grouped-link format again later. Aura Start is an independent project and is not affiliated with A Fine Start.</p>
-<p>For safety, Aura Start includes restore points before destructive actions, a Restore Points Manager, a read-only Duplicate Finder scan with user-confirmed deletion, and clear import preview flows. Power-user features include Command Palette with a visible UI entry point, browser-assigned keyboard shortcuts, improved search, layout-aware Latin/Cyrillic shortcut handling, and a focused Settings area for Import, Export / Backup, Privacy Promise, Restore Points, and optional Google Drive sync.</p>
-<p>Aura Start has no required account, no analytics, no tracking, no ads, and no backend. Optional Google Drive backup/sync is off by default and uses only the hidden Google Drive <code>appDataFolder</code> scope for Aura Start's own <code>aura-start-sync.json</code> file. After connection, local changes sync automatically; onboarding can restore an existing hidden Drive sync file when the user chooses that path, and delete/disconnect is a confirmed action. The extension does not request browser bookmarks, history, cookies, tabs, webRequest, scripting, or full Google Drive access.</p>
+<p>For safety, Aura Start includes restore points before destructive actions, a searchable Restore Timeline, a read-only Duplicate Finder scan with user-confirmed deletion, and clear import preview flows. Power-user features include Command Palette with fuzzy command search, browser-assigned keyboard shortcuts, layout-aware Latin/Cyrillic shortcut handling, optional Save open tabs with runtime tabs permission, background images, local Markdown notes, a header clock, and a Pomodoro timer.</p>
+<p>Aura Start has no required account, no analytics, no tracking, no ads, and no backend. Optional Google Drive backup/sync is off by default. Google Chrome uses the hidden Google Drive <code>appDataFolder</code> scope for Aura Start's own <code>aura-start-sync.json</code> file; Firefox and compatible Chromium fallback builds can use Google Device OAuth with <code>drive.file</code> only for an Aura Start-owned sync file marked with Aura Start app properties. After connection, local changes sync automatically; onboarding can restore an existing sync file when the user chooses that path, and delete/disconnect is a confirmed action. The extension does not request browser bookmarks, history, cookies, webRequest, scripting, or full Google Drive access. The <code>tabs</code> permission is optional and requested only when the user previews current-window tabs for Save open tabs.</p>
 <p>Aura Start is open-source under the MIT License.</p>
 <h2>Feature Bullets</h2>
 <ul>
-<li>Organize links into clean groups on every new tab</li>
-<li>Search by title, URL, description, tags, and supported query modifiers</li>
+<li>Organize links into clean nested groups on every new tab</li>
+<li>Search by title, URL, description, tags, supported query modifiers, and fuzzy matches</li>
+<li>Customize the start page with built-in or local background images</li>
+<li>Optional widgets: clock, Markdown notes, and Pomodoro timer</li>
+<li>Optionally save current-window tabs into a new group after explicit tabs permission approval</li>
 <li>Import from A Fine Start export codes</li>
 <li>Export JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible code</li>
-<li>Restore points before destructive actions</li>
+<li>Restore Timeline before destructive actions</li>
 <li>Command Palette, visible UI access, and browser-assigned keyboard shortcuts</li>
 <li>Latin/Cyrillic layout-aware keyboard shortcuts for common actions</li>
 <li>Duplicate Finder with read-only scan and user-confirmed deletion</li>
@@ -50,26 +53,28 @@
 <li>Open-source under the MIT License</li>
 </ul>
 <h2>Privacy Disclosure Short Text</h2>
-<p>Aura Start stores user-created groups, links, settings, and restore points locally by default. It has no backend, no analytics, no tracking, no ads, and no required account. Optional Google Drive sync is user-initiated and uses only the hidden Google Drive <code>appDataFolder</code> file for Aura Start backup/sync.</p>
+<p>Aura Start stores user-created groups, links, settings, widget state, background preferences, and restore timeline entries locally by default. It has no backend, no analytics, no tracking, no ads, and no required account. Optional Google Drive sync is user-initiated and syncs only Aura Start's own backup file. Optional tabs access is requested only for Save open tabs.</p>
 <h2>Permission Justification</h2>
 <ul>
 <li><code>storage</code>: saves user-created groups, links, settings, sync metadata, and restore points in local extension storage.</li>
 <li><code>identity</code>: allows the user to explicitly connect optional Google Drive sync through Chrome's OAuth flow.</li>
 <li><code>https://www.googleapis.com/*</code>: used only for optional Google Drive API requests after the user enables sync.</li>
-<li><code>https://www.googleapis.com/auth/drive.appdata</code>: lets Aura Start read and write only its own hidden app data file, not normal visible Drive files.</li>
+<li><code>optional_permissions.tabs</code>: requested at runtime only for Save open tabs so Aura Start can preview current-window tab titles and URLs before saving.</li>
+<li><code>https://www.googleapis.com/auth/drive.appdata</code>: lets Google Chrome builds read and write only Aura Start's hidden app data file, not normal visible Drive files.</li>
+<li><code>https://www.googleapis.com/auth/drive.file</code>: used only by the Firefox/compatible Chromium Device OAuth fallback for an Aura Start-owned sync file marked with Aura Start app properties.</li>
 </ul>
-<p>Aura Start intentionally does not request bookmarks, history, cookies, tabs, webRequest, scripting, <code>&lt;all_urls&gt;</code>, full Google Drive access, <code>drive.file</code>, or browser-wide host permissions.</p>
+<p>Aura Start intentionally does not request bookmarks, history, cookies, webRequest, scripting, <code>&lt;all_urls&gt;</code>, full Google Drive access, required <code>tabs</code> permission, or browser-wide host permissions.</p>
 <h2>Reviewer Notes</h2>
-<p>Aura Start is a local-first Chromium new tab extension for user-created groups of links. It uses <code>chrome.storage.local</code> for local data and uses <code>chrome.identity</code>, <code>drive.appdata</code>, and <code>https://www.googleapis.com/*</code> only for optional Google Drive sync after user action. The Drive file is <code>aura-start-sync.json</code> in Google Drive <code>appDataFolder</code>.</p>
+<p>Aura Start is a local-first browser new tab extension for user-created groups of links. It uses extension-local storage for local data, optional runtime <code>tabs</code> access for Save open tabs, and Google OAuth scopes only for optional Google Drive sync after user action. Google Chrome uses <code>drive.appdata</code>; Firefox and compatible Chromium fallback builds can use <code>drive.file</code> only for Aura Start's own sync file.</p>
 <p>The extension has no content scripts, no analytics, no tracking, no backend, no ads, and no remotely hosted code. A Fine Start is mentioned only for migration compatibility; Aura Start is independent and not affiliated with A Fine Start.</p>
 <h2>Manual Fields Checklist</h2>
 <ul>
 <li>Category: Productivity</li>
 <li>Language: English</li>
-<li>Privacy policy URL: use the GitHub Pages URL for <code>docs/privacy-policy.html</code> after Pages publishes</li>
+<li>Privacy policy URL: <code>https://aurastart.pages.dev/privacy-policy.html</code></li>
 <li>Screenshots: follow <code>docs/SCREENSHOTS.md</code></li>
 <li>Support URL: GitHub repository issues or repository URL</li>
-<li>Website URL: GitHub Pages landing page or repository URL</li>
+<li>Website URL: <code>https://aurastart.pages.dev/</code></li>
 <li>Source code URL: <code>https://github.com/communism420/Aura-Start</code></li>
 <li>Store package: ZIP built from <code>dist</code> contents after <code>npm run build:store</code></li>
 </ul>

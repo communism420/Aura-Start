@@ -13,7 +13,9 @@ Aura Start is not affiliated with A Fine Start. This document only makes claims 
 - You want no required account
 - You want export formats
 - You want A Fine Start migration
-- You want optional Google Drive appDataFolder backup with automatic backup after connection
+- You want nested groups, fuzzy search, Restore Timeline, backgrounds, and lightweight widgets
+- You want optional Save open tabs with an explicit runtime tabs permission prompt
+- You want optional Google Drive backup with Chrome `appDataFolder` sync and Firefox/compatible Chromium Device OAuth fallback
 
 ## Feature comparison
 
@@ -21,29 +23,30 @@ Aura Start is not affiliated with A Fine Start. This document only makes claims 
 | --- | --- | --- |
 | Project relationship | Independent open-source project, not affiliated with A Fine Start | Separate product; check official listing |
 | Source availability | Open-source under the MIT License | Not verified here |
-| Published maturity | Chrome Web Store release materials exist in this repository; verify the current live listing before sharing a store link | Already published and has an existing audience according to the audit; verify current listing |
-| Browser/web footprint | Chromium new tab extension | Public A Fine Start pages indicate broader browser/web availability; verify current support |
+| Published maturity | Chrome Web Store and Firefox Add-ons release materials exist in this repository; verify the current live listing before sharing a store link | Already published and has an existing audience according to the audit; verify current listing |
+| Browser/web footprint | Browser new tab extension with Chrome/Chromium and Firefox builds | Public A Fine Start pages indicate broader browser/web availability; verify current support |
 | Account requirement | No account required for local use | Depends on current version; check official listing |
-| Default storage | Local extension storage through `chrome.storage.local` | Not claimed by Aura Start docs |
+| Default storage | Browser-local extension storage | Not claimed by Aura Start docs |
 | Analytics/tracking | No analytics or tracking in Aura Start docs and source | Not verified here |
-| Link organization | User-created groups of links | Depends on current version |
-| Search | Search across title, URL, description, tags, and supported query modifiers | Check official listing |
-| Drag and drop | Groups and links can be reordered in edit mode | Check official listing |
-| Quick add current page | Not implemented; Aura Start avoids tabs/bookmarks permissions today | Public docs noted in the audit describe a quick-add/current-page workflow; verify current behavior |
+| Link organization | User-created nested groups of links, up to 2 levels | Depends on current version |
+| Search | Fuzzy search across title, URL, description, tags, and supported query modifiers | Check official listing |
+| Drag and drop | Groups and links can be reordered in edit mode; groups can move into/out of parents within the supported depth | Check official listing |
+| Save open tabs | Optional current-window tabs preview and save flow; requests `tabs` only at runtime when used | Public docs noted in the audit describe a quick-add/current-page workflow; verify current behavior |
 | Full Aura backup | Full Backup JSON export/import | Not verified here |
 | Export formats | JSON, Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible export code | A Fine Start has import/export tools; exact current formats should be verified |
 | A Fine Start migration | Imports A Fine Start export codes | Native format behavior depends on current version |
-| Restore points | Local Restore Points Manager, up to 20 local snapshots, and safety points before destructive operations | Public help checked in the audit documents restore points, including a broader every-change story and higher cap; verify current documentation |
-| Power-user tools | Command Palette, visible palette button, layout-aware shortcuts where implemented, and read-only Duplicate Finder scan | A Fine Start documents a search pane shortcut; broader command palette/duplicate tooling was not verified |
-| Optional cloud backup | Google Drive `appDataFolder` sync file, off by default, with automatic backup after connection and first-run restore if a sync file exists | Not claimed by Aura Start docs |
-| Browser permissions | `storage`, `identity`, Google API host permission for optional Drive sync | Check official listing |
+| Restore points | Searchable Restore Timeline, up to 20 local snapshots, and safety points before important/destructive operations | Public help checked in the audit documents restore points, including a broader every-change story and higher cap; verify current documentation |
+| Power-user tools | Command Palette, fuzzy search, visible palette button, layout-aware shortcuts where implemented, and read-only Duplicate Finder scan | A Fine Start documents a search pane shortcut; broader command palette/duplicate tooling was not verified |
+| Personalization | Background presets, custom local backgrounds, blur/dim/position controls, clock, Markdown notes, and Pomodoro widgets | Check official listing |
+| Optional cloud backup | Google Chrome `appDataFolder` sync file, Firefox/compatible Chromium `drive.file` fallback limited to Aura Start's own sync file, off by default, with automatic backup after connection and first-run restore if a sync file exists | Not claimed by Aura Start docs |
+| Browser permissions | `storage`, `identity`, optional `tabs`, Google API host permissions for optional Drive sync | Check official listing |
 
 ## Where A Fine Start may be stronger today
 
 - A Fine Start is already published and has existing market proof; Aura Start's live Chrome Web Store status should be verified before using a store link in public materials.
-- Public pages checked in the audit indicate a broader browser/web footprint for A Fine Start. Aura Start intentionally remains Chromium-only for now.
-- Public A Fine Start docs/listing describe a quick-add/current-page workflow. Aura Start does not implement this today because doing so safely may require permissions that Aura Start currently avoids.
-- A Fine Start publicly documents restore points with a broader every-bookmark-change story. Aura Start focuses restore points on destructive actions, keeps a visible manager, and recommends Full Backup JSON for long-term backups.
+- Public pages checked in the audit indicate a broader browser/web footprint for A Fine Start beyond browser extension builds; verify current support.
+- Public A Fine Start docs/listing describe a quick-add/current-page workflow. Aura Start supports saving current-window tabs as an optional explicit flow, not a silent browser-wide bookmark importer.
+- A Fine Start publicly documents restore points with a broader every-bookmark-change story. Aura Start focuses Restore Timeline on important actions, keeps snapshots visible and searchable, and recommends Full Backup JSON for long-term backups.
 
 ## Migration guide
 
@@ -63,7 +66,7 @@ Aura Start validates imported URLs before saving them. Unsupported or unsafe URL
 
 Aura Start is export-first. The primary data lives in local extension storage by default, and users can export a full JSON backup at any time. Manual JSON export/import works independently of optional Google Drive sync.
 
-Optional Google Drive sync uses a hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder`. After connection, local changes are backed up automatically. Aura Start does not request full Google Drive access and does not create visible Drive files.
+Optional Google Drive sync uses a hidden `aura-start-sync.json` file in the user's Google Drive `appDataFolder` in Google Chrome. Firefox and compatible Chromium fallback builds use `drive.file` only for Aura Start's own sync file marked with Aura Start app properties. After connection, local changes are backed up automatically. Aura Start does not request full Google Drive access and does not touch unrelated Drive files.
 
 When exporting back to an A Fine Start-compatible export code, Aura Start writes the compatibility fields supported by that format: group names and bookmark `name`/`url` values. Aura Start-specific fields such as descriptions and tags are not included in that compatibility export when the target format does not support them.
 

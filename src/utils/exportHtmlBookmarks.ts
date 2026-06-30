@@ -1,6 +1,7 @@
 import type { AuraStartData } from "../types";
 import { dateForFile, toUnixSeconds } from "./dates";
 import { downloadTextFile } from "./download";
+import { buildGroupTree } from "./groupTree";
 
 function escapeHtml(value: string): string {
   return value
@@ -19,27 +20,27 @@ export function createHtmlBookmarks(data: AuraStartData): string {
     "<DL><p>"
   ];
 
-  data.groups
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .forEach((group) => {
-      lines.push(`  <DT><H3>${escapeHtml(group.title)}</H3>`);
-      lines.push("  <DL><p>");
+  function addGroup(group: ReturnType<typeof buildGroupTree>[number], indent: string) {
+    lines.push(`${indent}<DT><H3>${escapeHtml(group.title)}</H3>`);
+    lines.push(`${indent}<DL><p>`);
 
-      group.links
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .forEach((link) => {
-          const addDate = toUnixSeconds(link.createdAt);
-          lines.push(
-            `    <DT><A HREF="${escapeHtml(link.url)}" ADD_DATE="${addDate}">${escapeHtml(
-              link.title
-            )}</A>`
-          );
-        });
+    group.links
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .forEach((link) => {
+        const addDate = toUnixSeconds(link.createdAt);
+        lines.push(
+          `${indent}  <DT><A HREF="${escapeHtml(link.url)}" ADD_DATE="${addDate}">${escapeHtml(
+            link.title
+          )}</A>`
+        );
+      });
 
-      lines.push("  </DL><p>");
-    });
+    group.children.forEach((child) => addGroup(child, `${indent}  `));
+    lines.push(`${indent}</DL><p>`);
+  }
+
+  buildGroupTree(data.groups).forEach((group) => addGroup(group, "  "));
 
   lines.push("</DL><p>");
   return `${lines.join("\n")}\n`;

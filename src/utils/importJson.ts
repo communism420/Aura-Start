@@ -1,7 +1,12 @@
 import { DATA_VERSION, DEFAULT_SETTINGS, MAX_RESTORE_POINTS } from "../constants";
 import type {
+  AuraBackgroundPosition,
+  AuraBackgroundPreset,
   AuraColumns,
   AuraLanguage,
+  AuraPomodoroSettings,
+  AuraRestorePointContext,
+  AuraRestorePointEntity,
   AuraRestorePoint,
   AuraRestorePointReason,
   AuraSyncMode,
@@ -11,10 +16,12 @@ import type {
   AuraStartGroup,
   AuraStartLink,
   AuraStartSettings,
-  AuraTheme
+  AuraTheme,
+  AuraWidgetSettings
 } from "../types";
 import { isAuraLanguage } from "../i18n";
 import { nowIso } from "./dates";
+import { groupsInTreeOrder, normalizeGroupOrders } from "./groupTree";
 import { createId } from "./ids";
 import { normalizeUrl } from "./validators";
 
@@ -46,6 +53,11 @@ function asNumber(value: unknown, fallback: number): number {
 
 function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
+}
+
+function clampNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const number = typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return Math.min(max, Math.max(min, number));
 }
 
 function normalizeIso(value: unknown, fallback = nowIso()): string {
@@ -85,6 +97,45 @@ function normalizeColumns(value: unknown): AuraColumns {
 function normalizeSyncMode(value: unknown): AuraSyncMode {
   if (value === "manual") return "auto";
   return value === "auto" || value === "off" ? value : "off";
+}
+
+function normalizeBackgroundPreset(value: unknown): AuraBackgroundPreset {
+  return value === "none" || value === "aurora" || value === "dawn" || value === "forest" || value === "custom"
+    ? value
+    : DEFAULT_SETTINGS.background.preset;
+}
+
+function normalizeBackgroundPosition(value: unknown): AuraBackgroundPosition {
+  return value === "center" || value === "top" || value === "bottom" || value === "left" || value === "right"
+    ? value
+    : DEFAULT_SETTINGS.background.position;
+}
+
+function normalizeBackgroundSettings(value: unknown): AuraStartSettings["background"] {
+  const background = isRecord(value) ? value : {};
+  return {
+    preset: normalizeBackgroundPreset(background.preset),
+    blur: clampNumber(background.blur, DEFAULT_SETTINGS.background.blur, 0, 18),
+    dim: clampNumber(background.dim, DEFAULT_SETTINGS.background.dim, 0, 80),
+    position: normalizeBackgroundPosition(background.position)
+  };
+}
+
+function normalizeWidgetSettings(value: unknown): AuraWidgetSettings {
+  const widgets = isRecord(value) ? value : {};
+  return {
+    clock: asBoolean(widgets.clock, DEFAULT_SETTINGS.widgets.clock),
+    notes: asBoolean(widgets.notes, DEFAULT_SETTINGS.widgets.notes),
+    pomodoro: asBoolean(widgets.pomodoro, DEFAULT_SETTINGS.widgets.pomodoro)
+  };
+}
+
+function normalizePomodoroSettings(value: unknown): AuraPomodoroSettings {
+  const pomodoro = isRecord(value) ? value : {};
+  return {
+    focusMinutes: Math.round(clampNumber(pomodoro.focusMinutes, DEFAULT_SETTINGS.pomodoro.focusMinutes, 5, 90)),
+    breakMinutes: Math.round(clampNumber(pomodoro.breakMinutes, DEFAULT_SETTINGS.pomodoro.breakMinutes, 1, 30))
+  };
 }
 
 function optionalTrimmedString(value: unknown): string | undefined {
@@ -127,6 +178,10 @@ function normalizeSettings(value: unknown): AuraStartSettings {
     showDescriptions: asBoolean(value.showDescriptions, DEFAULT_SETTINGS.showDescriptions),
     showSearch: asBoolean(value.showSearch, DEFAULT_SETTINGS.showSearch),
     showVersionInHeader: asBoolean(value.showVersionInHeader, DEFAULT_SETTINGS.showVersionInHeader),
+    captureOpenTabs: asBoolean(value.captureOpenTabs, DEFAULT_SETTINGS.captureOpenTabs),
+    background: normalizeBackgroundSettings(value.background),
+    widgets: normalizeWidgetSettings(value.widgets),
+    pomodoro: normalizePomodoroSettings(value.pomodoro),
     autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints),
     sync: normalizeSyncSettings(value.sync)
   };
@@ -172,7 +227,12 @@ function normalizeLink(value: unknown, fallbackOrder: number, usedIds: Set<strin
   };
 }
 
-function normalizeGroup(value: unknown, fallbackOrder: number, usedIds: Set<string>): AuraStartGroup {
+function normalizeGroup(
+  value: unknown,
+  fallbackOrder: number,
+  usedIds: Set<string>,
+  rawIdMap: Map<string, string>
+): AuraStartGroup {
   if (!isRecord(value)) {
     throw new Error("Every group must be an object.");
   }
@@ -185,6 +245,9 @@ function normalizeGroup(value: unknown, fallbackOrder: number, usedIds: Set<stri
   const rawId = typeof value.id === "string" && value.id.trim() ? value.id.trim() : createId("group");
   const id = usedIds.has(rawId) ? createId("group") : rawId;
   usedIds.add(id);
+  if (!rawIdMap.has(rawId)) {
+    rawIdMap.set(rawId, id);
+  }
 
   const linkIds = new Set<string>();
   const links = Array.isArray(value.links)
@@ -194,6 +257,7 @@ function normalizeGroup(value: unknown, fallbackOrder: number, usedIds: Set<stri
   return {
     id,
     title,
+    parentId: optionalTrimmedString(value.parentId) ?? null,
     collapsed: asBoolean(value.collapsed, false),
     order: asNumber(value.order, fallbackOrder),
     links: links
@@ -201,6 +265,25 @@ function normalizeGroup(value: unknown, fallbackOrder: number, usedIds: Set<stri
       .sort((a, b) => a.order - b.order)
       .map((link, index) => ({ ...link, order: index }))
   };
+}
+
+function normalizeGroupParentReferences(
+  groups: AuraStartGroup[],
+  rawIdMap: Map<string, string>
+): AuraStartGroup[] {
+  const resolved = groups.map((group) => ({
+    ...group,
+    parentId: group.parentId ? rawIdMap.get(group.parentId) ?? group.parentId : null
+  }));
+  const groupsById = new Map(resolved.map((group) => [group.id, group]));
+
+  return resolved.map((group) => {
+    const parent = group.parentId ? groupsById.get(group.parentId) : undefined;
+    return {
+      ...group,
+      parentId: parent && parent.id !== group.id && parent.parentId === null ? parent.id : null
+    };
+  });
 }
 
 function normalizeCoreData(value: unknown): AuraStartDataWithoutRestorePoints {
@@ -213,33 +296,83 @@ function normalizeCoreData(value: unknown): AuraStartDataWithoutRestorePoints {
   }
 
   const groupIds = new Set<string>();
+  const rawGroupIdMap = new Map<string, string>();
   const groups = Array.isArray(value.groups)
-    ? value.groups.map((group, index) => normalizeGroup(group, index, groupIds))
+    ? value.groups.map((group, index) => normalizeGroup(group, index, groupIds, rawGroupIdMap))
     : [];
+  const orderedGroups = normalizeGroupParentReferences(groups, rawGroupIdMap)
+    .slice()
+    .sort((a, b) => a.order - b.order);
 
   return {
     version: DATA_VERSION,
     updatedAt: normalizeIso(value.updatedAt),
     settings: normalizeSettings(value.settings),
-    groups: groups
-      .slice()
-      .sort((a, b) => a.order - b.order)
-      .map((group, index) => ({ ...group, order: index }))
+    groups: groupsInTreeOrder(normalizeGroupOrders(orderedGroups))
   };
 }
 
 function normalizeReason(value: unknown): AuraRestorePointReason {
   if (
     value === "manual" ||
-    value === "before_import" ||
+    value === "before_bulk_delete" ||
+    value === "before_cloud_restore" ||
+    value === "before_demo_remove" ||
     value === "before_delete" ||
+    value === "before_duplicate_delete" ||
+    value === "before_group_delete" ||
+    value === "before_group_move" ||
+    value === "before_group_reorder" ||
+    value === "before_import" ||
+    value === "before_link_delete" ||
+    value === "before_link_move" ||
+    value === "before_tabs_save" ||
     value === "before_reset" ||
+    value === "before_restore" ||
     value === "auto"
   ) {
     return value;
   }
 
   return "manual";
+}
+
+function normalizeRestorePointEntity(value: unknown): AuraRestorePointEntity | undefined {
+  if (
+    value === "data" ||
+    value === "demo" ||
+    value === "group" ||
+    value === "groups" ||
+    value === "import" ||
+    value === "link" ||
+    value === "links" ||
+    value === "settings" ||
+    value === "sync" ||
+    value === "tabs"
+  ) {
+    return value;
+  }
+
+  return undefined;
+}
+
+function normalizeRestorePointContext(value: unknown): AuraRestorePointContext | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const context: AuraRestorePointContext = {
+    entity: normalizeRestorePointEntity(value.entity),
+    title: optionalTrimmedString(value.title),
+    groupTitle: optionalTrimmedString(value.groupTitle),
+    count: typeof value.count === "number" && Number.isFinite(value.count) && value.count > 0 ? Math.floor(value.count) : undefined,
+    source: optionalTrimmedString(value.source),
+    from: optionalTrimmedString(value.from),
+    to: optionalTrimmedString(value.to),
+    description: optionalTrimmedString(value.description)
+  };
+
+  return Object.values(context).some((item) => item !== undefined) ? context : undefined;
 }
 
 function normalizeRestorePoint(value: unknown): AuraRestorePoint | undefined {
@@ -253,6 +386,7 @@ function normalizeRestorePoint(value: unknown): AuraRestorePoint | undefined {
       name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : "Imported restore point",
       createdAt: normalizeIso(value.createdAt),
       reason: normalizeReason(value.reason),
+      context: normalizeRestorePointContext(value.context),
       data: normalizeCoreData(value.data)
     };
   } catch {
@@ -291,9 +425,11 @@ export function mergeImportedData(current: AuraStartData, imported: AuraStartDat
   const now = nowIso();
   const existingGroupIds = new Set(current.groups.map((group) => group.id));
   const existingLinkIds = new Set(current.groups.flatMap((group) => group.links.map((link) => link.id)));
+  const importedGroupIdMap = new Map<string, string>();
   const appendedGroups = imported.groups.map((group, groupIndex) => {
     const groupId = existingGroupIds.has(group.id) ? createId("group") : group.id;
     existingGroupIds.add(groupId);
+    importedGroupIdMap.set(group.id, groupId);
 
     return {
       ...group,
@@ -310,10 +446,14 @@ export function mergeImportedData(current: AuraStartData, imported: AuraStartDat
       })
     };
   });
+  const appendedGroupsWithParents = appendedGroups.map((group) => ({
+    ...group,
+    parentId: group.parentId ? importedGroupIdMap.get(group.parentId) ?? null : null
+  }));
 
   return {
     ...current,
     updatedAt: now,
-    groups: [...current.groups, ...appendedGroups].map((group, index) => ({ ...group, order: index }))
+    groups: groupsInTreeOrder(normalizeGroupOrders([...current.groups, ...appendedGroupsWithParents]))
   };
 }

@@ -2,17 +2,36 @@ import { Search, X } from "lucide-react";
 import { forwardRef } from "react";
 import { t } from "../i18n";
 import type { AuraLanguage } from "../types";
+import type { SearchQuickFilter } from "../utils/search";
 
 type SearchBarProps = {
+  filter: SearchQuickFilter;
   language: AuraLanguage;
+  resultCount?: number;
   value: string;
   visible: boolean;
   hint?: string;
   onChange: (value: string) => void;
+  onFilterChange: (filter: SearchQuickFilter) => void;
 };
 
+const filterOptions: SearchQuickFilter[] = ["all", "title", "url", "tag"];
+
+function filterLabel(language: AuraLanguage, filter: SearchQuickFilter): string {
+  switch (filter) {
+    case "all":
+      return t(language, "searchFilter_all");
+    case "tag":
+      return t(language, "searchFilter_tag");
+    case "title":
+      return t(language, "searchFilter_title");
+    case "url":
+      return t(language, "searchFilter_url");
+  }
+}
+
 export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function SearchBar(
-  { language, value, visible, hint, onChange },
+  { filter, language, resultCount, value, visible, hint, onChange, onFilterChange },
   ref
 ) {
   if (!visible) return null;
@@ -43,6 +62,24 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
           ) : null}
         </span>
       </label>
+      <div className="search-meta-row">
+        <div className="search-filter-list" aria-label={t(language, "searchFilters")}>
+          {filterOptions.map((option) => (
+            <button
+              aria-pressed={filter === option}
+              className={`search-filter-button ${filter === option ? "search-filter-button-active" : ""}`}
+              key={option}
+              type="button"
+              onClick={() => onFilterChange(option)}
+            >
+              {filterLabel(language, option)}
+            </button>
+          ))}
+        </div>
+        {typeof resultCount === "number" && value ? (
+          <span className="search-result-count">{t(language, "searchResultsCount", { count: resultCount })}</span>
+        ) : null}
+      </div>
       {hint ? <div className="search-help-row">{hint}</div> : null}
     </div>
   );

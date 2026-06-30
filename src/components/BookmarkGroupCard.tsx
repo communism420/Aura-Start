@@ -1,9 +1,9 @@
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, GripVertical, LinkIcon, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderPlus, GripVertical, LinkIcon, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import type { AuraStartGroup, AuraStartLink, AuraStartSettings } from "../types";
-import { searchResultId } from "../utils/search";
+import { searchResultId, type SearchHighlightMap } from "../utils/search";
 import { BookmarkLinkItem } from "./BookmarkLinkItem";
 import { HighlightedText } from "./HighlightedText";
 import { SortableLinkItem } from "./SortableLinkItem";
@@ -13,18 +13,20 @@ type BookmarkGroupCardProps = {
   settings: AuraStartSettings;
   searchMode: boolean;
   editMode: boolean;
+  activeGroupId?: string | null;
   activeLinkId?: string | null;
+  canAcceptChildGroups?: boolean;
+  depth?: number;
   highlightTerms?: string[];
+  searchHighlights?: SearchHighlightMap;
   selectedSearchResultId?: string | null;
   sortable?: {
-    setNodeRef: (node: HTMLElement | null) => void;
     attributes: React.HTMLAttributes<HTMLElement>;
     listeners: React.HTMLAttributes<HTMLElement> | undefined;
-    transform: string | null;
-    transition?: string;
     isDragging: boolean;
     isDropPending: boolean;
   };
+  onAddGroup: (parentId?: string | null) => void;
   onAddLink: (groupId: string) => void;
   onEditGroup: (group: AuraStartGroup) => void;
   onDeleteGroup: (group: AuraStartGroup) => void;
@@ -38,10 +40,15 @@ export function BookmarkGroupCard({
   settings,
   searchMode,
   editMode,
+  activeGroupId,
   activeLinkId,
+  canAcceptChildGroups = false,
+  depth = 0,
   highlightTerms = [],
+  searchHighlights,
   selectedSearchResultId,
   sortable,
+  onAddGroup,
   onAddLink,
   onEditGroup,
   onDeleteGroup,
@@ -53,6 +60,11 @@ export function BookmarkGroupCard({
     id: `group-drop:${group.id}`,
     data: { type: "group-drop", groupId: group.id },
     disabled: searchMode || !editMode
+  });
+  const childDroppable = useDroppable({
+    id: `group-child-drop:${group.id}`,
+    data: { type: "group-child-drop", groupId: group.id },
+    disabled: searchMode || !editMode || !canAcceptChildGroups
   });
   const collapsed = group.collapsed && !searchMode;
   const sortedLinks = group.links.slice().sort((a, b) => a.order - b.order);
@@ -101,10 +113,21 @@ export function BookmarkGroupCard({
           </button>
         )}
         <h2 className="group-name" title={t(language, "linksCount", { count: group.links.length })}>
-          <HighlightedText terms={highlightTerms} text={group.title} />
+          <HighlightedText ranges={searchHighlights?.groups[group.id]} terms={highlightTerms} text={group.title} />
         </h2>
         {editMode ? (
           <>
+            {depth === 0 ? (
+              <button
+                aria-label={t(language, "addNestedGroupTo", { title: group.title })}
+                className="group-action"
+                type="button"
+                onPointerDown={stopDragActivation}
+                onClick={() => onAddGroup(group.id)}
+              >
+                <FolderPlus size={13} />
+              </button>
+            ) : null}
             <button
               aria-label={t(language, "addLinkTo", { title: group.title })}
               className="group-action"
@@ -147,6 +170,7 @@ export function BookmarkGroupCard({
                     key={link.id}
                     link={link}
                     highlightTerms={highlightTerms}
+                    highlights={searchHighlights?.links[link.id]}
                     selected={selectedSearchResultId === searchResultId(group.id, link.id)}
                     settings={settings}
                     onDelete={onDeleteLink}
@@ -164,6 +188,7 @@ export function BookmarkGroupCard({
                       editMode={editMode}
                       groupId={group.id}
                       highlightTerms={highlightTerms}
+                      highlights={searchHighlights?.links[link.id]}
                       key={link.id}
                       link={link}
                       selected={selectedSearchResultId === searchResultId(group.id, link.id)}
@@ -186,20 +211,18 @@ export function BookmarkGroupCard({
           ) : null}
         </div>
       ) : null}
+      {canAcceptChildGroups && activeGroupId ? (
+        <div
+          aria-label={t(language, "dropGroupInside", { title: group.title })}
+          className={`group-child-drop-zone ${childDroppable.isOver ? "group-drop-zone-active" : ""}`}
+          ref={childDroppable.setNodeRef}
+          role="button"
+        >
+          <span className="sr-only">{t(language, "dropGroupInside", { title: group.title })}</span>
+        </div>
+      ) : null}
     </section>
   );
 
-  if (!sortable) {
-    return content;
-  }
-
-  return (
-    <div
-      className="sortable-group-shell"
-      ref={sortable.setNodeRef}
-      style={{ transform: sortable.transform ?? undefined, transition: sortable.transition }}
-    >
-      {content}
-    </div>
-  );
+  return content;
 }

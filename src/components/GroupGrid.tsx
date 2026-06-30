@@ -10,13 +10,17 @@ import {
   type DragEndEvent,
   type DragStartEvent,
   type CollisionDetection,
+  useDroppable,
   useSensor,
   useSensors
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates, SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import type { CSSProperties } from "react";
 import { useState } from "react";
-import type { AuraStartData, AuraStartGroup, AuraStartLink } from "../types";
+import { t } from "../i18n";
+import type { AuraStartData, AuraStartGroup, AuraStartLink, GroupTreeNode } from "../types";
+import { buildGroupTree, flattenGroupTree } from "../utils/groupTree";
+import type { SearchHighlightMap } from "../utils/search";
 import { BookmarkGroupCard } from "./BookmarkGroupCard";
 import { SortableGroupCard } from "./SortableGroupCard";
 
@@ -25,15 +29,18 @@ type GroupGridProps = {
   editMode: boolean;
   groups: AuraStartGroup[];
   highlightTerms?: string[];
+  searchHighlights?: SearchHighlightMap;
   searchMode: boolean;
   selectedSearchResultId?: string | null;
+  onAddGroup: (parentId?: string | null) => void;
   onAddLink: (groupId?: string) => void;
   onEditGroup: (group: AuraStartGroup) => void;
   onDeleteGroup: (group: AuraStartGroup) => void;
   onToggle: (groupId: string) => void;
   onEditLink: (groupId: string, link: AuraStartLink) => void;
   onDeleteLink: (groupId: string, link: AuraStartLink) => void;
-  onReorderGroups: (orderedGroupIds: string[]) => Promise<void> | void;
+  onReorderGroups: (orderedGroupIds: string[], parentId?: string | null) => Promise<void> | void;
+  onMoveGroup: (groupId: string, targetParentId: string | null) => Promise<void> | void;
   onMoveLink: (linkId: string, targetGroupId: string, overLinkId?: string) => Promise<void> | void;
 };
 
@@ -47,6 +54,17 @@ function findGroupForLink(groups: AuraStartGroup[], linkId: string): AuraStartGr
 
 function findLink(groups: AuraStartGroup[], linkId: string): AuraStartLink | undefined {
   return groups.flatMap((group) => group.links).find((link) => link.id === linkId);
+}
+
+function findGroup(groups: AuraStartGroup[], groupId: string): AuraStartGroup | undefined {
+  return groups.find((group) => group.id === groupId);
+}
+
+function siblingGroupIds(groups: AuraStartGroup[], parentId: string | null): string[] {
+  return groups
+    .filter((group) => group.parentId === parentId)
+    .sort((a, b) => a.order - b.order)
+    .map((group) => group.id);
 }
 
 function isActiveAfterOver(event: DragEndEvent): boolean {
@@ -81,10 +99,22 @@ const responsiveCollisionDetection: CollisionDetection = (args) => {
   const activeId = String(args.active.id);
 
   if (stripPrefix(activeId, "group:")) {
+    const groupDropContainers = args.droppableContainers.filter((container) => {
+      const containerId = String(container.id);
+      return containerId.startsWith("group-child-drop:") || containerId === "group-root-drop";
+    });
     const groupContainers = args.droppableContainers.filter((container) => {
       const containerId = String(container.id);
       return containerId.startsWith("group:");
     });
+
+    const dropIntersections = rectIntersection({
+      ...args,
+      droppableContainers: groupDropContainers
+    });
+    if (dropIntersections.length) {
+      return dropIntersections;
+    }
 
     const intersections = rectIntersection({
       ...args,
@@ -97,14 +127,14 @@ const responsiveCollisionDetection: CollisionDetection = (args) => {
 
     const pointerCollisions = pointerWithin({
       ...args,
-      droppableContainers: groupContainers
+      droppableContainers: [...groupContainers, ...groupDropContainers]
     });
 
     return pointerCollisions.length
       ? pointerCollisions
       : closestCenter({
           ...args,
-          droppableContainers: groupContainers
+          droppableContainers: [...groupContainers, ...groupDropContainers]
         });
   }
 
@@ -143,13 +173,38 @@ function gridStyle(columns: AuraStartData["settings"]["columns"]): CSSProperties
   return { gridTemplateColumns: `repeat(${columns}, minmax(0, 27rem))` };
 }
 
+function RootGroupDropZone({ enabled, language }: { enabled: boolean; language: AuraStartData["settings"]["language"] }) {
+  const droppable = useDroppable({
+    id: "group-root-drop",
+    data: { type: "group-root-drop" },
+    disabled: !enabled
+  });
+
+  if (!enabled) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-label={t(language, "moveGroupToTopLevel")}
+      className={`group-root-drop-zone ${droppable.isOver ? "group-drop-zone-active" : ""}`}
+      ref={droppable.setNodeRef}
+      role="button"
+    >
+      <span className="sr-only">{t(language, "moveGroupToTopLevel")}</span>
+    </div>
+  );
+}
+
 export function GroupGrid({
   data,
   editMode,
   groups,
   highlightTerms = [],
+  searchHighlights,
   searchMode,
   selectedSearchResultId,
+  onAddGroup,
   onAddLink,
   onEditGroup,
   onDeleteGroup,
@@ -157,6 +212,7 @@ export function GroupGrid({
   onEditLink,
   onDeleteLink,
   onReorderGroups,
+  onMoveGroup,
   onMoveLink
 }: GroupGridProps) {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
@@ -166,10 +222,13 @@ export function GroupGrid({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const sortedGroups = groups.slice().sort((a, b) => a.order - b.order);
-  const groupIds = sortedGroups.map((group) => group.id);
-  const activeGroup = activeGroupId ? sortedGroups.find((group) => group.id === activeGroupId) : undefined;
+  const groupTree = buildGroupTree(groups);
+  const flatGroupNodes = flattenGroupTree(groupTree);
+  const groupIds = flatGroupNodes.map((group) => group.id);
+  const activeGroup = activeGroupId ? flatGroupNodes.find((group) => group.id === activeGroupId) : undefined;
+  const activeGroupHasChildren = Boolean(activeGroupId && groups.some((group) => group.parentId === activeGroupId));
   const activeLink = activeLinkId ? findLink(data.groups, activeLinkId) : undefined;
+  const language = data.settings.language;
 
   function handleDragStart(event: DragStartEvent) {
     const activeId = String(event.active.id);
@@ -193,12 +252,39 @@ export function GroupGrid({
     const overGroupId = stripPrefix(overId, "group:");
     if (activeGroupId) {
       try {
+        const rootDrop = overId === "group-root-drop";
+        if (rootDrop) {
+          await onMoveGroup(activeGroupId, null);
+          return;
+        }
+
+        const childDropGroupId = stripPrefix(overId, "group-child-drop:");
+        if (childDropGroupId && childDropGroupId !== activeGroupId) {
+          await onMoveGroup(activeGroupId, childDropGroupId);
+          return;
+        }
+
         const activeIndex = groupIds.indexOf(activeGroupId);
         const overIndex = overGroupId ? groupIds.indexOf(overGroupId) : -1;
 
         if (activeIndex >= 0 && overIndex >= 0 && activeIndex !== overIndex) {
-          const finalOrder = arrayMove(groupIds, activeIndex, overIndex);
-          await onReorderGroups(finalOrder);
+          const activeGroup = findGroup(groups, activeGroupId);
+          const overGroup = overGroupId ? findGroup(groups, overGroupId) : undefined;
+          if (!activeGroup || !overGroup) return;
+
+          const targetParentId = overGroup.parentId ?? null;
+          if ((activeGroup.parentId ?? null) !== targetParentId) {
+            await onMoveGroup(activeGroupId, targetParentId);
+            return;
+          }
+
+          const siblings = siblingGroupIds(groups, targetParentId);
+          const activeSiblingIndex = siblings.indexOf(activeGroupId);
+          const overSiblingIndex = siblings.indexOf(overGroup.id);
+          if (activeSiblingIndex >= 0 && overSiblingIndex >= 0 && activeSiblingIndex !== overSiblingIndex) {
+            const finalOrder = arrayMove(siblings, activeSiblingIndex, overSiblingIndex);
+            await onReorderGroups(finalOrder, targetParentId);
+          }
         }
       } finally {
         clearGroupDragState();
@@ -215,12 +301,12 @@ export function GroupGrid({
     try {
       if (!overId) return;
 
-    const overLinkId = stripPrefix(overId, "link:");
-    if (overLinkId) {
-      if (overLinkId === activeLinkId) return;
+      const overLinkId = stripPrefix(overId, "link:");
+      if (overLinkId) {
+        if (overLinkId === activeLinkId) return;
 
-      const targetGroup = findGroupForLink(data.groups, overLinkId);
-      if (targetGroup) {
+        const targetGroup = findGroupForLink(data.groups, overLinkId);
+        if (targetGroup) {
           await onMoveLink(
             activeLinkId,
             targetGroup.id,
@@ -239,29 +325,86 @@ export function GroupGrid({
     }
   }
 
+  function canNestInto(group: GroupTreeNode): boolean {
+    return Boolean(
+      activeGroup &&
+        activeGroup.id !== group.id &&
+        group.depth === 0 &&
+        activeGroup.parentId !== group.id &&
+        !activeGroupHasChildren
+    );
+  }
+
+  function renderChildren(node: GroupTreeNode, sortable: boolean) {
+    if (node.collapsed && !searchMode) {
+      return null;
+    }
+
+    const children = node.children.map((child) => (sortable ? renderSortableNode(child) : renderStaticNode(child)));
+    return children.length ? <div className="nested-group-list">{children}</div> : null;
+  }
+
+  function renderStaticNode(group: GroupTreeNode) {
+    return (
+      <div className={`group-tree-node group-tree-depth-${group.depth}`} key={group.id}>
+        <BookmarkGroupCard
+          group={group}
+          depth={group.depth}
+          highlightTerms={highlightTerms}
+          searchHighlights={searchHighlights}
+          selectedSearchResultId={selectedSearchResultId}
+          searchMode={searchMode}
+          editMode={false}
+          settings={data.settings}
+          onAddGroup={onAddGroup}
+          onAddLink={(groupId) => onAddLink(groupId)}
+          onDeleteGroup={onDeleteGroup}
+          onDeleteLink={onDeleteLink}
+          onEditGroup={onEditGroup}
+          onEditLink={onEditLink}
+          onToggle={onToggle}
+        />
+        {renderChildren(group, false)}
+      </div>
+    );
+  }
+
+  function renderSortableNode(group: GroupTreeNode) {
+    return (
+      <SortableGroupCard
+        activeGroupId={activeGroupId}
+        activeLinkId={activeLinkId}
+        canAcceptChildGroups={canNestInto(group)}
+        depth={group.depth}
+        editMode={editMode}
+        group={group}
+        highlightTerms={highlightTerms}
+        searchHighlights={searchHighlights}
+        isDropPending={activeGroupId === group.id}
+        key={group.id}
+        searchMode={false}
+        selectedSearchResultId={selectedSearchResultId}
+        settings={data.settings}
+        onAddGroup={onAddGroup}
+        onAddLink={(groupId) => onAddLink(groupId)}
+        onDeleteGroup={onDeleteGroup}
+        onDeleteLink={onDeleteLink}
+        onEditGroup={onEditGroup}
+        onEditLink={onEditLink}
+        onToggle={onToggle}
+      >
+        {renderChildren(group, true)}
+      </SortableGroupCard>
+    );
+  }
+
   if (searchMode) {
     return (
       <div
         className={`aura-group-grid ${data.settings.columns === 1 ? "aura-group-grid-left" : ""}`}
         style={gridStyle(data.settings.columns)}
       >
-        {sortedGroups.map((group) => (
-          <BookmarkGroupCard
-            group={group}
-            highlightTerms={highlightTerms}
-            key={group.id}
-            selectedSearchResultId={selectedSearchResultId}
-            searchMode
-            editMode={false}
-            settings={data.settings}
-            onAddLink={(groupId) => onAddLink(groupId)}
-            onDeleteGroup={onDeleteGroup}
-            onDeleteLink={onDeleteLink}
-            onEditGroup={onEditGroup}
-            onEditLink={onEditLink}
-            onToggle={onToggle}
-          />
-        ))}
+        {groupTree.map((group) => renderStaticNode(group))}
       </div>
     );
   }
@@ -272,23 +415,7 @@ export function GroupGrid({
         className={`aura-group-grid ${data.settings.columns === 1 ? "aura-group-grid-left" : ""}`}
         style={gridStyle(data.settings.columns)}
       >
-        {sortedGroups.map((group) => (
-          <BookmarkGroupCard
-            group={group}
-            highlightTerms={highlightTerms}
-            key={group.id}
-            selectedSearchResultId={selectedSearchResultId}
-            searchMode={false}
-            editMode={false}
-            settings={data.settings}
-            onAddLink={(groupId) => onAddLink(groupId)}
-            onDeleteGroup={onDeleteGroup}
-            onDeleteLink={onDeleteLink}
-            onEditGroup={onEditGroup}
-            onEditLink={onEditLink}
-            onToggle={onToggle}
-          />
-        ))}
+        {groupTree.map((group) => renderStaticNode(group))}
       </div>
     );
   }
@@ -302,30 +429,13 @@ export function GroupGrid({
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}
     >
-      <SortableContext items={sortedGroups.map((group) => `group:${group.id}`)} strategy={rectSortingStrategy}>
+      <SortableContext items={flatGroupNodes.map((group) => `group:${group.id}`)} strategy={rectSortingStrategy}>
         <div
           className={`aura-group-grid ${data.settings.columns === 1 ? "aura-group-grid-left" : ""}`}
           style={gridStyle(data.settings.columns)}
         >
-          {sortedGroups.map((group) => (
-            <SortableGroupCard
-              group={group}
-              highlightTerms={highlightTerms}
-              isDropPending={activeGroupId === group.id}
-              key={group.id}
-              selectedSearchResultId={selectedSearchResultId}
-              editMode={editMode}
-              searchMode={false}
-              settings={data.settings}
-              onAddLink={(groupId) => onAddLink(groupId)}
-              onDeleteGroup={onDeleteGroup}
-              onDeleteLink={onDeleteLink}
-              onEditGroup={onEditGroup}
-              onEditLink={onEditLink}
-              activeLinkId={activeLinkId}
-              onToggle={onToggle}
-            />
-          ))}
+          <RootGroupDropZone enabled={Boolean(activeGroup?.parentId)} language={language} />
+          {groupTree.map((group) => renderSortableNode(group))}
         </div>
       </SortableContext>
       <DragOverlay adjustScale={false} dropAnimation={null}>

@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start restore points guide: recover from imports, resets, restores, and confirmed cleanup actions."
+      content="Aura Start Restore Timeline guide: search, filter, export, and restore local snapshots created before imports, moves, tab saves, resets, restores, and confirmed cleanup actions."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
-    <title>Restore Points - Aura Start</title>
+    <title>Restore Timeline - Aura Start</title>
   </head>
   <body>
     <div class="doc-shell">
@@ -29,25 +29,27 @@
 
       <main class="doc">
         <span class="kicker">User guide</span>
-        <h1>Restore Points</h1>
+        <h1>Restore Timeline</h1>
         <p>
-          Restore points are local safety snapshots. Aura Start uses them to make
-          destructive changes easier to recover from.
+          Restore points are local safety snapshots. Restore Timeline turns them into
+          a searchable history of important changes.
         </p>
 
         <h2>When restore points are useful</h2>
         <ul>
           <li>Before replacing data during import.</li>
           <li>Before restoring from Google Drive during connection.</li>
+          <li>Before moving or reordering groups and links where supported.</li>
+          <li>Before saving open tabs into a new group.</li>
           <li>Before reset or destructive cleanup actions where supported.</li>
           <li>Before duplicate deletion when you confirm selected items.</li>
         </ul>
 
-        <h2>Restore Points Manager</h2>
+        <h2>Restore Timeline</h2>
         <p>
-          The Restore Points Manager shows local snapshots with their reason, date,
-          and data counts when available. You can restore a snapshot or export it as a
-          JSON backup.
+          Restore Timeline groups snapshots by day, shows readable reasons and
+          context, and includes search and action filters. You can restore a snapshot
+          after confirmation or export a restore point as a JSON backup.
         </p>
         <p>
           Aura Start keeps up to 20 local restore points. The cap prevents unbounded

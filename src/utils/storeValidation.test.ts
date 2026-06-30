@@ -14,10 +14,11 @@ const VALID_MANIFEST = {
   manifest_version: 3,
   name: "__MSG_extensionName__",
   description: "__MSG_extensionDescription__",
-  version: "1.2.0",
+  version: "2.0.0",
   default_locale: "en",
   chrome_url_overrides: { newtab: "newtab.html" },
   permissions: ["storage", "identity"],
+  optional_permissions: ["tabs"],
   host_permissions: ["https://www.googleapis.com/*", "https://oauth2.googleapis.com/*"],
   oauth2: {
     client_id: VALID_CLIENT_ID,
@@ -115,6 +116,16 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("drive.appdata");
     expect(result.stderr).toContain("drive.file");
+  });
+
+  it("fails when tabs is requested as a required permission", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      permissions: ["storage", "identity", "tabs"]
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("required permissions");
   });
 
   it("fails when a Web OAuth client ID is bundled into runtime code without explicit fallback", async () => {

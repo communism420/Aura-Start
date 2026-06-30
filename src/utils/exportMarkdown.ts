@@ -1,6 +1,7 @@
 import type { AuraStartData } from "../types";
 import { dateForFile } from "./dates";
 import { downloadTextFile } from "./download";
+import { buildGroupTree } from "./groupTree";
 
 function cleanMarkdownText(value: string): string {
   return value.replaceAll("\r", " ").replaceAll("\n", " ").trim();
@@ -13,27 +14,27 @@ function escapeMarkdownLinkText(value: string): string {
 export function createMarkdownBookmarks(data: AuraStartData): string {
   const lines = ["# Aura Start Bookmarks", ""];
 
-  data.groups
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .forEach((group) => {
-      lines.push(`## ${cleanMarkdownText(group.title)}`, "");
+  function addGroup(group: ReturnType<typeof buildGroupTree>[number]) {
+    lines.push(`${group.depth === 0 ? "##" : "###"} ${cleanMarkdownText(group.title)}`, "");
 
-      group.links
-        .slice()
-        .sort((a, b) => a.order - b.order)
-        .forEach((link) => {
-          lines.push(`- [${escapeMarkdownLinkText(link.title)}](${link.url})`);
-          if (link.description) {
-            lines.push(`  ${cleanMarkdownText(link.description)}`);
-          }
-          if (link.tags?.length) {
-            lines.push(`  Tags: ${link.tags.map((tag) => `\`${cleanMarkdownText(tag)}\``).join(", ")}`);
-          }
-        });
+    group.links
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .forEach((link) => {
+        lines.push(`- [${escapeMarkdownLinkText(link.title)}](${link.url})`);
+        if (link.description) {
+          lines.push(`  ${cleanMarkdownText(link.description)}`);
+        }
+        if (link.tags?.length) {
+          lines.push(`  Tags: ${link.tags.map((tag) => `\`${cleanMarkdownText(tag)}\``).join(", ")}`);
+        }
+      });
 
-      lines.push("");
-    });
+    lines.push("");
+    group.children.forEach(addGroup);
+  }
+
+  buildGroupTree(data.groups).forEach(addGroup);
 
   return `${lines.join("\n").trim()}\n`;
 }

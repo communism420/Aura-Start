@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+import type { SearchHighlightRange } from "../utils/search";
 
 type HighlightedTextProps = {
   text: string;
   terms: string[];
+  ranges?: SearchHighlightRange[];
 };
 
 function findNextMatch(text: string, terms: string[], start: number): { index: number; length: number } | null {
@@ -24,13 +26,45 @@ function findNextMatch(text: string, terms: string[], start: number): { index: n
   return next;
 }
 
-export function HighlightedText({ text, terms }: HighlightedTextProps) {
-  if (!terms.length || !text) {
+function normalizedRanges(text: string, ranges: SearchHighlightRange[] = []): SearchHighlightRange[] {
+  return ranges
+    .map((range) => ({
+      start: Math.max(0, Math.min(text.length, range.start)),
+      end: Math.max(0, Math.min(text.length, range.end))
+    }))
+    .filter((range) => range.end > range.start)
+    .sort((a, b) => a.start - b.start || b.end - a.end);
+}
+
+export function HighlightedText({ text, terms, ranges = [] }: HighlightedTextProps) {
+  const explicitRanges = normalizedRanges(text, ranges);
+  if ((!terms.length && !explicitRanges.length) || !text) {
     return <>{text}</>;
   }
 
   const parts: ReactNode[] = [];
   let cursor = 0;
+
+  if (explicitRanges.length) {
+    explicitRanges.forEach((range, index) => {
+      if (range.start > cursor) {
+        parts.push(text.slice(cursor, range.start));
+      }
+
+      parts.push(
+        <mark className="search-highlight" key={`${range.start}-${range.end}-${index}`}>
+          {text.slice(range.start, range.end)}
+        </mark>
+      );
+      cursor = Math.max(cursor, range.end);
+    });
+
+    if (cursor < text.length) {
+      parts.push(text.slice(cursor));
+    }
+
+    return <>{parts}</>;
+  }
 
   while (cursor < text.length) {
     const match = findNextMatch(text, terms, cursor);

@@ -103,6 +103,32 @@ describe("Google Drive OAuth flow selection", () => {
     ).toBe("device_oauth");
   });
 
+  it("uses Device OAuth for Firefox builds instead of Chrome identity", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        deviceOAuthClientId: DEVICE_CLIENT_ID,
+        deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
+        targetBrowser: "firefox"
+      })
+    ).toBe("device_oauth");
+  });
+
+  it("keeps Firefox Drive sync unavailable when Device OAuth is not configured", () => {
+    expect(
+      selectGoogleDriveAuthFlow({
+        hasIdentityApi: true,
+        hasGetAuthToken: true,
+        manifestClientId: CHROME_EXTENSION_CLIENT_ID,
+        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        targetBrowser: "firefox"
+      })
+    ).toBe("unavailable");
+  });
+
   it("keeps Chrome Web Store installs on manifest OAuth in supported Chrome identity environments", () => {
     expect(
       selectGoogleDriveAuthFlow({

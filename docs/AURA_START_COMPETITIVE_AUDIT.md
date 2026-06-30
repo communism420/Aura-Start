@@ -1,10 +1,10 @@
 # Aura Start Competitive Audit
 
-> Current status note: this audit is retained as launch context. Since it was written, Aura Start has addressed several noted blockers, including regenerated store materials/screenshots, installed-extension checklist coverage, OAuth flow selection, shortcut/layout handling, Google Drive reconnect/token persistence behavior, and public documentation cleanup. Chromium-only and broader multi-browser support remain intentionally out of scope for the current work.
+> Current status note: this audit is retained as launch context. Since it was written, Aura Start has addressed several noted blockers, including nested groups, fuzzy search, Restore Timeline, Save open tabs, backgrounds/widgets, Firefox packaging, regenerated store materials/screenshots, installed-extension checklist coverage, OAuth flow selection, shortcut/layout handling, Google Drive reconnect/token persistence behavior, and public documentation cleanup.
 
 Audit date: 2026-05-18  
-Repository audited: local working copy of `communism420/Aura-Start` at Aura Start 1.2.0  
-Scope: product, code architecture, documentation, GitHub Pages site, Chrome Web Store materials, and release readiness.  
+Repository audited: local working copy of `communism420/Aura-Start` at Aura Start 2.0.0
+Scope: product, code architecture, documentation, public website, Chrome Web Store materials, and release readiness.
 Relationship note: Aura Start is independent and not affiliated with A Fine Start.
 
 External A Fine Start references checked for context:
@@ -19,21 +19,21 @@ Anything not confirmed by those sources is marked as not verified or requiring m
 
 ## Executive Summary
 
-Aura Start has a credible chance to become a strong open-source, local-first alternative for users who want grouped links without account lock-in. The strongest angle is not "A Fine Start but cloned"; it is "your links belong to you": open source, local-first storage, broad export formats, A Fine Start-compatible migration, restore points, privacy-first permissions, and power-user tools.
+Aura Start has a credible chance to become a strong open-source, local-first alternative for users who want grouped links without account lock-in. The strongest angle is not "A Fine Start but cloned"; it is "your links belong to you": open source, local-first storage, nested groups, fuzzy search, broad export formats, A Fine Start-compatible migration, Restore Timeline, privacy-first permissions, and power-user tools.
 
-The local repository already implements most of the core product promises: grouped links, drag-and-drop edit mode, search modifiers, onboarding, empty state, demo groups, A Fine Start import/export, JSON/HTML/Markdown/CSV exports, Restore Points Manager, Duplicate Finder, Command Palette, localized UI, optional Google Drive `appDataFolder` sync, privacy policy, screenshots, and Chrome Web Store preparation materials.
+The local repository already implements the core product promises: nested grouped links, drag-and-drop edit mode, fuzzy search and modifiers, onboarding, empty state, demo groups, A Fine Start import/export, JSON/HTML/Markdown/CSV exports, Restore Timeline, Duplicate Finder, Command Palette, localized UI, optional Google Drive sync, backgrounds/widgets, Save open tabs, privacy policy, screenshots, and Chrome Web Store / Firefox Add-ons preparation materials.
 
 The main blocker is not feature count. The main blocker is launch polish and trust verification. A Fine Start is already published, has public store credibility, supports multiple browsers/web, has a quick-add workflow from the current page, and documents restore points on every bookmark change. Aura Start must avoid shipping with stale store artifacts, unverified OAuth behavior, unclear shortcut behavior, or user-facing settings that do not do what they imply.
 
-Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 release, but should not be submitted to the Chrome Web Store until the stale `Chrome Submit` ZIP is regenerated after the latest manifest/background-command changes, the installed-extension manual test passes, Google OAuth is verified with the final extension ID, and the screenshots/listing are checked against the exact ZIP being uploaded.
+Recommended launch posture: Aura Start is close to a publishable 2.0.0 release, but should not be submitted to stores until the Chrome and Firefox ZIPs are regenerated from the latest source, installed-extension manual tests pass, Google OAuth is verified with the final extension IDs, and screenshots/listing text are checked against the exact ZIPs being uploaded.
 
 ## Verdict
 
 | Dimension | Score | Reason |
 |---|---:|---|
-| Alternative to A Fine Start | 7.5/10 | Strong grouped-link workflow plus migration, but lacks A Fine Start's existing market proof and multi-browser/web footprint. |
-| Privacy/data ownership | 8.5/10 | Excellent local-first/export-first story, least-privilege permissions, no backend, no analytics, optional Drive appDataFolder sync. Needs final OAuth and privacy-practice verification before store submission. |
-| Power-user appeal | 8/10 | Command Palette, shortcuts, search modifiers, Duplicate Finder, restore points, export formats. Needs final shortcut reliability test and discoverability polish. |
+| Alternative to A Fine Start | 8/10 | Strong grouped-link workflow plus migration, nested groups, fuzzy search, Firefox packaging, and local-first ownership; still lacks A Fine Start's existing market proof and broader web footprint. |
+| Privacy/data ownership | 8.5/10 | Excellent local-first/export-first story, least-privilege permissions, no backend, no analytics, optional Drive sync. Needs final OAuth and privacy-practice verification before store submission. |
+| Power-user appeal | 8.5/10 | Command Palette, shortcuts, fuzzy search, Duplicate Finder, Restore Timeline, optional widgets, and export formats. Needs final shortcut reliability test and discoverability polish. |
 | Chrome Web Store readiness | 6.5/10 | Store docs, screenshots, validation scripts, and ZIP materials exist, but the committed Chrome Submit ZIP is stale and lacks the latest background command manifest entries. |
 | Chance to quickly overtake A Fine Start | 4/10 | A Fine Start has an existing listing, ratings, featured/recommended-practice signals, and multi-browser presence. Quick overtake is unlikely without launch traction. |
 | Chance to gradually take meaningful audience | 7/10 | Strong if positioned around open source, local-first ownership, export formats, migration, and privacy rather than direct hostility. |
@@ -50,7 +50,7 @@ Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 rele
 | Command Palette | General action launcher for search, create, import/export, settings, restore points, duplicate finder, Drive actions. | `src/components/CommandPalette.tsx`, command list in `src/components/App.tsx`, `src/background.ts` | A Fine Start documents a search pane shortcut, not a general command palette. | Medium |
 | No Aura account required | All local features work without account; Drive sync uses the user's Google Drive app data, not an Aura backend account. | `src/services/googleDriveSync.ts`, `public/manifest.json`, `PRIVACY.md` | A Fine Start free use does not require an account; Premium sync uses an account/subscription. | High |
 | No custom backend | Aura Start has no server component; sync uses Google Drive only after user action. | No backend code found; `PRIVACY.md`; `src/services/googleDriveSync.ts` | A Fine Start Premium sync uses its own account/server flow according to checked public docs. | High |
-| Least-privilege Drive sync | Uses `drive.appdata`, not full Drive or `drive.file`. | `public/manifest.json`, `src/services/googleDriveSync.ts`, `scripts/validate-store.mjs` | A Fine Start sync implementation details beyond public privacy/store text were not audited. | High for Aura |
+| Least-privilege Drive sync | Google Chrome uses `drive.appdata`; Firefox/compatible Chromium fallback uses `drive.file` only for Aura Start's own sync file. No full Drive scope. | `public/manifest.json`, `src/services/googleDriveSync.ts`, `scripts/validate-store.mjs`, `scripts/validate-firefox-build.mjs` | A Fine Start sync implementation details beyond public privacy/store text were not audited. | High for Aura |
 | Localization surface | UI strings exist for English, Russian, Spanish, German, French, Portuguese, and Ukrainian. | `src/i18n.ts`, `public/_locales/*/messages.json` | Chrome listing checked shows English; broader localization not verified. | Medium |
 
 ## Similar / comparable areas
@@ -60,8 +60,8 @@ Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 rele
 | Grouped links | User-created groups with ordered links. | Public docs describe grouped/sorted lists of links. | Core workflow is comparable. | High |
 | Drag-and-drop | Groups and links can be reordered in edit mode. | Public docs/listing mention drag-and-drop sorting. | Comparable; manual UX test still needed for Aura. | High |
 | Dark/light theme | Light, dark, system theme. | Public docs/listing mention light/dark and multiple themes. | A Fine Start appears broader on theme presets. | High |
-| Local default storage | Uses `chrome.storage.local` with local fallback in dev. | Public docs say bookmarks are saved in browser by default. | Both have local-first/free local behavior. | High |
-| Restore points | Local Restore Points Manager and safety points before destructive operations. | Public help page documents restore points. | A Fine Start appears stronger in restore frequency/cap. | High |
+| Local default storage | Uses browser-local extension storage with local fallback in dev. | Public docs say bookmarks are saved in browser by default. | Both have local-first/free local behavior. | High |
+| Restore points | Searchable Restore Timeline and safety points before important/destructive operations. | Public help page documents restore points. | A Fine Start appears stronger in restore frequency/cap. | High |
 | Import/export code | Aura imports/exports A Fine Start-compatible codes plus other formats. | Public docs mention free import/export tools for moving between A Fine Start installs. | Aura has broader formats; A Fine Start has native flow. | High |
 | Search | Title/URL/description/tag search, modifiers, keyboard navigation. | Public help page documents search pane and keyboard navigation. | Aura has modifiers and highlights; A Fine Start has established shortcut docs. | Medium |
 
@@ -69,27 +69,27 @@ Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 rele
 
 | Area | Current issue | Why it matters | Suggested fix | Priority |
 |---|---|---|---|---|
-| Store ZIP freshness | `Chrome Submit/aura-start-1.2.0-chrome-web-store.zip` does not include the latest `background`/`commands` manifest entries or `background.js`. | Uploading this ZIP would ship the old shortcut behavior after the shortcut fix. | Regenerate Chrome Submit ZIP from current `dist` after `npm run build:store`; re-check ZIP manifest before upload. | P0 |
+| Store ZIP freshness | `Chrome Submit/aura-start-2.0.0-chrome-web-store.zip` does not include the latest `background`/`commands` manifest entries or `background.js`. | Uploading this ZIP would ship the old shortcut behavior after the shortcut fix. | Regenerate Chrome Submit ZIP from current `dist` after `npm run build:store`; re-check ZIP manifest before upload. | P0 |
 | Installed-extension verification | CI verifies build, but not real Chrome shortcut/focus behavior, Drive OAuth, or drag-and-drop. | These are the highest-risk user-facing workflows. | Run a manual installed-extension test matrix against the exact ZIP. | P0 |
 | `Ctrl+K` command reliability | Manifest command exists, but browsers can reserve or not assign some shortcuts. | The command palette is a headline power-user feature. | Verify `chrome://extensions/shortcuts`; document fallback if Chrome does not assign `Ctrl+K`. | P1 |
-| Quick-add current page | Popup opens Aura Start/settings/export; it does not prefill current page title/URL. | A Fine Start publicly advertises quick-add from the current page. | Consider an optional quick-add workflow later; weigh against avoiding `tabs` permission. | P1 |
-| Restore point depth/frequency | Aura caps restore points at 20 and mainly creates them before destructive actions. A Fine Start help documents restore points on every bookmark change and cap of 100. | Recovery confidence is a strong trust feature. | Consider increasing cap, honoring an automatic restore setting, or documenting exact restore coverage more clearly. | P1 |
+| Save open tabs vs quick-add | Aura now supports optional current-window tab capture, but it is an explicit preview flow rather than a one-click current-page quick-add. | A Fine Start publicly advertises quick-add from the current page. | Keep the permission prompt and preview clear; consider a narrower current-page flow later if it can remain optional. | P2 |
+| Restore point depth/frequency | Aura caps restore points at 20 and focuses on important actions. A Fine Start help documents restore points on every bookmark change and cap of 100. | Recovery confidence is a strong trust feature. | Consider increasing cap, honoring an automatic restore setting, or documenting exact restore coverage more clearly. | P1 |
 | `autoRestorePoints` setting | `autoRestorePoints` exists in settings/data/i18n but is not used by store mutation logic. | A visible setting that has no effect reduces trust. | Either implement it honestly or remove/rename the UI to avoid implying a toggleable behavior. | P1 |
 | `openLinksInNewTab` setting | Data/i18n include it, search result opening checks it, but settings UI does not expose it and normal link anchors do not use it. | Users may expect consistent link-opening control. | Add a UI toggle and make link anchors respect it, or remove the dormant setting. | P1 |
 | A Fine Start comparison docs | Existing comparison doc is cautious, but now that public A Fine Start docs were checked, it could be more precise. | Honest comparison builds credibility. | Update comparison with verified AFS strengths too, not just unknown statuses. | P2 |
-| Multi-browser support | Aura Start is Chromium-focused. | A Fine Start advertises Chrome, Firefox, Edge, and Web options. | Treat Firefox/Edge packaging as a future roadmap, not launch blocker. | P2 |
+| Broader web footprint | Aura Start now has Chrome/Chromium and Firefox extension builds, but not a hosted web app. | A Fine Start advertises Chrome, Firefox, Edge, and Web options. | Treat broader web/Edge-specific packaging as a future roadmap, not launch blocker. | P2 |
 | Automated tests | No dedicated unit/integration tests were found for import/export, duplicates, restore, sync comparison, or search. | High-risk data paths currently depend on TypeScript/build validation and manual testing. | Add focused tests for parsers, exporters, duplicate finder, restore point behavior, and validators. | P1 |
-| Google Drive OAuth complexity | Requires a real Chrome Extension OAuth client and, for Chromium variants that reject Chrome identity, a carefully configured Web OAuth fallback with the exact extension redirect URI. | Store review and user support can fail on OAuth setup more than on UI. | Keep reviewer notes tight, test final extension ID, and verify the Web OAuth fallback before release. Do not use Device OAuth because Google rejects `drive.appdata` in that flow. | P1 |
+| Google Drive OAuth complexity | Requires a real Chrome Extension OAuth client and Device OAuth credentials for Firefox/compatible Chromium fallback builds. | Store review and user support can fail on OAuth setup more than on UI. | Keep reviewer notes tight, test final extension IDs, and verify the Device OAuth fallback before release. Document that the fallback uses `drive.file` only for Aura Start's own sync file because Device OAuth cannot request `drive.appdata`. | P1 |
 | Developer-only docs still published | Developer/release HTML pages remain under `docs/` even if not in main user navigation. | Public site visitors can still find internal release docs. | Keep them unlinked or move under a clearly developer-only path if needed. | P2 |
 
 ## Feature-by-feature comparison
 
 | Feature | Aura Start status | A Fine Start status | Better / Same / Worse / Unknown | Notes |
 |---|---|---|---|---|
-| Link groups | Implemented. | Verified publicly. | Same | Core workflow comparable. |
+| Link groups | Implemented with nested groups up to 2 levels. | Verified publicly. | Same/Better | Core workflow comparable; Aura has documented nested groups. |
 | Link metadata | Title, URL, optional description, tags, order, timestamps. | A Fine Start exact internal fields not verified. | Better/Unknown | Aura metadata is richer than basic name/url compatibility format. |
 | Drag-and-drop | Implemented through dnd-kit in edit mode. | Verified publicly. | Same | Aura deliberately gates dragging behind edit mode, which is safer. |
-| Search | Implemented with title, URL, description, tags, modifiers, selection. | Verified search pane and keyboard navigation publicly. | Better/Same | Aura modifiers and highlights are a likely advantage; needs manual performance test at 1000+ links. |
+| Search | Implemented with Fuse.js fuzzy matching across title, URL, description, tags, modifiers, highlighting, counts, and selection. | Verified search pane and keyboard navigation publicly. | Better/Same | Aura fuzzy matching and modifiers are a likely advantage; needs manual performance test at 1000+ links. |
 | Command Palette | Implemented, including extension command route. | Not claimed in checked docs. | Better | Major power-user differentiator if shortcut is reliable. |
 | Keyboard shortcuts | Implemented with layout-independent `event.code` and manifest command for Ctrl/Cmd+K. | Search/privacy shortcuts verified publicly. | Same/Better | Aura has broader shortcuts; AFS has established documented shortcuts. |
 | Onboarding | Implemented for empty/new users only. | Not verified. | Better/Unknown | Good first-run advantage if manual test confirms no existing-user regression. |
@@ -100,14 +100,14 @@ Recommended launch posture: Aura Start is close to a publishable beta/1.2.0 rele
 | Full JSON backup | Implemented. | Not verified. | Better/Unknown | Full schema backup is a clear data-ownership feature. |
 | Browser bookmarks HTML | Implemented. | AFS help says browser bookmark export is not available at checked time. | Better | Strong practical differentiator. |
 | Markdown/CSV export | Implemented. | Not verified. | Better/Unknown | Good archival/workflow advantage. |
-| Restore points | Implemented and managed in UI. | Verified publicly. | Same/Worse | Aura UI is good, but AFS docs describe more frequent restore points and cap of 100 vs Aura cap of 20. |
+| Restore points | Implemented as searchable Restore Timeline grouped by day. | Verified publicly. | Same/Worse | Aura UI is good, but AFS docs describe more frequent restore points and cap of 100 vs Aura cap of 20. |
 | Duplicate Finder | Implemented. | Not verified. | Better/Unknown | Clear cleanup differentiator. |
-| Themes | Light/dark/system. | Multiple themes verified publicly. | Worse/Same | AFS appears richer on theme presets. |
+| Themes/personalization | Light/dark/system, background presets/custom local images, blur/dim/position, clock, Markdown notes, and Pomodoro widgets. | Multiple themes verified publicly. | Same/Better | Aura now has richer page personalization than the original audit noted. |
 | Localization | Seven app languages. | Chrome listing checked shows English; more not verified. | Better/Unknown | Need translation quality review. |
-| Google Drive sync | Implemented optional appDataFolder sync. | Premium account sync verified publicly. | Different | Aura wins on no Aura backend/account; AFS may win on simplicity/cross-browser productization. |
+| Google Drive sync | Implemented optional Chrome `appDataFolder` sync plus Firefox/compatible Chromium Device OAuth fallback for Aura's own sync file. | Premium account sync verified publicly. | Different | Aura wins on no Aura backend/account; AFS may win on simplicity/cross-browser productization. |
 | Privacy | No backend/analytics/tracking; least-privilege permissions. | Public docs make privacy claims; Premium collects email/bookmarks for sync. | Better/Different | Aura's open-source auditability is the advantage. |
 | Open-source | MIT. | Not verified. | Better/Unknown | Core positioning advantage. |
-| Chrome Web Store readiness | Store materials and validation exist, but ZIP stale. | Published listing verified. | Worse | Must fix before submission. |
+| Store readiness | Chrome and Firefox store materials and validation exist; final ZIPs must be regenerated from the exact release build before upload. | Published listing verified. | Worse | Must verify package freshness before submission. |
 
 ## Technical Audit
 
@@ -258,7 +258,7 @@ Recommended improvement: add a tiny empty-state export note so users understand 
 
 ### Restore flow
 
-Restore Points Manager is strong and user-facing. It shows name/date/reason/group count/link count and supports restore/export/delete/delete all with confirmation.
+Restore Timeline is strong and user-facing. It groups snapshots by day, supports search/filtering, shows name/date/reason/group count/link count, and supports restore/export/delete/delete all with confirmation.
 
 Recommended improvement: explain cap/count in the UI so users know old restore points roll off.
 
@@ -294,7 +294,7 @@ README is strong for GitHub users. It explains:
 
 README can include development commands because GitHub readers include developers. It does not read like a toxic competitor attack.
 
-### GitHub Pages site
+### Public website
 
 The public site in `docs/` is visually organized and user-facing:
 
@@ -316,17 +316,17 @@ The privacy policy is detailed and consistent with the manifest/source:
 - no account required
 - no analytics/tracking/backend
 - optional Drive sync
-- `drive.appdata` only
+- Chrome `drive.appdata`; Firefox/compatible Chromium fallback `drive.file` only for Aura Start's own sync file
 - no full Drive access
-- no browser bookmarks/history/tabs/cookies/webRequest/scripting permissions
+- no browser bookmarks/history/cookies/webRequest/scripting permissions, with `tabs` requested only as an optional runtime permission for Save open tabs
 
 This is a competitive strength.
 
 ### Screenshot gallery
 
-The gallery uses eight 1280x800 images under `docs/assets/screenshots` and mirrors `Photo/`. It states they are real UI screenshots with demo data. That is good.
+The gallery uses current 1280x800 images under `docs/assets/screenshots` and the store screenshots mirror `Chrome Submit/Photo/` and `Firefox Submit/Photo/`. It states they are real UI screenshots with demo data. That is good.
 
-Recommended manual check: open the gallery on GitHub Pages and verify image clarity, text legibility, dark/light contrast, and that screenshots reflect the current post-shortcut-fix UI where relevant.
+Recommended manual check: open the gallery on `https://aurastart.pages.dev/` and verify image clarity, text legibility, dark/light contrast, and that screenshots reflect the current post-shortcut-fix UI where relevant.
 
 ## Chrome Web Store Readiness Audit
 
@@ -345,16 +345,14 @@ Recommended manual check: open the gallery on GitHub Pages and verify image clar
 
 ### Blockers before submission
 
-1. Regenerate the Chrome Submit ZIP.
-   - Current `Chrome Submit/aura-start-1.2.0-chrome-web-store.zip` was inspected.
-   - Its manifest lacks the latest `background`/`commands` entries.
-   - It lacks `background.js`.
-   - It is stale relative to the current source.
+1. Regenerate the Chrome and Firefox Submit ZIPs from the exact release source.
+   - Final packages must be rebuilt after release-affecting source, manifest, OAuth, documentation, or screenshot changes.
+   - Each ZIP must keep `manifest.json` at archive root and include the background script referenced by the manifest.
 
 2. Verify final OAuth client configuration.
    - `build:store` can inject a real client ID from local env.
    - The uploaded ZIP must be built with the real Chrome Extension OAuth client ID for the final extension ID.
-   - If the Web OAuth fallback is used, verify that the Google OAuth client has the exact `https://<extension-id>.chromiumapp.org/` redirect URI used by the installed build.
+   - Verify the Device OAuth fallback credentials for Firefox/compatible Chromium builds.
 
 3. Run installed-extension manual testing.
    - new tab override
@@ -362,7 +360,11 @@ Recommended manual check: open the gallery on GitHub Pages and verify image clar
    - import from A Fine Start
    - JSON import/export
    - all export formats
-   - restore points
+   - Restore Timeline
+   - nested groups
+   - fuzzy search
+   - Save open tabs
+   - backgrounds/widgets
    - duplicate deletion
    - command palette from browser focus
    - shortcuts under Latin and Cyrillic layouts
@@ -400,8 +402,8 @@ What would improve credibility further:
 
 ### Product risks
 
-- Aura is currently Chromium-only while A Fine Start has public Chrome/Firefox/Edge/Web presence.
-- Aura lacks quick-add from the current web page.
+- Aura is currently packaged for Chrome/Chromium and Firefox, while A Fine Start has public Chrome/Firefox/Edge/Web presence.
+- Aura's Save open tabs flow is explicit and permission-gated, not a one-click current-page quick-add.
 - Aura has no public store ratings/reviews yet.
 - Aura's theme system is simpler than A Fine Start's publicly shown theme variety.
 - Some settings appear incomplete or not wired fully.
@@ -409,7 +411,7 @@ What would improve credibility further:
 ### UX risks
 
 - Shortcut reliability depends on real browser command assignment.
-- Users may not discover Restore Points or Duplicate Finder unless Settings/Command Palette makes them obvious.
+- Users may not discover Restore Timeline or Duplicate Finder unless Settings/Command Palette makes them obvious.
 - Replace import should feel more explicitly confirmed.
 - Drive sync setup may be intimidating for users if OAuth errors appear.
 
@@ -427,10 +429,10 @@ What would improve credibility further:
 
 ## Top 10 Changes to Make Next
 
-1. [P0] Regenerate and verify the Chrome Submit ZIP from the current source.
-   - Why: the existing ZIP is stale and would omit the background command shortcut fix.
-   - Where: `Chrome Submit/aura-start-1.2.0-chrome-web-store.zip`.
-   - Expected impact: prevents shipping a known old behavior.
+1. [P0] Regenerate and verify the Chrome and Firefox Submit ZIPs from the current source.
+   - Why: store packages must match the final manifest, OAuth fallback, screenshots, and background scripts.
+   - Where: `Chrome Submit/aura-start-2.0.0-chrome-web-store.zip` and `Firefox Submit/aura-start-2.0.0-firefox.zip`.
+   - Expected impact: prevents shipping stale behavior or invalid store metadata.
 
 2. [P0] Run a manual installed-extension release test against the exact ZIP.
    - Why: browser focus, extension commands, OAuth, drag-and-drop, and Drive sync cannot be fully verified by TypeScript.
@@ -491,7 +493,7 @@ Before Chrome Web Store submission:
 - Verify real OAuth client ID in the built manifest.
 - Run manual installed-extension tests.
 - Confirm screenshots match current UI.
-- Confirm GitHub Pages privacy policy URL is live.
+- Confirm `https://aurastart.pages.dev/privacy-policy.html` is live.
 - Keep A Fine Start language limited to migration/compatibility and independent/not affiliated wording.
 
 After launch:

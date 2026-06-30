@@ -2,6 +2,7 @@ import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import type { AuraStartLink, AuraStartSettings } from "../types";
 import { searchResultId } from "../utils/search";
+import type { LinkSearchHighlights } from "../utils/search";
 import { HighlightedText } from "./HighlightedText";
 
 type BookmarkLinkItemProps = {
@@ -11,6 +12,7 @@ type BookmarkLinkItemProps = {
   editMode: boolean;
   dragging?: boolean;
   highlightTerms?: string[];
+  highlights?: LinkSearchHighlights;
   selected?: boolean;
   dragAttributes?: React.HTMLAttributes<HTMLElement>;
   dragListeners?: React.HTMLAttributes<HTMLElement>;
@@ -25,6 +27,7 @@ export function BookmarkLinkItem({
   editMode,
   dragging = false,
   highlightTerms = [],
+  highlights,
   selected = false,
   dragAttributes,
   dragListeners,
@@ -39,21 +42,21 @@ export function BookmarkLinkItem({
   const content = (
     <>
       <span className="bookmark-title">
-        <HighlightedText terms={highlightTerms} text={link.title} />
+        <HighlightedText ranges={highlights?.title} terms={highlightTerms} text={link.title} />
       </span>
       <span className="bookmark-url">
-        <HighlightedText terms={highlightTerms} text={link.url} />
+        <HighlightedText ranges={highlights?.url} terms={highlightTerms} text={link.url} />
       </span>
       {settings.showDescriptions && link.description && !settings.compactMode ? (
         <span className="bookmark-description">
-          <HighlightedText terms={highlightTerms} text={link.description} />
+          <HighlightedText ranges={highlights?.description} terms={highlightTerms} text={link.description} />
         </span>
       ) : null}
       {link.tags?.length && !settings.compactMode ? (
         <span className="bookmark-tags">
-          {link.tags.map((tag) => (
+          {link.tags.map((tag, index) => (
             <span className="bookmark-tag" key={tag}>
-              <HighlightedText terms={highlightTerms} text={tag} />
+              <HighlightedText ranges={highlights?.tags?.[index]} terms={highlightTerms} text={tag} />
             </span>
           ))}
         </span>

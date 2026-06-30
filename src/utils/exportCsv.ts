@@ -1,6 +1,7 @@
 import type { AuraStartData } from "../types";
 import { dateForFile } from "./dates";
 import { downloadTextFile } from "./download";
+import { buildGroupTree, flattenGroupTree, groupTitlePath } from "./groupTree";
 
 function escapeCsvCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -13,16 +14,14 @@ function escapeCsvCell(value: string): string {
 export function createCsvBookmarks(data: AuraStartData): string {
   const rows = [["group", "title", "url", "description", "tags", "createdAt", "updatedAt"]];
 
-  data.groups
-    .slice()
-    .sort((a, b) => a.order - b.order)
+  flattenGroupTree(buildGroupTree(data.groups))
     .forEach((group) => {
       group.links
         .slice()
         .sort((a, b) => a.order - b.order)
         .forEach((link) => {
           rows.push([
-            group.title,
+            groupTitlePath(data.groups, group),
             link.title,
             link.url,
             link.description ?? "",

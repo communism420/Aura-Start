@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AddEditGroupDialog } from "./AddEditGroupDialog";
 import { AddEditLinkDialog, type EditingLink } from "./AddEditLinkDialog";
+import { BackgroundLayer } from "./BackgroundLayer";
 import { CommandPalette, type CommandPaletteCommand } from "./CommandPalette";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { DuplicateFinderDialog } from "./DuplicateFinderDialog";
@@ -11,24 +12,19 @@ import { ImportDialog, type ImportDialogFormat } from "./ImportDialog";
 import { Modal } from "./Modal";
 import { OnboardingDialog } from "./OnboardingDialog";
 import { RecoveryScreen } from "./RecoveryScreen";
-import { RestorePointsDialog } from "./RestorePointsDialog";
+import { RestoreTimeline } from "./RestoreTimeline";
+import { SaveTabsDialog } from "./SaveTabsDialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { Toasts } from "./Toasts";
+import { WidgetPanel } from "./widgets";
 import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
 import { GOOGLE_DEVICE_AUTH_EVENT, type GoogleDeviceAuthEventDetail } from "../services/googleDriveSync";
-import { useAuraStore } from "../store/useAuraStore";
+import { useAuraStore, type GroupDeleteMode } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
+import { addExtensionRuntimeMessageListener, removeExtensionRuntimeMessageListener } from "../utils/browserApi";
 import { exportJsonBackup } from "../utils/exportJson";
-import {
-  filterGroupsForSearch,
-  flattenSearchResults,
-  parseSearchQuery,
-  searchHasQuery,
-  searchHighlightTerms,
-  searchResultId,
-  type SearchResult
-} from "../utils/search";
+import { searchResultId, type SearchResult } from "../utils/search";
 
 type AppProps = {
   initialSettingsOpen?: boolean;
@@ -80,14 +76,20 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     syncConflict,
     onboardingCompleted,
     demoData,
+    searchQuery,
+    searchFilter,
+    customBackgroundImage,
+    widgetNotes,
     load,
     completeOnboarding,
     resetCorruptData,
     updateSettings,
     addGroup,
+    saveCurrentTabsAsNewGroup,
     updateGroupTitle,
     toggleGroupCollapsed,
     deleteGroup,
+    moveGroup,
     addLink,
     updateLink,
     deleteLink,
@@ -102,21 +104,27 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     restoreRestorePoint,
     deleteRestorePoint,
     deleteAllRestorePoints,
+    getRestoreTimeline,
     connectGoogleDrive,
     disconnectGoogleDrive,
     deleteGoogleDriveBackupAndDisconnect,
     restoreFromGoogleDrive,
     resolveSyncConflict,
+    getSearchView,
+    setCustomBackgroundImage,
+    setSearchFilter,
+    setSearchQuery,
+    setWidgetNotes,
     addToast
   } = useAuraStore();
 
-  const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedSearchResultId, setSelectedSearchResultId] = useState<string | null>(null);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<AuraStartGroup | null>(null);
+  const [initialGroupParentId, setInitialGroupParentId] = useState<string | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [initialLinkGroupId, setInitialLinkGroupId] = useState<string | undefined>();
   const [editingLink, setEditingLink] = useState<EditingLink | null>(null);
@@ -124,6 +132,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   const [importOpen, setImportOpen] = useState(false);
   const [importFormat, setImportFormat] = useState<ImportDialogFormat>("aura_json");
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [saveTabsOpen, setSaveTabsOpen] = useState(false);
   const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [deviceAuth, setDeviceAuth] = useState<GoogleDeviceAuthEventDetail | null>(null);
@@ -210,6 +219,12 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   }, [searchOpen]);
 
   useEffect(() => {
+    if (searchQuery.trim()) {
+      setSearchOpen(true);
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
     const focusKeyboardScope = () => {
       if (document.visibilityState !== "visible") return;
       if (isTextInput(document.activeElement) || isInteractiveControl(document.activeElement)) {
@@ -233,15 +248,12 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     };
   }, []);
 
-  const parsedSearch = useMemo(() => parseSearchQuery(search), [search]);
-  const searchMode = searchHasQuery(parsedSearch);
-  const searchTerms = useMemo(() => searchHighlightTerms(parsedSearch), [parsedSearch]);
-  const filteredGroups = useMemo(() => {
-    if (!data) return [];
-    const sortedGroups = data.groups.slice().sort((a, b) => a.order - b.order);
-    return filterGroupsForSearch(sortedGroups, parsedSearch);
-  }, [data, parsedSearch]);
-  const searchResults = useMemo(() => (searchMode ? flattenSearchResults(filteredGroups) : []), [filteredGroups, searchMode]);
+  const searchView = useMemo(() => getSearchView(), [data, getSearchView, searchFilter, searchQuery]);
+  const searchMode = searchQuery.trim().length > 0;
+  const searchTerms = searchView.highlightTerms;
+  const filteredGroups = searchView.groups;
+  const searchResults = searchMode ? searchView.results : [];
+  const restoreTimeline = useMemo(() => getRestoreTimeline(), [data, getRestoreTimeline]);
 
   useEffect(() => {
     if (!searchMode || !searchResults.length) {
@@ -287,6 +299,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         settingsOpen ||
         importOpen ||
         restoreOpen ||
+        saveTabsOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
         deviceAuth ||
@@ -323,9 +336,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         return;
       }
 
-      if (event.key === "Escape" && (search || searchOpen)) {
+      if (event.key === "Escape" && (searchQuery || searchOpen)) {
         event.preventDefault();
-        setSearch("");
+        setSearchQuery("");
         setSearchOpen(false);
         return;
       }
@@ -383,7 +396,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     onboardingOpen,
     pendingDanger,
     restoreOpen,
-    search,
+    saveTabsOpen,
+    searchQuery,
+    setSearchQuery,
     searchMode,
     searchOpen,
     searchResults,
@@ -392,14 +407,13 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   ]);
 
   useEffect(() => {
-    if (typeof chrome === "undefined" || !chrome.runtime?.onMessage) return;
-
     const blockingModalOpen = Boolean(
       groupDialogOpen ||
         linkDialogOpen ||
         settingsOpen ||
         importOpen ||
         restoreOpen ||
+        saveTabsOpen ||
         duplicateFinderOpen ||
         onboardingOpen ||
         deviceAuth ||
@@ -415,8 +429,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       setCommandPaletteOpen((open) => (open ? false : !blockingModalOpen));
     };
 
-    chrome.runtime.onMessage.addListener(handleRuntimeMessage);
-    return () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
+    if (!addExtensionRuntimeMessageListener(handleRuntimeMessage)) return;
+    return () => removeExtensionRuntimeMessageListener(handleRuntimeMessage);
   }, [
     duplicateFinderOpen,
     deviceAuth,
@@ -426,6 +440,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     onboardingOpen,
     pendingDanger,
     restoreOpen,
+    saveTabsOpen,
     settingsOpen
   ]);
 
@@ -433,8 +448,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     addToast({ type: "error", title: t(data?.settings.language ?? fallbackLanguage, "actionFailed"), message });
   };
 
-  const openAddGroup = () => {
+  const openAddGroup = (parentId: string | null = null) => {
     setEditingGroup(null);
+    setInitialGroupParentId(parentId);
     setGroupDialogOpen(true);
   };
 
@@ -445,8 +461,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   };
 
   const toggleSearch = () => {
-    if (searchOpen || search) {
-      setSearch("");
+    if (searchOpen || searchQuery) {
+      setSearchQuery("");
       setSearchOpen(false);
       return;
     }
@@ -551,6 +567,17 @@ export function App({ initialSettingsOpen = false }: AppProps) {
       keywords: ["link", "create"],
       action: () => openAddLink()
     },
+    ...(data.settings.captureOpenTabs
+      ? [
+          {
+            id: "save-open-tabs",
+            title: t(language, "commandSaveOpenTabs"),
+            description: t(language, "commandSaveOpenTabsDescription"),
+            keywords: ["tabs", "save", "window", "group"],
+            action: () => setSaveTabsOpen(true)
+          } satisfies CommandPaletteCommand
+        ]
+      : []),
     {
       id: "toggle-edit",
       title: t(language, "commandToggleEditMode"),
@@ -671,9 +698,22 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         return t(language, "delete");
     }
   })();
+  const pendingDeleteGroupChildren =
+    pendingDanger?.type === "deleteGroup"
+      ? data.groups.filter((group) => group.parentId === pendingDanger.group.id)
+      : [];
+  const pendingDeleteGroupHasChildren = pendingDanger?.type === "deleteGroup" && pendingDeleteGroupChildren.length > 0;
+
+  const confirmDeleteGroup = async (mode: GroupDeleteMode) => {
+    if (pendingDanger?.type !== "deleteGroup") return;
+    await deleteGroup(pendingDanger.group.id, mode);
+    setPendingDanger(null);
+  };
 
   return (
     <div className={`afs-like ${data.settings.compactMode ? "compact" : ""}`}>
+      <BackgroundLayer customImage={customBackgroundImage} settings={data.settings.background} />
+      <div className="aura-content-layer">
       {keyboardFocusTarget}
       <main className="app-shell">
         <div className="container-narrow">
@@ -685,25 +725,35 @@ export function App({ initialSettingsOpen = false }: AppProps) {
           <Header
             data={data}
             editMode={editMode}
-            search={search}
+            search={searchQuery}
+            searchFilter={searchFilter}
             searchInputRef={searchInputRef}
+            searchResultCount={searchResults.length}
             syncMessage={syncMessage}
             syncStatus={syncStatus}
-            onAddGroup={openAddGroup}
+            onAddGroup={() => openAddGroup()}
             onAddLink={() => openAddLink()}
             onExportError={showError}
             onOpenCommandPalette={() => setCommandPaletteOpen(true)}
             onOpenImport={() => openImport("aura_json")}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenSearch={toggleSearch}
+            onOpenSaveTabs={() => setSaveTabsOpen(true)}
             onToggleEditMode={() => setEditMode((value) => !value)}
             onSearchChange={(value) => {
-              setSearch(value);
+              setSearchQuery(value);
               if (value) {
                 setSearchOpen(true);
               }
             }}
+            onSearchFilterChange={setSearchFilter}
             searchOpen={searchOpen}
+          />
+          <WidgetPanel
+            language={language}
+            notes={widgetNotes}
+            settings={data.settings}
+            onNotesChange={setWidgetNotes}
           />
           {filteredGroups.length ? (
             <GroupGrid
@@ -711,13 +761,16 @@ export function App({ initialSettingsOpen = false }: AppProps) {
               editMode={editMode}
               groups={filteredGroups}
               highlightTerms={searchTerms}
+              searchHighlights={searchView.highlights}
               searchMode={searchMode}
               selectedSearchResultId={selectedSearchResultId}
+              onAddGroup={openAddGroup}
               onAddLink={openAddLink}
               onDeleteGroup={(group) => setPendingDanger({ type: "deleteGroup", group })}
               onDeleteLink={(groupId, link) => setPendingDanger({ type: "deleteLink", groupId, link })}
               onEditGroup={(group) => {
                 setEditingGroup(group);
+                setInitialGroupParentId(group.parentId ?? null);
                 setGroupDialogOpen(true);
               }}
               onEditLink={(groupId, link) => {
@@ -729,8 +782,13 @@ export function App({ initialSettingsOpen = false }: AppProps) {
                   showError(caught instanceof Error ? caught.message : t(language, "couldNotMoveLink"))
                 );
               }}
-              onReorderGroups={(orderedGroupIds) => {
-                return reorderGroups(orderedGroupIds).catch((caught: unknown) =>
+              onMoveGroup={(groupId, parentId) => {
+                return moveGroup(groupId, parentId).catch((caught: unknown) =>
+                  showError(caught instanceof Error ? caught.message : t(language, "couldNotMoveGroup"))
+                );
+              }}
+              onReorderGroups={(orderedGroupIds, parentId) => {
+                return reorderGroups(orderedGroupIds, parentId).catch((caught: unknown) =>
                   showError(caught instanceof Error ? caught.message : t(language, "couldNotReorderGroups"))
                 );
               }}
@@ -759,15 +817,20 @@ export function App({ initialSettingsOpen = false }: AppProps) {
 
       <AddEditGroupDialog
         group={editingGroup}
+        groups={data.groups}
+        initialParentId={initialGroupParentId}
         language={language}
         open={groupDialogOpen}
         onClose={() => setGroupDialogOpen(false)}
         onError={showError}
-        onSubmit={async (title) => {
+        onSubmit={async (title, parentId) => {
           if (editingGroup) {
             await updateGroupTitle(editingGroup.id, title);
+            if ((editingGroup.parentId ?? null) !== parentId) {
+              await moveGroup(editingGroup.id, parentId);
+            }
           } else {
-            await addGroup(title);
+            await addGroup(title, parentId);
           }
         }}
       />
@@ -806,6 +869,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onRemoveDemoData={() => setPendingDanger({ type: "removeDemoData" })}
         onResolveSyncConflict={resolveSyncConflict}
         onReset={() => setPendingDanger({ type: "resetAll" })}
+        customBackgroundImage={customBackgroundImage}
+        onSetCustomBackgroundImage={setCustomBackgroundImage}
         onUpdateSettings={updateSettings}
       />
       <ImportDialog
@@ -828,16 +893,24 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onRestoreGoogleDrive={() => restoreFromGoogleDrive({ requireExistingFile: true })}
         onUpdateSettings={updateSettings}
       />
-      <RestorePointsDialog
+      <RestoreTimeline
         language={language}
         open={restoreOpen}
-        restorePoints={data.restorePoints}
+        timeline={restoreTimeline}
         onClose={() => setRestoreOpen(false)}
         onCreate={createManualRestorePoint}
         onDeleteAll={deleteAllRestorePoints}
         onDelete={deleteRestorePoint}
         onError={showError}
         onRestore={restoreRestorePoint}
+      />
+      <SaveTabsDialog
+        data={data}
+        language={language}
+        open={saveTabsOpen}
+        onClose={() => setSaveTabsOpen(false)}
+        onError={showError}
+        onSave={saveCurrentTabsAsNewGroup}
       />
       <DuplicateFinderDialog
         data={data}
@@ -853,6 +926,11 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         onError={showError}
+        onSearchLinks={(query) => {
+          setSearchQuery(query);
+          setSearchOpen(true);
+          window.requestAnimationFrame(() => searchInputRef.current?.focus());
+        }}
       />
       <Modal
         closeLabel={t(language, "closeDialog")}
@@ -894,11 +972,51 @@ export function App({ initialSettingsOpen = false }: AppProps) {
           <p className="muted text-sm">{t(language, "googleDriveDeviceAuthWaiting")}</p>
         </div>
       </Modal>
+      <Modal
+        closeLabel={t(language, "cancel")}
+        closeOnBackdrop={false}
+        description={t(language, "deleteGroupWithChildrenMessage", {
+          count: pendingDeleteGroupChildren.length,
+          title: pendingDanger?.type === "deleteGroup" ? pendingDanger.group.title : ""
+        })}
+        open={pendingDeleteGroupHasChildren}
+        size="sm"
+        title={t(language, "deleteThisGroup")}
+        onClose={() => setPendingDanger(null)}
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button className="btn btn-secondary" type="button" onClick={() => setPendingDanger(null)}>
+            {t(language, "cancel")}
+          </button>
+          <button
+            className="btn btn-secondary"
+            type="button"
+            onClick={() => {
+              void confirmDeleteGroup("promote_children").catch((caught: unknown) =>
+                showError(caught instanceof Error ? caught.message : t(language, "couldNotCompleteAction"))
+              );
+            }}
+          >
+            {t(language, "deleteGroupKeepChildren")}
+          </button>
+          <button
+            className="btn btn-danger"
+            type="button"
+            onClick={() => {
+              void confirmDeleteGroup("delete_children").catch((caught: unknown) =>
+                showError(caught instanceof Error ? caught.message : t(language, "couldNotCompleteAction"))
+              );
+            }}
+          >
+            {t(language, "deleteGroupAndChildren")}
+          </button>
+        </div>
+      </Modal>
       <ConfirmDialog
         cancelLabel={t(language, "cancel")}
         confirmLabel={dangerConfirmLabel}
         message={dangerMessage}
-        open={pendingDanger !== null}
+        open={pendingDanger !== null && !pendingDeleteGroupHasChildren}
         title={dangerTitle}
         onCancel={() => setPendingDanger(null)}
         onConfirm={async () => {
@@ -910,7 +1028,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
               await removeDemoData();
             }
             if (pendingDanger?.type === "deleteGroup") {
-              await deleteGroup(pendingDanger.group.id);
+              await deleteGroup(pendingDanger.group.id, "promote_children");
             }
             if (pendingDanger?.type === "deleteLink") {
               await deleteLink(pendingDanger.groupId, pendingDanger.link.id);
@@ -922,6 +1040,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         }}
       />
       <Toasts />
+      </div>
     </div>
   );
 }

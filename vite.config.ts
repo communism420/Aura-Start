@@ -55,7 +55,8 @@ function googleOAuthClientPlugin(clientId: string | undefined): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const googleOAuthClientId = env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
+  const targetBrowser = (process.env.AURA_TARGET_BROWSER ?? env.AURA_TARGET_BROWSER ?? "chromium").trim().toLowerCase();
+  const googleOAuthClientId = targetBrowser === "firefox" ? undefined : env.AURA_GOOGLE_OAUTH_CLIENT_ID?.trim();
   const storeBuild = process.env.AURA_STORE_BUILD === "true" || env.AURA_STORE_BUILD === "true";
   const googleWebOAuthClientId = storeBuild
     ? process.env.AURA_GOOGLE_WEB_OAUTH_CLIENT_ID?.trim() ?? ""
@@ -113,7 +114,8 @@ export default defineConfig(({ mode }) => {
       __AURA_GOOGLE_WEB_OAUTH_REDIRECT_PATH__: JSON.stringify(googleWebOAuthRedirectPath),
       __AURA_ENABLE_GOOGLE_DEVICE_OAUTH_FALLBACK__: JSON.stringify(enableGoogleDeviceOAuthFallback),
       __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID__: JSON.stringify(enableGoogleDeviceOAuthFallback ? googleDeviceOAuthClientId : ""),
-      __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__: JSON.stringify(enableGoogleDeviceOAuthFallback ? googleDeviceOAuthClientSecret : "")
+      __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__: JSON.stringify(enableGoogleDeviceOAuthFallback ? googleDeviceOAuthClientSecret : ""),
+      __AURA_TARGET_BROWSER__: JSON.stringify(targetBrowser === "firefox" ? "firefox" : "chromium")
     },
     build: {
       rollupOptions: {

@@ -1,6 +1,7 @@
 import type { AuraStartData, AuraStartGroup, AuraStartLink } from "../types";
 import { dateForFile } from "./dates";
 import { downloadTextFile } from "./download";
+import { buildGroupTree, flattenGroupTree, groupTitlePath } from "./groupTree";
 
 type AFineStartBookmark = {
   name: string;
@@ -44,9 +45,7 @@ export function createAFineStartExportCode(data: AuraStartData): string {
   const columns: AFineStartColumns = Array.from({ length: exportColumnCount(data) }, () => []);
   const usedGroupNames = new Map<string, number>();
 
-  data.groups
-    .slice()
-    .sort((a, b) => a.order - b.order)
+  flattenGroupTree(buildGroupTree(data.groups))
     .forEach((group, groupIndex) => {
       const bookmarks = group.links
         .slice()
@@ -55,7 +54,7 @@ export function createAFineStartExportCode(data: AuraStartData): string {
         .map(toAFineStartBookmark);
 
       columns[groupIndex % columns.length].push({
-        name: uniqueGroupName(group, usedGroupNames),
+        name: uniqueGroupName({ ...group, title: groupTitlePath(data.groups, group) }, usedGroupNames),
         bookmarks
       });
     });

@@ -19,6 +19,7 @@ import {
 } from "../services/googleDriveSync";
 import type {
   AuraRestorePoint,
+  AuraRestorePointContext,
   AuraRestorePointReason,
   AuraSyncConflict,
   AuraSyncConflictChoice,
@@ -29,14 +30,19 @@ import type {
   AuraStartGroup,
   AuraStartLink,
   AuraStartSettings,
-  ImportMode
+  GroupTreeNode,
+  ImportMode,
+  RestoreTimelineDay
 } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
 import { nowIso } from "../utils/dates";
+import { buildGroupTree, groupsInTreeOrder, groupTitlePath, normalizeGroupOrders } from "../utils/groupTree";
 import { createId } from "../utils/ids";
 import { mergeImportedData } from "../utils/importJson";
 import { createEmptyData } from "../utils/sampleData";
+import { searchAuraGroups, type SearchAuraGroupsResult, type SearchQuickFilter } from "../utils/search";
 import { clearAuraData, loadAuraData, saveAuraData } from "../utils/storage";
+import { getCurrentWindowTabsPreview } from "../utils/tabsCapture";
 import { loadAuraUiState, saveAuraUiState, type DemoDataMarker } from "../utils/uiState";
 import { normalizeUrl, parseTags, type UrlValidationResult } from "../utils/validators";
 
@@ -67,6 +73,7 @@ type GoogleDriveRestoreOptions = { requireExistingFile?: boolean };
 type GoogleDriveSyncNowOptions = { silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
 type ImportBackupSource = "aura_json" | "a_fine_start";
+export type GroupDeleteMode = "promote_children" | "delete_children";
 
 const EMPTY_DEMO_DATA: DemoDataMarker = {
   groupIds: [],
@@ -84,25 +91,39 @@ type AuraStore = {
   syncConflict: AuraSyncConflict | null;
   onboardingCompleted: boolean;
   demoData: DemoDataMarker;
+  searchQuery: string;
+  searchFilter: SearchQuickFilter;
+  customBackgroundImage: string | null;
+  widgetNotes: string;
   toasts: ToastMessage[];
   load: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   resetCorruptData: () => Promise<void>;
   updateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
-  addGroup: (title: string) => Promise<string | undefined>;
+  addGroup: (title: string, parentId?: string | null) => Promise<string | undefined>;
+  saveCurrentTabsAsNewGroup: (customTitle?: string) => Promise<string | undefined>;
   updateGroupTitle: (groupId: string, title: string) => Promise<void>;
   toggleGroupCollapsed: (groupId: string) => Promise<void>;
-  deleteGroup: (groupId: string) => Promise<void>;
+  deleteGroup: (groupId: string, mode?: GroupDeleteMode) => Promise<void>;
+  moveGroup: (groupId: string, newParentId: string | null) => Promise<void>;
   addLink: (groupId: string, input: LinkInput) => Promise<void>;
   updateLink: (groupId: string, linkId: string, input: LinkInput) => Promise<void>;
   deleteLink: (groupId: string, linkId: string) => Promise<void>;
   deleteLinksWithRestorePoint: (targets: LinkDeleteTarget[]) => Promise<void>;
-  reorderGroups: (orderedGroupIds: string[]) => Promise<void>;
+  reorderGroups: (orderedGroupIds: string[], parentId?: string | null) => Promise<void>;
   moveLink: (linkId: string, targetGroupId: string, overLinkId?: string) => Promise<void>;
+  getGroupTree: () => GroupTreeNode[];
+  getSearchedGroups: () => AuraStartGroup[];
+  getSearchView: () => SearchAuraGroupsResult;
+  setSearchQuery: (query: string) => void;
+  setSearchFilter: (filter: SearchQuickFilter) => void;
+  setCustomBackgroundImage: (image: string | null) => void;
+  setWidgetNotes: (notes: string) => void;
   addDemoData: () => Promise<void>;
   removeDemoData: () => Promise<void>;
   importBackup: (imported: AuraStartData, mode: ImportMode, source?: ImportBackupSource) => Promise<void>;
   resetAllData: () => Promise<void>;
+  getRestoreTimeline: () => RestoreTimelineDay[];
   createManualRestorePoint: (name: string) => Promise<void>;
   restoreRestorePoint: (restorePointId: string) => Promise<void>;
   deleteRestorePoint: (restorePointId: string) => Promise<void>;
@@ -175,11 +196,7 @@ async function getTokenForSync(sync: AuraSyncSettings, allowInteractive = true):
 }
 
 function normalizeOrders(groups: AuraStartGroup[]): AuraStartGroup[] {
-  return groups.map((group, groupIndex) => ({
-    ...group,
-    order: groupIndex,
-    links: group.links.map((link, linkIndex) => ({ ...link, order: linkIndex }))
-  }));
+  return groupsInTreeOrder(normalizeGroupOrders(groups));
 }
 
 function touch(data: AuraStartData): AuraStartData {
@@ -193,15 +210,21 @@ function touch(data: AuraStartData): AuraStartData {
 function createRestorePoint(
   data: AuraStartData,
   name: string,
-  reason: AuraRestorePointReason
+  reason: AuraRestorePointReason,
+  context?: AuraRestorePointContext
 ): AuraRestorePoint {
   return {
     id: createId("restore"),
     name,
     createdAt: nowIso(),
     reason,
+    context,
     data: snapshot(data)
   };
+}
+
+function snapshotLinkCount(data: Omit<AuraStartData, "restorePoints">): number {
+  return data.groups.reduce((count, group) => count + group.links.length, 0);
 }
 
 function createDemoGroups(startOrder: number): { groups: AuraStartGroup[]; marker: DemoDataMarker } {
@@ -242,6 +265,7 @@ function createDemoGroups(startOrder: number): { groups: AuraStartGroup[]; marke
     return {
       id: groupId,
       title: groupSpec.title,
+      parentId: null,
       collapsed: false,
       order: startOrder + groupIndex,
       links: groupSpec.links.map(([title, url], linkIndex): AuraStartLink => {
@@ -280,13 +304,23 @@ function hasMatchingDemoData(data: AuraStartData, marker: DemoDataMarker): boole
 function withRestorePoint(
   data: AuraStartData,
   name: string,
-  reason: AuraRestorePointReason
+  reason: AuraRestorePointReason,
+  context?: AuraRestorePointContext
 ): AuraStartData {
-  const point = createRestorePoint(data, name, reason);
+  const point = createRestorePoint(data, name, reason, context);
   return {
     ...data,
     restorePoints: [point, ...data.restorePoints].slice(0, MAX_RESTORE_POINTS)
   };
+}
+
+function withAutomaticRestorePoint(
+  data: AuraStartData,
+  name: string,
+  reason: AuraRestorePointReason,
+  context?: AuraRestorePointContext
+): AuraStartData {
+  return data.settings.autoRestorePoints ? withRestorePoint(data, name, reason, context) : data;
 }
 
 function keepLocalSyncSettings(data: AuraStartData, current: AuraStartData): AuraStartData {
@@ -306,6 +340,54 @@ function findGroup(data: AuraStartData, groupId: string): AuraStartGroup {
   }
 
   return group;
+}
+
+function groupChildren(data: AuraStartData, groupId: string): AuraStartGroup[] {
+  return data.groups.filter((group) => group.parentId === groupId);
+}
+
+function existingLinkUrls(data: AuraStartData): string[] {
+  return data.groups.flatMap((group) => group.links.map((link) => link.url));
+}
+
+function groupLabel(data: AuraStartData, groupId: string | null): string {
+  if (!groupId) {
+    return text(data, "topLevelGroup");
+  }
+
+  const group = data.groups.find((item) => item.id === groupId);
+  return group ? groupTitlePath(data.groups, group) : text(data, "groupNotFound");
+}
+
+function resolveGroupParentId(data: AuraStartData, parentId?: string | null): string | null {
+  if (!parentId) {
+    return null;
+  }
+
+  const parent = findGroup(data, parentId);
+  if (parent.parentId !== null) {
+    throw new Error(text(data, "nestedGroupDepthLimit"));
+  }
+
+  return parent.id;
+}
+
+function canMoveGroupToParent(data: AuraStartData, groupId: string, parentId: string | null): void {
+  const group = findGroup(data, groupId);
+  if (parentId === group.id) {
+    throw new Error(text(data, "groupCannotBeItsOwnParent"));
+  }
+
+  if (parentId) {
+    const parent = findGroup(data, parentId);
+    if (parent.parentId !== null) {
+      throw new Error(text(data, "nestedGroupDepthLimit"));
+    }
+
+    if (groupChildren(data, group.id).length > 0) {
+      throw new Error(text(data, "groupWithChildrenCannotBeNested"));
+    }
+  }
 }
 
 function urlValidationMessage(data: AuraStartData, result: Extract<UrlValidationResult, { ok: false }>): string {
@@ -344,6 +426,19 @@ function prepareLinkInput(data: AuraStartData, input: LinkInput): Pick<AuraStart
     description: description ? description : undefined,
     tags: input.tags ? parseTags(input.tags) : undefined
   };
+}
+
+function saveCurrentUiState(
+  state: Pick<AuraStore, "customBackgroundImage" | "demoData" | "onboardingCompleted" | "searchFilter" | "searchQuery" | "widgetNotes">
+): void {
+  void saveAuraUiState({
+    onboardingCompleted: state.onboardingCompleted,
+    demoData: state.demoData,
+    lastSearchQuery: state.searchQuery,
+    searchFilter: state.searchFilter,
+    customBackgroundImage: state.customBackgroundImage,
+    widgetNotes: state.widgetNotes
+  }).catch(() => undefined);
 }
 
 function clearAutoSyncQueue(): void {
@@ -497,7 +592,10 @@ async function applyCloudDownload(
   const current = get().data;
   if (!current) return;
 
-  const point = createRestorePoint(current, "Before Google Drive restore", "before_import");
+  const point = createRestorePoint(current, text(current, "restoreNameBeforeCloudRestore"), "before_cloud_restore", {
+    entity: "sync",
+    source: "Google Drive"
+  });
   const syncedAt = nowIso();
   const currentSync = ensureSyncDevice(current.settings.sync);
   const nextSync: AuraSyncSettings = {
@@ -540,6 +638,10 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   syncConflict: null,
   onboardingCompleted: false,
   demoData: EMPTY_DEMO_DATA,
+  searchQuery: "",
+  searchFilter: "all",
+  customBackgroundImage: null,
+  widgetNotes: "",
   toasts: [],
 
   async load() {
@@ -558,7 +660,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           syncMessage: null,
           syncConflict: null,
           onboardingCompleted: uiState.onboardingCompleted,
-          demoData: uiState.demoData
+          demoData: uiState.demoData,
+          searchQuery: uiState.lastSearchQuery,
+          searchFilter: uiState.searchFilter,
+          customBackgroundImage: uiState.customBackgroundImage,
+          widgetNotes: uiState.widgetNotes
         });
         return;
       }
@@ -574,7 +680,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           syncMessage: null,
           syncConflict: null,
           onboardingCompleted: uiState.onboardingCompleted,
-          demoData: uiState.demoData
+          demoData: uiState.demoData,
+          searchQuery: uiState.lastSearchQuery,
+          searchFilter: uiState.searchFilter,
+          customBackgroundImage: uiState.customBackgroundImage,
+          widgetNotes: uiState.widgetNotes
         });
         return;
       }
@@ -587,7 +697,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         syncMessage: null,
         syncConflict: null,
         onboardingCompleted: uiState.onboardingCompleted,
-        demoData: uiState.demoData
+        demoData: uiState.demoData,
+        searchQuery: uiState.lastSearchQuery,
+        searchFilter: uiState.searchFilter,
+        customBackgroundImage: uiState.customBackgroundImage,
+        widgetNotes: uiState.widgetNotes
       });
     } catch (caught) {
       set({
@@ -603,7 +717,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async completeOnboarding() {
     const next = {
       onboardingCompleted: true,
-      demoData: get().demoData
+      demoData: get().demoData,
+      lastSearchQuery: get().searchQuery,
+      searchFilter: get().searchFilter,
+      customBackgroundImage: get().customBackgroundImage,
+      widgetNotes: get().widgetNotes
     };
     await saveAuraUiState(next);
     set({ onboardingCompleted: true });
@@ -633,16 +751,18 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
-  async addGroup(title) {
+  async addGroup(title, parentId = null) {
     const data = get().data;
     if (!data) return undefined;
 
     const now = nowIso();
+    const normalizedParentId = resolveGroupParentId(data, parentId);
     const group: AuraStartGroup = {
       id: createId("group"),
       title: requireTitle(data, title, "groupTitleRequired"),
+      parentId: normalizedParentId,
       collapsed: false,
-      order: data.groups.length,
+      order: data.groups.filter((item) => item.parentId === normalizedParentId).length,
       links: []
     };
 
@@ -650,6 +770,59 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       ...data,
       updatedAt: now,
       groups: [...data.groups, group]
+    });
+
+    return group.id;
+  },
+
+  async saveCurrentTabsAsNewGroup(customTitle) {
+    const data = get().data;
+    if (!data) return undefined;
+    if (!data.settings.captureOpenTabs) {
+      throw new Error(text(data, "openTabsCaptureDisabled"));
+    }
+
+    const preview = await getCurrentWindowTabsPreview(existingLinkUrls(data));
+    if (!preview.links.length) {
+      throw new Error(text(data, "noOpenTabsToSave"));
+    }
+
+    const createdAt = nowIso();
+    const groupTitle = requireTitle(data, customTitle?.trim() || text(data, "openTabsDefaultGroupTitle"), "groupTitleRequired");
+    const group: AuraStartGroup = {
+      id: createId("group"),
+      title: groupTitle,
+      parentId: null,
+      collapsed: false,
+      order: data.groups.filter((item) => item.parentId === null).length,
+      links: preview.links.map((link, index): AuraStartLink => ({
+        id: createId("link"),
+        title: link.title,
+        url: link.url,
+        order: index,
+        createdAt,
+        updatedAt: createdAt
+      }))
+    };
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeSavingTabs"), "before_tabs_save", {
+      entity: "tabs",
+      title: groupTitle,
+      count: group.links.length,
+      description: text(data, "openTabsSkippedSummary", {
+        duplicates: preview.duplicateCount,
+        existing: preview.existingCount,
+        skipped: preview.skippedCount
+      })
+    });
+
+    await safeCommit(set, {
+      ...withSafety,
+      groups: [...withSafety.groups, group]
+    });
+    get().addToast({
+      type: "success",
+      title: text(data, "openTabsSaved"),
+      message: text(data, "openTabsSavedMessage", { count: group.links.length, title: group.title })
     });
 
     return group.id;
@@ -676,15 +849,32 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
-  async deleteGroup(groupId) {
+  async deleteGroup(groupId, mode = "promote_children") {
     const data = get().data;
     if (!data) return;
     const previous = cloneData(data);
     const group = findGroup(data, groupId);
-    const withSafety = withRestorePoint(data, `Before deleting "${group.title}"`, "before_delete");
+    const children = groupChildren(data, groupId);
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeDeletingGroup", { title: group.title }), "before_group_delete", {
+      entity: "group",
+      title: group.title,
+      count: children.length
+    });
+    const deleteIds = new Set([groupId, ...(mode === "delete_children" ? children.map((child) => child.id) : [])]);
+    const groups = withSafety.groups
+      .filter((item) => !deleteIds.has(item.id))
+      .map((item) =>
+        item.parentId === groupId
+          ? {
+              ...item,
+              parentId: group.parentId,
+              order: data.groups.filter((candidate) => candidate.parentId === group.parentId).length + item.order
+            }
+          : item
+      );
     await safeCommit(set, {
       ...withSafety,
-      groups: withSafety.groups.filter((item) => item.id !== groupId)
+      groups
     });
     get().addToast({
       type: "info",
@@ -695,6 +885,30 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         const current = get().data;
         await safeCommit(set, current ? { ...previous, restorePoints: current.restorePoints } : previous);
       }
+    });
+  },
+
+  async moveGroup(groupId, newParentId) {
+    const data = get().data;
+    if (!data) return;
+
+    const normalizedParentId = resolveGroupParentId(data, newParentId);
+    canMoveGroupToParent(data, groupId, normalizedParentId);
+    const group = findGroup(data, groupId);
+    if (group.parentId === normalizedParentId) return;
+
+    const targetSiblingCount = data.groups.filter((item) => item.parentId === normalizedParentId).length;
+    const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeMovingGroup", { title: group.title }), "before_group_move", {
+      entity: "group",
+      title: group.title,
+      from: groupLabel(data, group.parentId),
+      to: groupLabel(data, normalizedParentId)
+    });
+    await optimisticCommit(set, data, {
+      ...withSafety,
+      groups: withSafety.groups.map((item) =>
+        item.id === groupId ? { ...item, parentId: normalizedParentId, order: targetSiblingCount } : item
+      )
     });
   },
 
@@ -755,9 +969,14 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       throw new Error(text(data, "linkNotFound"));
     }
 
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeDeletingLink", { title: link.title }), "before_link_delete", {
+      entity: "link",
+      title: link.title,
+      groupTitle: groupTitlePath(data.groups, group)
+    });
     await safeCommit(set, {
-      ...data,
-      groups: data.groups.map((item) =>
+      ...withSafety,
+      groups: withSafety.groups.map((item) =>
         item.id === groupId ? { ...item, links: item.links.filter((candidate) => candidate.id !== linkId) } : item
       )
     });
@@ -767,7 +986,8 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       message: text(data, "removedMessage", { title: link.title }),
       actionLabel: text(data, "undo"),
       onAction: async () => {
-        await safeCommit(set, previous);
+        const current = get().data;
+        await safeCommit(set, current ? { ...previous, restorePoints: current.restorePoints } : previous);
       }
     });
   },
@@ -783,7 +1003,10 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const previous = cloneData(data);
     const targetIds = new Set(uniqueTargets);
     let deletedCount = 0;
-    const withSafety = withRestorePoint(data, "Before deleting duplicate links", "before_delete");
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeDeletingDuplicates"), "before_duplicate_delete", {
+      entity: "links",
+      count: uniqueTargets.length
+    });
     const groups = withSafety.groups.map((group) => ({
       ...group,
       links: group.links.filter((link) => {
@@ -815,26 +1038,36 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
-  async reorderGroups(orderedGroupIds) {
+  async reorderGroups(orderedGroupIds, parentId = null) {
     const data = get().data;
     if (!data) return;
 
-    const groupsById = new Map(data.groups.map((group) => [group.id, group]));
-    const orderedIdSet = new Set(orderedGroupIds);
-    const nextGroups = orderedGroupIds
-      .map((groupId) => groupsById.get(groupId))
-      .filter((group): group is AuraStartGroup => Boolean(group));
-    const missingGroups = data.groups.filter((group) => !orderedIdSet.has(group.id));
+    const normalizedParentId = parentId ?? null;
+    const siblings = data.groups.filter((group) => group.parentId === normalizedParentId).sort((a, b) => a.order - b.order);
+    const siblingIds = new Set(siblings.map((group) => group.id));
+    const orderedSiblings = orderedGroupIds
+      .map((groupId) => data.groups.find((group) => group.id === groupId))
+      .filter((group): group is AuraStartGroup => Boolean(group && siblingIds.has(group.id)));
 
-    if (!nextGroups.length || nextGroups.length + missingGroups.length !== data.groups.length) {
+    if (orderedSiblings.length !== siblings.length) {
       return;
     }
 
-    const nextOrder = [...nextGroups, ...missingGroups];
-    const changed = nextOrder.some((group, index) => group.id !== data.groups[index]?.id);
+    const changed = orderedSiblings.some((group, index) => group.id !== siblings[index]?.id);
     if (!changed) return;
 
-    await optimisticCommit(set, data, { ...data, groups: nextOrder });
+    const orderById = new Map(orderedSiblings.map((group, index) => [group.id, index]));
+    const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeReorderingGroups"), "before_group_reorder", {
+      entity: "groups",
+      groupTitle: groupLabel(data, normalizedParentId),
+      count: siblings.length
+    });
+    await optimisticCommit(set, data, {
+      ...withSafety,
+      groups: withSafety.groups.map((group) =>
+        group.parentId === normalizedParentId ? { ...group, order: orderById.get(group.id) ?? group.order } : group
+      )
+    });
   },
 
   async moveLink(linkId, targetGroupId, overLinkId) {
@@ -855,25 +1088,71 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const insertIndex = foundOverIndex >= 0 ? foundOverIndex : targetWithoutMoved.length;
     const nextTargetLinks = targetWithoutMoved.slice();
     nextTargetLinks.splice(insertIndex, 0, link);
+    const orderedSourceLinks = sourceLinks.map((item, index) => ({ ...item, order: index }));
+    const orderedTargetLinks = nextTargetLinks.map((item, index) => ({ ...item, order: index }));
+    const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeMovingLink", { title: link.title }), "before_link_move", {
+      entity: "link",
+      title: link.title,
+      from: groupTitlePath(data.groups, sourceGroup),
+      to: groupTitlePath(data.groups, targetGroup)
+    });
 
     await optimisticCommit(set, data, {
-      ...data,
-      groups: data.groups.map((group) => {
+      ...withSafety,
+      groups: withSafety.groups.map((group) => {
         if (group.id === sourceGroup.id && group.id === targetGroup.id) {
-          return { ...group, links: nextTargetLinks };
+          return { ...group, links: orderedTargetLinks };
         }
 
         if (group.id === sourceGroup.id) {
-          return { ...group, links: sourceLinks };
+          return { ...group, links: orderedSourceLinks };
         }
 
         if (group.id === targetGroup.id) {
-          return { ...group, links: nextTargetLinks };
+          return { ...group, links: orderedTargetLinks };
         }
 
         return group;
       })
     });
+  },
+
+  getGroupTree() {
+    const data = get().data;
+    return data ? buildGroupTree(data.groups) : [];
+  },
+
+  getSearchView() {
+    const data = get().data;
+    return data
+      ? searchAuraGroups(data, get().searchQuery, get().searchFilter)
+      : { groups: [], highlights: { groups: {}, links: {} }, highlightTerms: [], results: [] };
+  },
+
+  getSearchedGroups() {
+    return get().getSearchView().groups;
+  },
+
+  setSearchQuery(query) {
+    const nextQuery = query.slice(0, 300);
+    set({ searchQuery: nextQuery });
+    saveCurrentUiState({ ...get(), searchQuery: nextQuery });
+  },
+
+  setSearchFilter(filter) {
+    set({ searchFilter: filter });
+    saveCurrentUiState({ ...get(), searchFilter: filter });
+  },
+
+  setCustomBackgroundImage(image) {
+    set({ customBackgroundImage: image });
+    saveCurrentUiState({ ...get(), customBackgroundImage: image });
+  },
+
+  setWidgetNotes(notes) {
+    const nextNotes = notes.slice(0, 12_000);
+    set({ widgetNotes: nextNotes });
+    saveCurrentUiState({ ...get(), widgetNotes: nextNotes });
   },
 
   async addDemoData() {
@@ -889,7 +1168,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
     await saveAuraUiState({
       onboardingCompleted: get().onboardingCompleted,
-      demoData: nextMarker
+      demoData: nextMarker,
+      lastSearchQuery: get().searchQuery,
+      searchFilter: get().searchFilter,
+      customBackgroundImage: get().customBackgroundImage,
+      widgetNotes: get().widgetNotes
     });
     set({ demoData: nextMarker });
   },
@@ -904,13 +1187,20 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     if (!hasMatchingDemoData(data, marker)) {
       await saveAuraUiState({
         onboardingCompleted: get().onboardingCompleted,
-        demoData: EMPTY_DEMO_DATA
+        demoData: EMPTY_DEMO_DATA,
+        lastSearchQuery: get().searchQuery,
+        searchFilter: get().searchFilter,
+        customBackgroundImage: get().customBackgroundImage,
+        widgetNotes: get().widgetNotes
       });
       set({ demoData: EMPTY_DEMO_DATA });
       return;
     }
 
-    const withSafety = withRestorePoint(data, "Before removing demo data", "before_delete");
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeRemovingDemoData"), "before_demo_remove", {
+      entity: "demo",
+      count: groupIds.size + linkIds.size
+    });
     const nextGroups = withSafety.groups
       .map((group): AuraStartGroup | null => {
         const links = group.links.filter((link) => !linkIds.has(link.id));
@@ -932,7 +1222,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
     await saveAuraUiState({
       onboardingCompleted: get().onboardingCompleted,
-      demoData: nextMarker
+      demoData: nextMarker,
+      lastSearchQuery: get().searchQuery,
+      searchFilter: get().searchFilter,
+      customBackgroundImage: get().customBackgroundImage,
+      widgetNotes: get().widgetNotes
     });
     set({ demoData: nextMarker });
   },
@@ -940,7 +1234,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async importBackup(imported, mode, source = "aura_json") {
     const data = get().data;
     if (!data) return;
-    const withSafety = withRestorePoint(data, "Before import", "before_import");
+    const importedLinkCount = imported.groups.reduce((count, group) => count + group.links.length, 0);
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeImport"), "before_import", {
+      entity: "import",
+      source: source === "a_fine_start" ? "A Fine Start" : "Aura JSON",
+      count: imported.groups.length,
+      description: text(data, "restoreContextImportCounts", { groups: imported.groups.length, links: importedLinkCount })
+    });
     const next =
       mode === "replace"
         ? keepLocalSyncSettings(
@@ -953,7 +1253,6 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         : mergeImportedData(withSafety, imported);
 
     await safeCommit(set, next);
-    const importedLinkCount = imported.groups.reduce((count, group) => count + group.links.length, 0);
     get().addToast({
       type: "success",
       title:
@@ -969,7 +1268,9 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async resetAllData() {
     const data = get().data;
     if (!data) return;
-    const point = createRestorePoint(data, "Before reset", "before_reset");
+    const point = createRestorePoint(data, text(data, "restoreNameBeforeReset"), "before_reset", {
+      entity: "data"
+    });
     const empty = createEmptyData();
     await safeCommit(set, {
       ...empty,
@@ -977,10 +1278,34 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
+  getRestoreTimeline() {
+    const data = get().data;
+    if (!data) return [];
+
+    const days = new Map<string, RestoreTimelineDay>();
+    data.restorePoints
+      .slice()
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .forEach((point) => {
+        const day = point.createdAt.slice(0, 10);
+        const current = days.get(day) ?? { day, entries: [] };
+        current.entries.push({
+          point,
+          groupCount: point.data.groups.length,
+          linkCount: snapshotLinkCount(point.data)
+        });
+        days.set(day, current);
+      });
+
+    return Array.from(days.values());
+  },
+
   async createManualRestorePoint(name) {
     const data = get().data;
     if (!data) return;
-    await safeCommit(set, withRestorePoint(data, requireTitle(data, name, "restorePointNameRequired"), "manual"));
+    await safeCommit(set, withRestorePoint(data, requireTitle(data, name, "restorePointNameRequired"), "manual", {
+      entity: "data"
+    }));
   },
 
   async restoreRestorePoint(restorePointId) {
@@ -991,7 +1316,10 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       throw new Error(text(data, "restorePointNotFound"));
     }
 
-    const withSafety = withRestorePoint(data, "Before restore", "auto");
+    const withSafety = withRestorePoint(data, text(data, "restoreNameBeforeRestore"), "before_restore", {
+      entity: "data",
+      title: point.name
+    });
     await safeCommit(set, {
       ...point.data,
       restorePoints: withSafety.restorePoints

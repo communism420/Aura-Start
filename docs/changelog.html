@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="User-facing changelog for Aura Start 1.2.0, the Migration and Data Ownership release."
+      content="User-facing changelog for Aura Start 2.0.0, the Migration and Data Ownership release."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -29,23 +29,31 @@
 
       <main class="doc">
         <span class="kicker">Release notes</span>
-        <h1>Aura Start 1.2.0</h1>
+        <h1>Aura Start 2.0.0</h1>
         <p>
-          Migration and Data Ownership Release. This release focuses on safer data
-          movement, clearer recovery, and a more keyboard-friendly workflow.
+          Migration, personalization, Firefox, and data ownership release. This release
+          focuses on nested organization, safer recovery, optional customization,
+          cross-browser packaging, and keyboard-friendly workflows.
         </p>
 
         <h2>Highlights</h2>
         <ul>
+          <li>Added nested groups up to two levels, including parent selection and drag-and-drop reparenting.</li>
+          <li>Added Fuse.js-powered fuzzy search across title, URL, description, and tags, with result counts and quick filters.</li>
+          <li>Reworked restore points into a searchable Restore Timeline with day grouping, action filters, export, and confirmed restore.</li>
+          <li>Added optional Save open tabs workflow with runtime tabs permission, preview, duplicate filtering, and restore point protection.</li>
+          <li>Added built-in and custom local background images with blur, dim, and positioning controls.</li>
+          <li>Added optional widgets for header clock, local Markdown notes, and a Pomodoro timer.</li>
+          <li>Added Firefox-oriented build support with WebExtension API wrappers and Device OAuth fallback for Google Drive sync.</li>
           <li>Added stronger A Fine Start migration flow with safer import preview and compatibility notes.</li>
           <li>Added first-run onboarding, empty state actions, demo data, and Google Drive restore during setup.</li>
-          <li>Added Export / Backup hub, Restore Points Manager, Command Palette, Duplicate Finder, and Privacy Promise.</li>
+          <li>Added Export / Backup hub, Command Palette, Duplicate Finder, and Privacy Promise.</li>
           <li>Fixed Google Drive sync behavior across test and Chrome Web Store builds, including OAuth flow, reconnect states, token persistence, and automatic backup handling (I hope).</li>
           <li>Kept Google Drive sync optional and limited to the hidden appDataFolder storage used by Aura Start.</li>
           <li>Improved keyboard shortcuts, Cyrillic-layout shortcut handling, search focus behavior, and Command Palette access.</li>
           <li>Improved destructive-action safety with restore points, confirmations, and clearer recovery messaging.</li>
           <li>Updated translations across all supported languages and fixed untranslated UI labels.</li>
-          <li>Redesigned GitHub Pages documentation and refreshed privacy, store listing, and release materials.</li>
+          <li>Redesigned the documentation website and refreshed privacy, store listing, and release materials.</li>
           <li>Updated screenshots to match the new Aura Start design.</li>
         </ul>
 

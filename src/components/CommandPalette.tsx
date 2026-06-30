@@ -1,3 +1,4 @@
+import Fuse from "fuse.js";
 import { Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "../i18n";
@@ -15,26 +16,46 @@ type CommandPaletteProps = {
   language: AuraLanguage;
   open: boolean;
   commands: CommandPaletteCommand[];
+  onSearchLinks?: (query: string) => void;
   onClose: () => void;
   onError: (message: string) => void;
 };
 
-function commandMatches(command: CommandPaletteCommand, query: string): boolean {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return true;
-  const haystack = [command.title, command.description ?? "", ...(command.keywords ?? [])].join(" ").toLowerCase();
-  return haystack.includes(normalized);
+function commandFuse(commands: CommandPaletteCommand[]): Fuse<CommandPaletteCommand> {
+  return new Fuse(commands, {
+    ignoreLocation: true,
+    keys: [
+      { name: "title", weight: 0.6 },
+      { name: "description", weight: 0.25 },
+      { name: "keywords", weight: 0.15 }
+    ],
+    threshold: 0.38
+  });
 }
 
-export function CommandPalette({ language, open, commands, onClose, onError }: CommandPaletteProps) {
+export function CommandPalette({ language, open, commands, onSearchLinks, onClose, onError }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const normalizedQuery = query.trim();
   const filteredCommands = useMemo(
-    () => commands.filter((command) => commandMatches(command, query)),
-    [commands, query]
+    () => (normalizedQuery ? commandFuse(commands).search(normalizedQuery).map((result) => result.item) : commands),
+    [commands, normalizedQuery]
   );
-  const selectedCommand = filteredCommands[selectedIndex];
+  const searchLinksCommand = useMemo<CommandPaletteCommand | null>(
+    () =>
+      normalizedQuery && onSearchLinks
+        ? {
+            id: "search-links",
+            title: t(language, "commandSearchLinksFor", { query: normalizedQuery }),
+            description: t(language, "commandSearchLinksForDescription"),
+            action: () => onSearchLinks(normalizedQuery)
+          }
+        : null,
+    [language, normalizedQuery, onSearchLinks]
+  );
+  const visibleCommands = searchLinksCommand ? [searchLinksCommand, ...filteredCommands] : filteredCommands;
+  const selectedCommand = visibleCommands[selectedIndex];
 
   useEffect(() => {
     if (!open) return;
@@ -44,10 +65,10 @@ export function CommandPalette({ language, open, commands, onClose, onError }: C
   }, [open]);
 
   useEffect(() => {
-    if (selectedIndex >= filteredCommands.length) {
-      setSelectedIndex(Math.max(0, filteredCommands.length - 1));
+    if (selectedIndex >= visibleCommands.length) {
+      setSelectedIndex(Math.max(0, visibleCommands.length - 1));
     }
-  }, [filteredCommands.length, selectedIndex]);
+  }, [selectedIndex, visibleCommands.length]);
 
   if (!open) return null;
 
@@ -99,14 +120,14 @@ export function CommandPalette({ language, open, commands, onClose, onError }: C
                 event.preventDefault();
                 const direction = event.key === "ArrowDown" ? 1 : -1;
                 setSelectedIndex((current) =>
-                  filteredCommands.length ? (current + direction + filteredCommands.length) % filteredCommands.length : 0
+                  visibleCommands.length ? (current + direction + visibleCommands.length) % visibleCommands.length : 0
                 );
                 return;
               }
 
               if (event.key === "Enter") {
                 event.preventDefault();
-                void runCommand(filteredCommands[selectedIndex]);
+                void runCommand(visibleCommands[selectedIndex]);
               }
             }}
           />
@@ -115,8 +136,8 @@ export function CommandPalette({ language, open, commands, onClose, onError }: C
           </button>
         </div>
         <div className="mt-2 max-h-[min(28rem,60vh)] overflow-y-auto" id="command-palette-listbox" role="listbox">
-          {filteredCommands.length ? (
-            filteredCommands.map((command, index) => (
+          {visibleCommands.length ? (
+            visibleCommands.map((command, index) => (
               <button
                 aria-selected={index === selectedIndex}
                 className={`command-palette-item ${index === selectedIndex ? "command-palette-item-selected" : ""}`}

@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Non-personal demo data used for screenshot setup.">
+    <meta name="description" content="Non-personal demo data used for Aura Start screenshot setup.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Screenshot Demo Data — Aura Start</title>
+    <title>Screenshot Demo Data - Aura Start</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -23,63 +23,79 @@
       <main class="doc">
         <div class="kicker">Aura Start Docs</div>
         <h1>Screenshot Demo Data</h1>
-<section class="summary" aria-label="Maintainer-only note"><p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p></section>
-<p>This data is for manual screenshot setup, staging mockups, and local testing only. It must not be injected automatically for production users and must not change Aura Start's user data behavior.</p>
-<h2>Groups And Links</h2>
-<h3>Work</h3>
-<ul>
-<li>Project Dashboard — <code>https://github.com</code></li>
-<li>Calendar — <code>https://calendar.google.com</code></li>
-<li>Notes — <code>https://keep.google.com</code></li>
-</ul>
-<h3>Development</h3>
-<ul>
-<li>GitHub — <code>https://github.com</code></li>
-<li>Chrome Developers — <code>https://developer.chrome.com</code></li>
-<li>MDN Web Docs — <code>https://developer.mozilla.org</code></li>
-<li>web.dev — <code>https://web.dev</code></li>
-</ul>
-<h3>Design</h3>
-<ul>
-<li>Figma — <code>https://figma.com</code></li>
-<li>Material Design — <code>https://m3.material.io</code></li>
-</ul>
-<h3>Research</h3>
-<ul>
-<li>Wikipedia — <code>https://wikipedia.org</code></li>
-<li>Hacker News — <code>https://news.ycombinator.com</code></li>
-</ul>
-<h3>Reading</h3>
-<ul>
-<li>Long Reads — <code>https://longreads.com</code></li>
-<li>Documentation — <code>https://developer.mozilla.org</code></li>
-<li>Saved Articles — <code>https://getpocket.com</code></li>
-</ul>
-<h3>Tools</h3>
-<ul>
-<li>JSON Formatter — <code>https://jsonformatter.org</code></li>
-<li>Regex Tester — <code>https://regex101.com</code></li>
-<li>Color Picker — <code>https://coolors.co</code></li>
-</ul>
-<h2>Duplicate Finder Setup</h2>
-<p>For Duplicate Finder screenshots, add a few intentional duplicates manually:</p>
-<ul>
-<li>GitHub — <code>https://github.com</code></li>
-<li>GitHub Home — <code>https://github.com/</code></li>
-<li>Chrome Developers — <code>https://developer.chrome.com</code></li>
-<li>Chrome Dev Docs — <code>http://developer.chrome.com</code></li>
-</ul>
-<p>Keep at least one item in every duplicate group unselected so the screenshot never implies automatic deletion.</p>
-<h2>A Fine Start Import Setup</h2>
-<p>Use a small local sample export code created only from non-personal demo links. Confirm the import preview shows group/link counts before capturing the screenshot. Do not show A Fine Start branding, UI, or screenshots.</p>
-<h2>Manual Setup Notes</h2>
-<ol>
-<li>Install the current <code>dist</code> build as an unpacked extension.</li>
-<li>Create the demo groups manually or use Aura Start's opt-in demo groups only if the current UI provides enough data for the screenshot.</li>
-<li>Keep account identifiers, local paths, OAuth data, and browser profile information out of screenshots.</li>
-<li>Export a Full Backup JSON before replacing local screenshot data.</li>
-<li>After capture, restore your real local data from a backup or restore point if needed.</li>
-</ol>
+        <section class="summary" aria-label="Maintainer-only note">
+          <p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p>
+        </section>
+        <p>This data is for manual screenshot setup, staging mockups, and local testing only. It must not be injected automatically for production users and must not change Aura Start's user data behavior.</p>
+        <p>The automated screenshot script (<code>node scripts/generate-store-photos.mjs</code>) prepares equivalent non-personal demo data before capture. Use the same shape for manual screenshots so documentation, store assets, and the public site stay consistent.</p>
+        <h2>Groups And Links</h2>
+        <h3>Daily</h3>
+        <ul>
+          <li>Project dashboard - <code>https://example.com/dashboard</code></li>
+          <li>Inbox - <code>https://mail.example.com</code></li>
+          <li>Calendar - <code>https://calendar.google.com</code></li>
+        </ul>
+        <h3>Research</h3>
+        <ul>
+          <li>Design notes - <code>https://example.com/design-notes</code></li>
+          <li>Reading list - <code>https://example.com/reading</code></li>
+          <li>Archive - <code>https://example.com/archive</code></li>
+        </ul>
+        <h3>Deep dives</h3>
+        <p>Child group under <strong>Research</strong>.</p>
+        <ul>
+          <li>MDN Web Docs - <code>https://developer.mozilla.org</code></li>
+          <li>Wikipedia - <code>https://wikipedia.org</code></li>
+        </ul>
+        <h3>Tools</h3>
+        <ul>
+          <li>Figma - <code>https://figma.com</code></li>
+          <li>GitHub - <code>https://github.com</code></li>
+          <li>Service status - <code>https://status.example.com</code></li>
+        </ul>
+        <h3>Personal</h3>
+        <ul>
+          <li>Notes - <code>https://notes.example.com</code></li>
+          <li>Travel ideas - <code>https://example.com/travel</code></li>
+        </ul>
+        <h2>Settings For Screenshots</h2>
+        <ul>
+          <li>Theme: dark or system-dark, depending on contrast.</li>
+          <li>Background: built-in forest preset.</li>
+          <li>Background dim: enabled enough for text readability.</li>
+          <li>Widgets: header clock, Markdown notes, and Pomodoro enabled.</li>
+          <li>Notes widget sample: a short launch note with two checklist items.</li>
+          <li>Search query sample: a typo-tolerant query such as <code>dashbord</code>.</li>
+          <li>Sync marker: use non-personal text such as <code>Google Drive</code>; never show a real email address.</li>
+        </ul>
+        <h2>Save Open Tabs Setup</h2>
+        <p>For the Save open tabs screenshot, use only synthetic or public URLs. Include at least one already-saved duplicate and one unsupported browser URL so the preview demonstrates duplicate/unsupported filtering without showing private browsing data.</p>
+        <ul>
+          <li>Aura Start repository - <code>https://github.com/communism420/Aura-Start</code></li>
+          <li>Cloudflare Pages docs - <code>https://developers.cloudflare.com/pages/</code></li>
+          <li>Project dashboard - <code>https://example.com/dashboard</code> (duplicate)</li>
+          <li>Firefox Add-ons Developer Hub - <code>https://addons.mozilla.org/developers/</code></li>
+          <li>Browser settings - <code>chrome://extensions</code> or <code>about:addons</code> (unsupported)</li>
+        </ul>
+        <h2>A Fine Start Import Setup</h2>
+        <p>Use a small local sample export code created only from non-personal demo links. Confirm the import preview shows group/link counts before capturing the screenshot. Do not show A Fine Start branding, UI, or screenshots.</p>
+        <h2>Duplicate Finder Setup</h2>
+        <p>For Duplicate Finder screenshots or manual QA, add a few intentional duplicates manually:</p>
+        <ul>
+          <li>GitHub - <code>https://github.com</code></li>
+          <li>GitHub Home - <code>https://github.com/</code></li>
+          <li>MDN Web Docs - <code>https://developer.mozilla.org</code></li>
+          <li>MDN Docs - <code>http://developer.mozilla.org</code></li>
+        </ul>
+        <p>Keep at least one item in every duplicate group unselected so the screenshot never implies automatic deletion.</p>
+        <h2>Manual Setup Notes</h2>
+        <ol>
+          <li>Install the current <code>dist-google</code> or <code>dist-firefox</code> build as an unpacked extension.</li>
+          <li>Create the demo groups manually or run the screenshot script against a fresh generated build.</li>
+          <li>Keep account identifiers, local paths, OAuth data, and browser profile information out of screenshots.</li>
+          <li>Export a Full Backup JSON before replacing local screenshot data.</li>
+          <li>After capture, restore your real local data from a backup or restore point if needed.</li>
+        </ol>
       </main>
       <footer class="site-footer">
         <p>Aura Start is independent and open-source under the MIT License.</p>

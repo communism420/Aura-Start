@@ -4,7 +4,7 @@
     "description": "Nombre de la extensión."
   },
   "extensionDescription": {
-    "message": "Una página de inicio local, privada y exportable para la nueva pestaña de Chromium.",
+    "message": "Una página de inicio local, privada y exportable para la nueva pestaña del navegador.",
     "description": "Descripción para el manifest y Chrome Web Store."
   }
 }

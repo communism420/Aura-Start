@@ -2,7 +2,7 @@
 
 Effective date: May 24, 2026
 
-Aura Start is a local-first Chromium extension. It replaces the new tab page with user-created groups of links and keeps those groups under the user's control. Aura Start works without an account, and Google Drive sync is optional and off by default.
+Aura Start is a local-first browser extension. It replaces the new tab page with user-created groups of links and keeps those groups under the user's control. Aura Start works without an account, and Google Drive sync is optional and off by default.
 
 ## Data Aura Start Handles
 
@@ -10,30 +10,33 @@ Aura Start handles only the data needed for its new tab and backup features:
 
 - Link groups created by the user
 - Link titles, URLs, optional descriptions, optional tags, and ordering
-- Extension settings such as theme, language, columns, compact mode, search visibility, link-opening behavior, and optional sync mode
-- Local restore points created before imports, resets, cloud restores, and destructive actions
+- Nested group relationships, collapsed state, and display ordering
+- Extension settings such as theme, language, columns, compact mode, search visibility, link-opening behavior, background preferences, optional widgets, optional tabs capture mode, and optional sync mode
+- Local UI state such as the last search query, widget notes, and local background image data selected by the user
+- Local restore timeline entries created before imports, resets, cloud restores, group/link moves, tab saves, and destructive actions
 - Backup files or A Fine Start export codes selected or pasted by the user for import
+- Current-window tab titles and URLs only when the user enables Save open tabs and grants the optional `tabs` permission
 - Optional Google Drive sync metadata, such as connection status, last sync time, and a locally generated device ID
 
-Aura Start does not request browser history, browser bookmarks, tabs, cookies, web requests, scripting, or full Google Drive access.
+Aura Start does not request browser history, browser bookmarks, cookies, web requests, scripting, or full Google Drive access. The `tabs` permission is optional and requested at runtime only when the user previews current-window tabs for the Save open tabs feature.
 
 ## Local Storage
 
-Aura Start stores its primary data in `chrome.storage.local` inside the user's browser profile. In development mode only, when `chrome.storage.local` is unavailable, it can use browser `localStorage` as a local fallback.
+Aura Start stores its primary data in browser-local extension storage inside the user's browser profile. In development mode only, when extension storage is unavailable, it can use browser `localStorage` as a local fallback.
 
 Local storage remains the default. Manual JSON export/import continues to work independently of Google Drive.
 
 ## Optional Google Drive Sync
 
-If the user explicitly connects Google Drive sync, Aura Start uses Google OAuth through Chromium extension identity APIs and requests only this scope:
+If the user explicitly connects Google Drive sync in Google Chrome, Aura Start uses Google OAuth through Chrome extension identity APIs and requests this manifest OAuth scope:
 
 `https://www.googleapis.com/auth/drive.appdata`
 
-This scope allows Aura Start to store and read its own hidden application data file in Google Drive `appDataFolder`. Aura Start stores a single sync file named `aura-start-sync.json` in that hidden app data area. Google authorization is used only for this sync file and is not used for analytics, telemetry, tracking, advertising, account profiling, or reading the user's normal Drive contents.
+This scope allows Aura Start to store and read its own hidden application data file in Google Drive `appDataFolder`. Aura Start stores a single sync file named `aura-start-sync.json` in that hidden app data area.
 
-Aura Start does not request `https://www.googleapis.com/auth/drive`, `https://www.googleapis.com/auth/drive.file`, or `identity.email`. It does not read, scan, list, edit, delete, or create normal visible files in the user's Google Drive. It does not create a visible backup folder or visible backup JSON file in Drive.
+In Firefox and compatible Chromium browsers where Chrome's built-in identity flow is unavailable, Aura Start can use Google Device OAuth as a fallback. That fallback uses the narrower per-file `https://www.googleapis.com/auth/drive.file` scope only for an Aura Start-owned sync file marked with Aura Start app properties. Aura Start does not request `https://www.googleapis.com/auth/drive` or `identity.email`. Google authorization is used only for Aura Start sync and is not used for analytics, telemetry, tracking, advertising, account profiling, or reading the user's normal Drive contents. Aura Start does not read, scan, list, edit, delete, or create unrelated visible files in the user's Google Drive.
 
-When Google Drive sync is enabled, the user's Aura Start data may be transmitted to Google Drive API and stored in the user's Google Drive app data. This includes groups, links, settings, and restore points. The data is not sent to an Aura Start server because Aura Start does not operate a backend service.
+When Google Drive sync is enabled, the user's Aura Start data may be transmitted to Google Drive API and stored in the user's Google Drive app data or Aura Start-owned fallback sync file. This includes groups, nested group relationships, links, settings, widget state, background preferences, restore timeline entries, and sync metadata. The data is not sent to an Aura Start server because Aura Start does not operate a backend service.
 
 Users can:
 
@@ -41,7 +44,7 @@ Users can:
 - Restore an existing Google Drive sync file automatically when connecting sync
 - Restore an existing Google Drive sync file from first-run onboarding when the user chooses that action
 - Create a Google Drive sync file automatically when none exists
-- Back up local changes to Google Drive automatically after connecting sync
+- Back up local changes to Google Drive automatically after connecting sync, including nested group changes, link moves, settings changes, widget updates, and restore timeline updates
 - Delete the hidden Google Drive sync file and disconnect the Google account through one confirmed action
 
 Deleting the Google Drive sync file and disconnecting the Google account does not delete local Aura Start data. The action is shown in a confirmation dialog before it runs. Removing the extension may not remove the hidden Google Drive app data file automatically, so Aura Start provides this explicit delete-and-disconnect action.
@@ -52,7 +55,7 @@ Before replacing local data with a Google Drive restore during connection or onb
 
 ## Account Marker
 
-When Google Drive sync is enabled and connected, Aura Start may show a compact Google Drive status marker in the top-right header. The marker is used only to show sync status, last sync time, and connected account information if Chrome exposes it through existing extension APIs. Aura Start does not request additional Google permissions only to display an avatar or email address.
+When Google Drive sync is enabled and connected, Aura Start may show a compact Google Drive status marker in the top-right header. The marker is used only to show sync status, last sync time, and connected account information if the browser exposes it through existing extension APIs. Aura Start does not request additional Google permissions only to display an avatar or email address.
 
 ## Network, Accounts, Analytics, And Tracking
 
@@ -70,7 +73,7 @@ Aura Start is fully open-source under the MIT License. The source code, build sc
 
 ## Chrome Web Store Limited Use Statement
 
-The use of information received from Chrome APIs and Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements. Aura Start uses Chrome extension storage and the optional Google Drive app data scope only to provide its single user-facing purpose: a private, exportable, user-controlled new tab start page with optional backup/sync.
+The use of information received from browser extension APIs and Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements where applicable. Aura Start uses extension storage, optional runtime tabs access, and optional Google Drive sync scopes only to provide its single user-facing purpose: a private, exportable, user-controlled new tab start page with optional backup/sync.
 
 Aura Start does not sell user data and does not use user data for advertising.
 

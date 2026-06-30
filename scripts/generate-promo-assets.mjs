@@ -5,7 +5,7 @@ import { basename, join, resolve } from "node:path";
 
 const root = process.cwd();
 const photoDir = join(root, "Chrome Submit", "Photo");
-const outputDir = photoDir;
+const outputDir = join(root, "Chrome Submit", "Promo");
 const runId = `${Date.now()}-${process.pid}`;
 const tempDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-assets-${runId}`);
 const profileDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-profile-${runId}`);
@@ -20,19 +20,19 @@ const assets = {
 
 const promoTargets = [
   {
-    name: "small-promo-tile-440x280.png",
+    name: "small-promo-440x280.png",
     width: 440,
     height: 280,
     variant: "small"
   },
   {
-    name: "large-promo-tile-920x680.png",
+    name: "large-promo-920x680.png",
     width: 920,
     height: 680,
     variant: "large"
   },
   {
-    name: "marquee-promo-tile-1400x560.png",
+    name: "marquee-promo-1400x560.png",
     width: 1400,
     height: 560,
     variant: "marquee"

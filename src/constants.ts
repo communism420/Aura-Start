@@ -14,6 +14,22 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
   showDescriptions: true,
   showSearch: true,
   showVersionInHeader: true,
+  captureOpenTabs: false,
+  background: {
+    preset: "none",
+    blur: 0,
+    dim: 22,
+    position: "center"
+  },
+  widgets: {
+    clock: false,
+    notes: false,
+    pomodoro: false
+  },
+  pomodoro: {
+    focusMinutes: 25,
+    breakMinutes: 5
+  },
   autoRestorePoints: true,
   sync: {
     mode: "off",

@@ -1,6 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { AuraStartLink, AuraStartSettings } from "../types";
+import type { LinkSearchHighlights } from "../utils/search";
 import { BookmarkLinkItem } from "./BookmarkLinkItem";
 
 type SortableLinkItemProps = {
@@ -10,6 +11,7 @@ type SortableLinkItemProps = {
   disabled: boolean;
   editMode: boolean;
   highlightTerms?: string[];
+  highlights?: LinkSearchHighlights;
   isDropPending: boolean;
   selected?: boolean;
   onEdit: (groupId: string, link: AuraStartLink) => void;
@@ -23,6 +25,7 @@ export function SortableLinkItem({
   disabled,
   editMode,
   highlightTerms,
+  highlights,
   isDropPending,
   selected,
   onEdit,
@@ -52,6 +55,7 @@ export function SortableLinkItem({
         editMode={editMode}
         groupId={groupId}
         highlightTerms={highlightTerms}
+        highlights={highlights}
         link={link}
         selected={selected}
         settings={settings}

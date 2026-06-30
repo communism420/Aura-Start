@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start is a private, local-first Chromium new tab extension for clean groups of links, exportable backups, A Fine Start migration, and optional Google Drive appDataFolder sync."
+      content="Aura Start is a private, local-first browser new tab extension for nested link groups, fuzzy search, backgrounds, widgets, exportable backups, A Fine Start migration, and optional Google Drive sync."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -31,12 +31,12 @@
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-grid">
             <div class="hero-copy">
-              <span class="eyebrow">Open-source Chromium new tab extension</span>
+              <span class="eyebrow">Open-source browser new tab extension</span>
               <h1 id="hero-title">A private, local-first start page for your links.</h1>
               <p class="lead">
-                Aura Start replaces your Chromium new tab with clean groups of links,
-                local-first storage, exportable backups, A Fine Start migration, and
-                optional Google Drive appDataFolder sync.
+                Aura Start replaces your new tab with nested groups of links,
+                fuzzy search, optional backgrounds and widgets, exportable backups,
+                A Fine Start migration, and optional Google Drive sync.
               </p>
               <div class="actions" aria-label="Aura Start calls to action">
                 <a class="button primary" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">View source on GitHub</a>
@@ -55,8 +55,8 @@
               </div>
               <img
                 class="preview-image"
-                src="assets/screenshots/01-main-new-tab-20260524.png"
-                alt="Aura Start new tab with clean groups of links"
+                src="assets/screenshots/01-new-tab-overview-20260630.png"
+                alt="Aura Start new tab with nested groups, background image, and widgets"
                 width="1280"
                 height="800"
               >
@@ -85,23 +85,23 @@
           <div class="feature-grid">
             <article class="feature-card">
               <span class="feature-icon">01</span>
-              <h3>Clean link groups</h3>
-              <p>Organize links into readable groups with descriptions, tags, search modifiers, themes, compact mode, and configurable columns.</p>
+              <h3>Nested link groups</h3>
+              <p>Organize links into readable groups and one nested level, with descriptions, tags, themes, compact mode, and configurable columns.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">02</span>
-              <h3>Import from A Fine Start</h3>
-              <p>Import A Fine Start export codes for migration. Aura Start is independent and not affiliated with A Fine Start.</p>
+              <h3>Fuzzy search</h3>
+              <p>Find links by title, URL, description, or tags, even with small typos, and narrow results with quick filters.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">03</span>
-              <h3>Export / Backup</h3>
-              <p>Export Full Backup JSON, Browser Bookmarks HTML, Markdown, CSV, or an A Fine Start-compatible export code.</p>
+              <h3>Backgrounds and widgets</h3>
+              <p>Choose built-in or local background images, adjust blur and dimming, and enable clock, notes, or Pomodoro widgets.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">04</span>
-              <h3>Restore Points</h3>
-              <p>Review and restore local safety snapshots created before destructive changes where available.</p>
+              <h3>Restore Timeline</h3>
+              <p>Review grouped safety snapshots, filter them by action type, and restore a previous local state after confirmation.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">05</span>
@@ -110,13 +110,13 @@
             </article>
             <article class="feature-card">
               <span class="feature-icon">06</span>
-              <h3>Duplicate Finder</h3>
-              <p>Scan for exact and possible duplicate links. Deletion remains user-selected and confirmed.</p>
+              <h3>Save open tabs</h3>
+              <p>Preview current-window tabs, skip duplicates and unsupported URLs, and save the rest into a new group after optional permission approval.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">07</span>
               <h3>Optional Drive backup</h3>
-              <p>Google Drive sync is optional, restores or creates Aura Start's hidden sync file, and syncs local changes automatically after connection.</p>
+              <p>Google Drive sync is optional. Chrome uses appDataFolder; Firefox and compatible Chromium fallback builds use an Aura Start-owned Drive file.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">08</span>
@@ -153,7 +153,8 @@
             <h2>No account, no analytics, no tracking.</h2>
             <p>
               Aura Start has no backend and does not request browser history, bookmarks,
-              cookies, tabs, webRequest, scripting, or full Google Drive access.
+              cookies, webRequest, scripting, or full Google Drive access. Tabs access is
+              optional and requested only when you preview current-window tabs.
             </p>
             <div class="actions">
               <a class="button secondary" href="privacy-policy.html">Read the policy</a>
@@ -163,10 +164,11 @@
             <span class="kicker">Optional backup</span>
             <h2>Google Drive sync only when you choose it.</h2>
             <p>
-              When enabled, Drive sync uses Chromium extension identity APIs and the
-              <code>drive.appdata</code> scope to store Aura Start's hidden
-              <code>aura-start-sync.json</code> file. Aura Start does not request
-              full Drive access or visible Drive files.
+              When enabled, Google Chrome uses extension identity APIs and the
+              <code>drive.appdata</code> scope for Aura Start's hidden sync file.
+              Firefox and compatible Chromium fallback builds use <code>drive.file</code>
+              only for Aura Start's own sync file. Aura Start does not request full Drive
+              access or unrelated Drive files.
             </p>
           </div>
         </section>
@@ -176,30 +178,30 @@
             <span class="kicker">Screenshots</span>
             <h2 id="screenshots-title">See the real extension UI.</h2>
             <p>
-              The gallery uses screenshots captured from the current Aura Start 1.2.0 UI
+              The gallery uses screenshots captured from the current Aura Start 2.0.0 UI
               with non-personal demo data.
             </p>
           </div>
           <div class="screenshot-preview-grid">
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/03-export-backup-20260524.png" alt="Aura Start Export and Backup screen" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/03-import-export-20260630.png" alt="Aura Start Import and Export screen" width="1280" height="800" loading="lazy">
               <div>
                 <h3>Export / Backup</h3>
-                <p>Local export formats and migration-friendly backups.</p>
+                <p>Local import, export formats, and migration-friendly backups.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/06-command-palette-20260524.png" alt="Aura Start Command Palette" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/06-save-open-tabs-20260630.png" alt="Aura Start Save open tabs dialog" width="1280" height="800" loading="lazy">
               <div>
-                <h3>Command Palette</h3>
-                <p>Keyboard-first access to common actions.</p>
+                <h3>Save open tabs</h3>
+                <p>Preview current-window tabs before saving them.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/07-duplicate-finder-20260524.png" alt="Aura Start Duplicate Finder" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/04-backgrounds-widgets-20260630.png" alt="Aura Start settings with backgrounds and widgets" width="1280" height="800" loading="lazy">
               <div>
-                <h3>Duplicate Finder</h3>
-                <p>Read-only scans with confirmed cleanup.</p>
+                <h3>Backgrounds and widgets</h3>
+                <p>Personalize the page without changing the local-first model.</p>
               </div>
             </a>
           </div>

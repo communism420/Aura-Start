@@ -33,9 +33,9 @@
 <li>No analytics or tracking</li>
 <li>Full JSON backups</li>
 <li>Multiple export formats</li>
-<li>Optional Google Drive backup through the hidden Drive <code>appDataFolder</code>, with automatic backup after connection</li>
-<li>Restore points before destructive changes</li>
-<li>Command Palette, keyboard shortcuts, and Duplicate Finder</li>
+<li>Optional Google Drive backup through Chrome <code>appDataFolder</code> or Firefox/compatible Chromium Device OAuth fallback</li>
+<li>Restore Timeline before destructive changes</li>
+<li>Nested groups, fuzzy search, backgrounds, widgets, Command Palette, keyboard shortcuts, and Duplicate Finder</li>
 </ul>
 <h2>2. What is preserved?</h2>
 <p>Group names and links should migrate if the A Fine Start export code is valid and contains supported URL values.</p>
@@ -65,9 +65,9 @@
 <h2>6. Merge vs Replace</h2>
 <p>Merge adds imported groups to your current Aura Start data and avoids ID conflicts.</p>
 <p>Replace replaces current groups and settings with the imported data. Export a Full Backup JSON first if you want an extra copy before replacing data.</p>
-<h2>7. Restore points</h2>
-<p>Aura Start creates a restore point before import operations. Restore points are local and capped to avoid unbounded storage growth.</p>
-<p>Users should still create or export a backup before destructive operations such as replace imports, resets, restore point deletion, or deleting Google Drive backup data.</p>
+<h2>7. Restore Timeline</h2>
+<p>Aura Start creates a restore point before import operations. Restore Timeline shows local snapshots grouped by day with search and action filters. Restore points are capped to avoid unbounded storage growth.</p>
+<p>Users should still create or export a backup before destructive operations such as replace imports, resets, restore timeline deletion, or deleting Google Drive backup data.</p>
 <h2>8. Export back to A Fine Start-compatible code</h2>
 <p>Aura Start can export an A Fine Start-compatible export code from the Export menu.</p>
 <p>Use this if you change your mind or want to move a basic grouped-link list elsewhere. The compatibility export contains group names and link names/URLs. Aura Start descriptions and tags are not included when the target format does not support them.</p>
@@ -76,7 +76,7 @@
 <li>If Aura Start says the code is not valid JSON, copy the whole export code again from A Fine Start.</li>
 <li>If no bookmarks are imported, check that the export code includes groups and bookmarks.</li>
 <li>If a link is skipped, its URL may use an unsupported or unsafe scheme. Aura Start allows only <code>http</code> and <code>https</code> links.</li>
-<li>If you chose Replace by mistake, open Restore points and restore the point created before import.</li>
+<li>If you chose Replace by mistake, open Restore Timeline and restore the point created before import.</li>
 <li>If you are unsure, export a Full Backup JSON from Aura Start before trying again.</li>
 </ul>
 <h2>10. FAQ</h2>
@@ -85,7 +85,7 @@
 <p><strong>Does Aura Start import every possible A Fine Start setting?</strong></p>
 <p>No. Aura Start imports grouped links from supported export-code shapes. It does not promise to import fields that are not present in the export code.</p>
 <p><strong>Can I use Aura Start without Google Drive?</strong></p>
-<p>Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default. After you connect Google Drive, local Aura Start changes are backed up automatically to the hidden app data file.</p>
+<p>Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default. After you connect Google Drive, local Aura Start changes are backed up automatically to Aura Start's own sync file.</p>
 <p><strong>Can I keep a normal backup file?</strong></p>
 <p>Yes. Use Full Backup JSON export from Aura Start to keep an independent backup file.</p>
 <p><strong>Can I export back to A Fine Start-compatible format?</strong></p>
