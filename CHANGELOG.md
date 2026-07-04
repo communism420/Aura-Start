@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed Firefox Google Drive restore/connect so a failed optional data-collection permission prompt no longer blocks the real Google OAuth flow when Firefox rejects it outside a direct user-input stack.
+- Bumped the Firefox extension build version to 2.0.3 while keeping the Chromium extension version at 2.0.1.
+- Fixed Firefox Google Drive connection by removing the async permission preflight before the Firefox data collection consent request.
+- Bumped the Firefox extension build version to 2.0.2 while keeping the Chromium extension version at 2.0.1.
 - Added separate Chromium and Firefox extension version configuration with build-time manifest injection and target-specific release validation.
 - Fixed group drag-and-drop target detection so bookmark groups persist after dropping and can be reordered upward, downward, or into valid nested-group drop zones.
 - Fixed order normalization so group reordering is not undone during the save/touch cycle, including legacy data with missing `parentId`.

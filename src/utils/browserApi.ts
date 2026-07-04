@@ -217,10 +217,8 @@ export async function requestExtensionPermission(permission: string): Promise<bo
     throw new Error("Extension permissions API is unavailable.");
   }
 
-  if (await containsExtensionPermission(permission)) {
-    return true;
-  }
-
+  // Firefox requires permissions.request to run directly from a user input
+  // handler. A preflight permissions.contains await can consume that gesture.
   return await callPromiseOrCallback(
     async () => Boolean(await (permissions.request as (permissions: chrome.permissions.Permissions) => Promise<boolean>)({ permissions: [permission] })),
     (resolve, reject) => {
@@ -264,11 +262,9 @@ export async function requestExtensionDataCollectionPermissions(
     return true;
   }
 
-  if (await containsExtensionDataCollectionPermissions(dataCollectionPermissions)) {
-    return true;
-  }
-
   const request = { data_collection: dataCollectionPermissions };
+  // Firefox requires permissions.request to run directly from a user input
+  // handler. A preflight permissions.contains await can consume that gesture.
   return await callPromiseOrCallback(
     async () => Boolean(await permissions.request?.(request)),
     (resolve, reject) => {

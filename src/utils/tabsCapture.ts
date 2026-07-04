@@ -96,10 +96,6 @@ export async function hasTabsPermission(): Promise<boolean> {
 }
 
 export async function requestTabsPermission(): Promise<boolean> {
-  if (await hasTabsPermission()) {
-    return true;
-  }
-
   try {
     return await requestExtensionPermission(TABS_PERMISSION);
   } catch (error) {

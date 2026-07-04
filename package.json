@@ -3,7 +3,7 @@
   "version": "2.0.1",
   "extensionVersions": {
     "chromium": "2.0.1",
-    "firefox": "2.0.1"
+    "firefox": "2.0.3"
   },
   "license": "MIT",
   "type": "module",

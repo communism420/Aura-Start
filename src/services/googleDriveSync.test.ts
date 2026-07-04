@@ -8,6 +8,7 @@ import {
   googleDriveDeviceOAuthPollDelayMs,
   googleDriveDeviceOAuthScopes,
   isChromeIdentityUnsupportedError,
+  isFirefoxUserInputPermissionRequestError,
   isGoogleDriveAuthorizationUnavailable,
   mapDriveError,
   selectGoogleDriveAuthFlow,
@@ -558,6 +559,15 @@ describe("Google Drive browser OAuth capability detection", () => {
 });
 
 describe("Google Drive OAuth error handling", () => {
+  it("recognizes Firefox permission requests that lost the user input stack", () => {
+    expect(
+      isFirefoxUserInputPermissionRequestError(
+        new Error("permissions.request may only be called from a user input handler")
+      )
+    ).toBe(true);
+    expect(isFirefoxUserInputPermissionRequestError(new Error("The user did not approve access."))).toBe(false);
+  });
+
   it("recognizes revoked Chrome identity authorization", () => {
     const error = new GoogleDriveSyncError("auth_cancelled", "OAuth2 not granted or revoked.");
 

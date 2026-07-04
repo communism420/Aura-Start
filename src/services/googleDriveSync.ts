@@ -198,6 +198,17 @@ export class GoogleDriveSyncError extends Error {
 let webAuthTokenCache: CachedToken | undefined;
 let deviceAuthTokenCache: CachedDeviceToken | undefined;
 
+export function isFirefoxUserInputPermissionRequestError(error: unknown): boolean {
+  const message = error instanceof Error
+    ? error.message
+    : typeof error === "string"
+      ? error
+      : "";
+
+  return /permissions\.request/i.test(message)
+    && /may only be called from a user input handler/i.test(message);
+}
+
 function isRecord(value: unknown): value is RecordValue {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -1309,7 +1320,21 @@ async function requestFirefoxDriveSyncDataCollectionConsent(interactive: boolean
     return;
   }
 
-  const granted = await requestExtensionDataCollectionPermissions(FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS);
+  let granted: boolean;
+  try {
+    granted = await requestExtensionDataCollectionPermissions(FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS);
+  } catch (error) {
+    if (isFirefoxUserInputPermissionRequestError(error)) {
+      console.warn?.(
+        "Aura Start Firefox data collection consent prompt was rejected outside Firefox's direct user input stack. Continuing with Google OAuth because the data collection declaration is already present in the Firefox manifest.",
+        error
+      );
+      return;
+    }
+
+    throw error;
+  }
+
   if (!granted) {
     throw new GoogleDriveSyncError(
       "auth_cancelled",

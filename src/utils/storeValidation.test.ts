@@ -11,7 +11,7 @@ const VALID_DEVICE_CLIENT_ID = "391557451047-safedevicefallbackclient.apps.googl
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const CHROMIUM_EXTENSION_VERSION = "2.0.1";
-const FIREFOX_EXTENSION_VERSION = "2.0.1";
+const FIREFOX_EXTENSION_VERSION = "2.0.3";
 const VALID_MANIFEST = {
   manifest_version: 3,
   name: "__MSG_extensionName__",
