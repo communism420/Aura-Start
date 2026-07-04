@@ -27,7 +27,7 @@ export function normalizeGroupParentIds(groups: AuraStartGroup[]): AuraStartGrou
 }
 
 export function normalizeGroupOrders(groups: AuraStartGroup[]): AuraStartGroup[] {
-  const normalized = normalizeGroupParentIds(groups);
+  const normalized = sortedGroups(normalizeGroupParentIds(groups));
   const orderByParent = new Map<GroupParentId, number>();
 
   return normalized.map((group) => {

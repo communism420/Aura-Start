@@ -10,13 +10,19 @@ const VALID_WEB_CLIENT_ID = "391557451047-safewebfallbackclient.apps.googleuserc
 const VALID_DEVICE_CLIENT_ID = "391557451047-safedevicefallbackclient.apps.googleusercontent.com";
 const DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+const CHROMIUM_EXTENSION_VERSION = "2.0.1";
+const FIREFOX_EXTENSION_VERSION = "2.0.1";
 const VALID_MANIFEST = {
   manifest_version: 3,
   name: "__MSG_extensionName__",
   description: "__MSG_extensionDescription__",
-  version: "2.0.0",
+  version: CHROMIUM_EXTENSION_VERSION,
   default_locale: "en",
   chrome_url_overrides: { newtab: "newtab.html" },
+  background: {
+    service_worker: "background.js",
+    type: "module"
+  },
   permissions: ["storage", "identity"],
   optional_permissions: ["tabs"],
   host_permissions: ["https://www.googleapis.com/*", "https://oauth2.googleapis.com/*"],
@@ -49,10 +55,18 @@ async function writeFixtureDist(manifest: unknown, js = "console.log('ok');"): P
     "_locales/pt_BR/messages.json",
     "_locales/ru/messages.json",
     "_locales/uk/messages.json",
+    "background.js",
     "assets/app.js"
   ];
 
   await Promise.all(requiredFiles.map((file) => mkdir(join(dist, file, ".."), { recursive: true })));
+  await writeFile(join(root, "package.json"), `${JSON.stringify({
+    version: CHROMIUM_EXTENSION_VERSION,
+    extensionVersions: {
+      chromium: CHROMIUM_EXTENSION_VERSION,
+      firefox: FIREFOX_EXTENSION_VERSION
+    }
+  }, null, 2)}\n`, "utf8");
   await writeFile(join(dist, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
   await Promise.all(
     requiredFiles
@@ -126,6 +140,42 @@ describe("Chrome Web Store validation OAuth guards", () => {
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("required permissions");
+  });
+
+  it("fails when a Chromium MV3 manifest contains Firefox background scripts", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      background: {
+        scripts: ["background.js"],
+        service_worker: "background.js",
+        type: "module"
+      }
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("background.scripts");
+  });
+
+  it("fails when the Chromium manifest version does not match the configured Chromium version", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      version: "2.0.0"
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("configured Chromium extension version");
+  });
+
+  it("allows a Chromium version override for release validation", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      version: "2.0.2"
+    }, undefined, {
+      AURA_CHROMIUM_EXTENSION_VERSION: "2.0.2"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Chrome Web Store validation passed.");
   });
 
   it("fails when a Web OAuth client ID is bundled into runtime code without explicit fallback", async () => {

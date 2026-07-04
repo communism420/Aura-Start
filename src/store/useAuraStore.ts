@@ -346,6 +346,14 @@ function groupChildren(data: AuraStartData, groupId: string): AuraStartGroup[] {
   return data.groups.filter((group) => group.parentId === groupId);
 }
 
+function groupParentId(group: AuraStartGroup): string | null {
+  return group.parentId ?? null;
+}
+
+function groupHasParent(group: AuraStartGroup, parentId: string | null): boolean {
+  return groupParentId(group) === parentId;
+}
+
 function existingLinkUrls(data: AuraStartData): string[] {
   return data.groups.flatMap((group) => group.links.map((link) => link.url));
 }
@@ -365,7 +373,7 @@ function resolveGroupParentId(data: AuraStartData, parentId?: string | null): st
   }
 
   const parent = findGroup(data, parentId);
-  if (parent.parentId !== null) {
+  if (groupParentId(parent) !== null) {
     throw new Error(text(data, "nestedGroupDepthLimit"));
   }
 
@@ -380,7 +388,7 @@ function canMoveGroupToParent(data: AuraStartData, groupId: string, parentId: st
 
   if (parentId) {
     const parent = findGroup(data, parentId);
-    if (parent.parentId !== null) {
+    if (groupParentId(parent) !== null) {
       throw new Error(text(data, "nestedGroupDepthLimit"));
     }
 
@@ -689,11 +697,16 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         return;
       }
 
+      const data = {
+        ...result.data,
+        groups: normalizeOrders(result.data.groups)
+      };
+
       set({
-        data: result.data,
+        data,
         status: "ready",
         usingFallbackStorage: result.fallback,
-        syncStatus: syncStatusFromData(result.data),
+        syncStatus: syncStatusFromData(data),
         syncMessage: null,
         syncConflict: null,
         onboardingCompleted: uiState.onboardingCompleted,
@@ -762,7 +775,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       title: requireTitle(data, title, "groupTitleRequired"),
       parentId: normalizedParentId,
       collapsed: false,
-      order: data.groups.filter((item) => item.parentId === normalizedParentId).length,
+      order: data.groups.filter((item) => groupHasParent(item, normalizedParentId)).length,
       links: []
     };
 
@@ -794,7 +807,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       title: groupTitle,
       parentId: null,
       collapsed: false,
-      order: data.groups.filter((item) => item.parentId === null).length,
+      order: data.groups.filter((item) => groupHasParent(item, null)).length,
       links: preview.links.map((link, index): AuraStartLink => ({
         id: createId("link"),
         title: link.title,
@@ -867,8 +880,8 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         item.parentId === groupId
           ? {
               ...item,
-              parentId: group.parentId,
-              order: data.groups.filter((candidate) => candidate.parentId === group.parentId).length + item.order
+              parentId: groupParentId(group),
+              order: data.groups.filter((candidate) => groupHasParent(candidate, groupParentId(group))).length + item.order
             }
           : item
       );
@@ -895,13 +908,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     const normalizedParentId = resolveGroupParentId(data, newParentId);
     canMoveGroupToParent(data, groupId, normalizedParentId);
     const group = findGroup(data, groupId);
-    if (group.parentId === normalizedParentId) return;
+    if (groupHasParent(group, normalizedParentId)) return;
 
-    const targetSiblingCount = data.groups.filter((item) => item.parentId === normalizedParentId).length;
+    const targetSiblingCount = data.groups.filter((item) => groupHasParent(item, normalizedParentId)).length;
     const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeMovingGroup", { title: group.title }), "before_group_move", {
       entity: "group",
       title: group.title,
-      from: groupLabel(data, group.parentId),
+      from: groupLabel(data, groupParentId(group)),
       to: groupLabel(data, normalizedParentId)
     });
     await optimisticCommit(set, data, {
@@ -1043,7 +1056,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     if (!data) return;
 
     const normalizedParentId = parentId ?? null;
-    const siblings = data.groups.filter((group) => group.parentId === normalizedParentId).sort((a, b) => a.order - b.order);
+    const siblings = data.groups.filter((group) => groupHasParent(group, normalizedParentId)).sort((a, b) => a.order - b.order);
     const siblingIds = new Set(siblings.map((group) => group.id));
     const orderedSiblings = orderedGroupIds
       .map((groupId) => data.groups.find((group) => group.id === groupId))
@@ -1065,7 +1078,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     await optimisticCommit(set, data, {
       ...withSafety,
       groups: withSafety.groups.map((group) =>
-        group.parentId === normalizedParentId ? { ...group, order: orderById.get(group.id) ?? group.order } : group
+        groupHasParent(group, normalizedParentId) ? { ...group, parentId: normalizedParentId, order: orderById.get(group.id) ?? group.order } : group
       )
     });
   },

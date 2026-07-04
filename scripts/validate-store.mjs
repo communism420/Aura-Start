@@ -1,10 +1,15 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { resolveExtensionVersion } from "./extension-versions.mjs";
 
 const root = process.cwd();
-const dist = join(root, "dist");
+const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+const expectedChromiumVersion = resolveExtensionVersion(packageJson, "chromium");
+const distDir = process.env.AURA_CHROME_DIST_DIR?.trim() || "dist";
+const dist = join(root, distDir);
 const requiredFiles = [
   "manifest.json",
+  "background.js",
   "newtab.html",
   "options.html",
   "popup.html",
@@ -166,12 +171,24 @@ if (await exists(manifestPath)) {
     fail("manifest_version must be 3.");
   }
 
+  if (manifest.version !== expectedChromiumVersion) {
+    fail(`Chromium manifest version ${manifest.version} does not match configured Chromium extension version ${expectedChromiumVersion}.`);
+  }
+
   if (manifest.default_locale !== "en") {
     fail("default_locale must be present and set to en when localized __MSG_* manifest strings are used.");
   }
 
   if (manifest.chrome_url_overrides?.newtab !== "newtab.html") {
     fail("chrome_url_overrides.newtab must point to newtab.html.");
+  }
+
+  if (manifest.background?.scripts) {
+    fail("Chromium MV3 builds must not contain background.scripts. Use background.service_worker instead.");
+  }
+
+  if (manifest.background?.service_worker !== "background.js") {
+    fail("Chromium MV3 builds must use background.service_worker: background.js.");
   }
 
   const permissions = Array.isArray(manifest.permissions) ? manifest.permissions : [];
@@ -264,7 +281,7 @@ const benignUrlFragments = [
 for (const file of codeFiles) {
   const text = await readFile(file, "utf8");
   const displayPath = relative(root, file);
-  const isManifest = displayPath.replaceAll("\\", "/") === "dist/manifest.json";
+  const isManifest = file === manifestPath;
   for (const { pattern, label } of remoteCodePatterns) {
     if (pattern.test(text)) {
       fail(`${displayPath} contains ${label}.`);

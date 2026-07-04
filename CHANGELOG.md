@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added separate Chromium and Firefox extension version configuration with build-time manifest injection and target-specific release validation.
+- Fixed group drag-and-drop target detection so bookmark groups persist after dropping and can be reordered upward, downward, or into valid nested-group drop zones.
+- Fixed order normalization so group reordering is not undone during the save/touch cycle, including legacy data with missing `parentId`.
+- Fixed Chromium/Helium MV3 manifests so `background.scripts` is never included outside Firefox builds, and added validation guards for browser-specific background formats.
+- Bumped the extension package and manifest version to 2.0.1.
+- Documented the Mozilla Add-ons source-code submission flow in README, including the required source archive contents, exclusions, and reproducible Firefox build commands.
 - Refreshed README, privacy policy, public docs site, store submission notes, release checklists, comparison docs, demo screenshot data, and screenshot documentation for the current 2.0.0 feature set, including nested groups, fuzzy search, Restore Timeline, Save open tabs, Firefox support, backgrounds, and widgets.
 - Updated cross-browser UI and manifest wording so data ownership and extension descriptions no longer describe Aura Start as Chromium-only.
 - Updated release and store documentation to use `https://aurastart.pages.dev/` as the public Aura Start website.

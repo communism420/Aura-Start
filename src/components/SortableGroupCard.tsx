@@ -42,6 +42,7 @@ export function SortableGroupCard(props: SortableGroupCardProps) {
   return (
     <div
       className={`sortable-group-shell group-tree-depth-${props.depth ?? 0}`}
+      data-group-id={props.group.id}
       ref={sortable.setNodeRef}
       style={{
         transform: sortable.transform ? CSS.Translate.toString(sortable.transform) ?? undefined : undefined,

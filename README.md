@@ -107,6 +107,8 @@ In Vite development mode, Aura Start falls back to `localStorage` when the WebEx
 
 `npm run build:local` creates a local unpacked-extension build in `dist-local`. `npm run build:firefox` creates a Firefox-oriented package in `dist-firefox` and rewrites the built manifest for Firefox background scripts plus `browser_specific_settings.gecko`. `npm run build:store` builds the Chrome Web Store release package in `dist` and validates Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, OAuth configuration, and no obvious remote-code patterns. `npm run validate:zip` checks the Chrome Submit ZIP against the current `dist` package after a fresh ZIP is created.
 
+Extension store versions are configured separately in `package.json` under `extensionVersions.chromium` and `extensionVersions.firefox`. Build-time manifest injection writes the target browser version into the generated `manifest.json`, and release validators fail if a Chromium or Firefox package contains the wrong target version. Use `AURA_CHROMIUM_EXTENSION_VERSION`, `AURA_FIREFOX_EXTENSION_VERSION`, or `AURA_EXTENSION_VERSION` only for one-off build overrides.
+
 For a release build with Google Drive sync, provide real OAuth configuration through environment variables instead of committing secrets:
 
 - `AURA_GOOGLE_OAUTH_CLIENT_ID`: Chrome Extension OAuth client ID for the final extension ID.
@@ -170,13 +172,65 @@ You can export back to an A Fine Start-compatible export code from Aura Start if
 
 Firefox support is packaged separately from the Chrome Web Store build:
 
+PowerShell:
+
+```powershell
+$env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID='PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com'
+$env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET='PASTE_REAL_DEVICE_SECRET_HERE'
+npm run build:firefox
+```
+
+POSIX shells:
+
 ```bash
 AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com \
 AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET=PASTE_REAL_DEVICE_SECRET_HERE \
 npm run build:firefox
 ```
 
-The generated `dist-firefox/manifest.json` removes Chrome-only `manifest.oauth2`, uses Firefox background scripts, and sets `browser_specific_settings.gecko`. Use `AURA_FIREFOX_ALLOW_MISSING_DEVICE_OAUTH=true npm run build:firefox` only for UI smoke builds where Google Drive sync is intentionally unavailable.
+The `build:firefox` script runs TypeScript checking, Vite production build, Firefox JavaScript sanitization, Firefox manifest finalization, and Firefox package validation. The generated `dist-firefox/manifest.json` removes Chrome-only `manifest.oauth2`, removes the Chrome-only `identity` permission, uses Firefox background scripts, and sets `browser_specific_settings.gecko`.
+
+Use `AURA_FIREFOX_ALLOW_MISSING_DEVICE_OAUTH=true npm run build:firefox` only for UI smoke builds where Google Drive sync is intentionally unavailable. Do not use that flag for the Mozilla Add-ons release package.
+
+## Mozilla Add-ons Source Code Submission
+
+When Mozilla Add-ons asks whether source code must be submitted, choose **Yes** for Aura Start Firefox releases. Aura Start uses Vite, TypeScript, React, Tailwind CSS, and npm dependencies, so the uploaded extension ZIP contains generated bundled code.
+
+Upload a separate source archive in the source-code field. Do not upload the built `Firefox Submit/aura-start-<version>-firefox.zip` there; that file is the extension package. The source archive should contain the readable project source needed to reproduce the Firefox package:
+
+- `src/`
+- `public/`
+- `scripts/`
+- root HTML entry points: `newtab.html`, `options.html`, and `popup.html`
+- build and TypeScript configuration: `package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig.json`, `tailwind.config.ts`, and `postcss.config.js`
+- project documentation and license files, including this `README.md`, `PRIVACY.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, and `LICENSE`
+
+Do not include generated, dependency, secret, or store-upload artifacts in the source archive:
+
+- `node_modules/`
+- `dist/`, `dist-*`, `dist-google*`, or `dist-firefox*`
+- `.git/`
+- `.env`, `.env.*`, or local credential files
+- generated release ZIP files
+- source maps
+
+To reproduce the submitted Firefox package from the source archive:
+
+```powershell
+npm ci
+$env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID='PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com'
+$env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET='PASTE_REAL_DEVICE_SECRET_HERE'
+npm run build:firefox
+```
+
+The release OAuth values are supplied through environment variables and are intentionally not committed to the repository. `npm run build:firefox` fails if those values are missing, which prevents accidental Firefox release packages with broken Google Drive Device OAuth sync.
+
+After the build, zip the contents of `dist-firefox/` with `manifest.json` at the archive root, then run:
+
+```powershell
+npm run validate:firefox
+npm run validate:firefox:submit
+```
 
 ## Privacy
 

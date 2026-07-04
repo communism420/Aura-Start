@@ -368,6 +368,43 @@ describe("validation and restore point safety", () => {
     expect(validated.groups[0].parentId).toBeNull();
   });
 
+  it("reorders legacy top-level groups with missing parent ids", async () => {
+    const previousLocalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    const storage = new Map<string, string>();
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        removeItem: (key: string) => storage.delete(key),
+        setItem: (key: string, value: string) => storage.set(key, value)
+      }
+    });
+
+    try {
+      useAuraStore.setState({
+        data: data({
+          groups: [
+            group({ id: "group_1", title: "One", parentId: undefined, order: 0, links: [] }),
+            group({ id: "group_2", title: "Two", parentId: undefined, order: 1, links: [] })
+          ]
+        })
+      });
+
+      await useAuraStore.getState().reorderGroups(["group_2", "group_1"], null);
+
+      const reordered = useAuraStore.getState().data?.groups.slice().sort((a, b) => a.order - b.order);
+      expect(reordered?.map((item) => item.id)).toEqual(["group_2", "group_1"]);
+      expect(reordered?.map((item) => item.parentId)).toEqual([null, null]);
+    } finally {
+      useAuraStore.setState({ data: null });
+      if (previousLocalStorage) {
+        Object.defineProperty(globalThis, "localStorage", previousLocalStorage);
+      } else {
+        Reflect.deleteProperty(globalThis, "localStorage");
+      }
+    }
+  });
+
   it("migrates and clamps optional background and widget settings", () => {
     const legacySettings = { ...settings() } as Record<string, unknown>;
     delete legacySettings.background;

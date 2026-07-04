@@ -2,10 +2,12 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { resolveExtensionVersion } from "./extension-versions.mjs";
 
 const root = process.cwd();
 const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
-const zipPath = join(root, "Chrome Submit", `aura-start-${packageJson.version}-chrome-web-store.zip`);
+const chromiumVersion = resolveExtensionVersion(packageJson, "chromium");
+const zipPath = join(root, "Chrome Submit", `aura-start-${chromiumVersion}-chrome-web-store.zip`);
 const distDir = process.env.AURA_CHROME_DIST_DIR?.trim() || "dist";
 const distManifestPath = join(root, distDir, "manifest.json");
 const sourceManifestPath = join(root, "public", "manifest.json");
@@ -113,12 +115,8 @@ if (zipManifest) {
     fail("ZIP manifest_version must be 3.");
   }
 
-  if (zipManifest.version !== packageJson.version) {
-    fail(`ZIP manifest version ${zipManifest.version} does not match package.json version ${packageJson.version}.`);
-  }
-
-  if (zipManifest.version !== sourceManifest.version) {
-    fail(`ZIP manifest version ${zipManifest.version} does not match public/manifest.json version ${sourceManifest.version}.`);
+  if (zipManifest.version !== chromiumVersion) {
+    fail(`ZIP manifest version ${zipManifest.version} does not match configured Chromium extension version ${chromiumVersion}.`);
   }
 
   if (distManifest && JSON.stringify(zipManifest) !== JSON.stringify(distManifest)) {
@@ -127,6 +125,14 @@ if (zipManifest) {
 
   if (zipManifest.background?.service_worker && !entries.includes(zipManifest.background.service_worker)) {
     fail(`ZIP manifest references missing background service worker: ${zipManifest.background.service_worker}`);
+  }
+
+  if (zipManifest.background?.scripts) {
+    fail("ZIP manifest must not contain background.scripts because Chromium MV3 requires background.service_worker.");
+  }
+
+  if (zipManifest.background?.service_worker !== "background.js") {
+    fail("ZIP manifest must use background.service_worker: background.js.");
   }
 
   if (sourceManifest.background?.service_worker && zipManifest.background?.service_worker !== sourceManifest.background.service_worker) {

@@ -2,12 +2,14 @@ import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { resolveExtensionVersion } from "./extension-versions.mjs";
 
 const root = process.cwd();
 const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+const firefoxVersion = resolveExtensionVersion(packageJson, "firefox");
 const distDir = process.env.AURA_FIREFOX_DIST_DIR?.trim() || "dist-firefox";
 const args = process.argv.slice(2);
-const submitZipPath = join("Firefox Submit", `aura-start-${packageJson.version}-firefox.zip`);
+const submitZipPath = join("Firefox Submit", `aura-start-${firefoxVersion}-firefox.zip`);
 const zipArgIndex = args.indexOf("--zip");
 const zipArgPath = zipArgIndex >= 0 ? args[zipArgIndex + 1]?.trim() ?? "" : "";
 const zipPath = process.env.AURA_FIREFOX_ZIP_PATH?.trim()
@@ -107,8 +109,8 @@ function validateManifest(manifest, sourceLabel) {
     fail(`${sourceLabel}: manifest_version must be 3.`);
   }
 
-  if (manifest.version !== packageJson.version) {
-    fail(`${sourceLabel}: manifest version ${manifest.version} does not match package.json ${packageJson.version}.`);
+  if (manifest.version !== firefoxVersion) {
+    fail(`${sourceLabel}: manifest version ${manifest.version} does not match configured Firefox extension version ${firefoxVersion}.`);
   }
 
   if (manifest.oauth2) {
@@ -121,6 +123,14 @@ function validateManifest(manifest, sourceLabel) {
 
   if (!manifest.background?.scripts?.includes("background.js")) {
     fail(`${sourceLabel}: Firefox manifest must use background.scripts with background.js.`);
+  }
+
+  if (manifest.background?.service_worker) {
+    fail(`${sourceLabel}: Firefox manifest must not contain Chromium-only background.service_worker.`);
+  }
+
+  if (manifest.background?.type) {
+    fail(`${sourceLabel}: Firefox manifest must not contain Chromium-only background.type.`);
   }
 
   if (!manifest.optional_permissions?.includes("tabs")) {
