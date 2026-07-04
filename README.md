@@ -6,6 +6,11 @@ Aura Start is an independent open-source project, not affiliated with A Fine Sta
 
 Positioning: A private, local-first start page for your links - free, open-source, and easy to export.
 
+## Download
+
+- Chromium browsers: [Chrome Web Store](https://chromewebstore.google.com/detail/aura-start/pdhhhnmcampmmklkbbfbmniijmgjiabi)
+- Firefox: [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/aura-start/)
+
 ## Why Aura Start?
 
 - Free and open-source

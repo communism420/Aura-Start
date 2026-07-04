@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added official Chrome Web Store and Firefox Add-ons download links to README.
 - Fixed Firefox Google Drive restore/connect so a failed optional data-collection permission prompt no longer blocks the real Google OAuth flow when Firefox rejects it outside a direct user-input stack.
 - Bumped the Firefox extension build version to 2.0.3 while keeping the Chromium extension version at 2.0.1.
 - Fixed Firefox Google Drive connection by removing the async permission preflight before the Firefox data collection consent request.
