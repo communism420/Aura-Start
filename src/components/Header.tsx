@@ -64,16 +64,18 @@ export function Header({
   const syncMarkerTitle = [
     syncStatus === "syncing"
       ? t(language, "googleDriveSyncing")
-      : syncStatus === "error"
-        ? t(language, "googleDriveSyncFailed")
-        : syncStatus === "conflict"
-          ? t(language, "googleDriveConflictDetected")
-          : t(language, "googleDriveConnected"),
+      : syncStatus === "reconnect_required"
+        ? t(language, "googleDriveNeedsReconnect")
+        : syncStatus === "error"
+          ? t(language, "googleDriveSyncFailed")
+          : syncStatus === "conflict"
+            ? t(language, "googleDriveConflictDetected")
+            : t(language, "googleDriveConnected"),
     sync.accountEmail ?? sync.accountName,
     sync.lastSyncedAt ? t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) }) : undefined,
     syncMessage
   ].filter(Boolean).join("\n");
-  const SyncIcon = syncStatus === "syncing" ? RefreshCw : syncStatus === "error" || syncStatus === "conflict" ? AlertCircle : Cloud;
+  const SyncIcon = syncStatus === "syncing" ? RefreshCw : syncStatus === "error" || syncStatus === "conflict" || syncStatus === "reconnect_required" ? AlertCircle : Cloud;
 
   return (
     <header className="aura-header">
@@ -150,7 +152,7 @@ export function Header({
             {showSyncMarker ? (
               <button
                 className={`sync-account-marker ${
-                  syncStatus === "error" || syncStatus === "conflict" ? "sync-account-marker-error" : ""
+                  syncStatus === "error" || syncStatus === "conflict" || syncStatus === "reconnect_required" ? "sync-account-marker-error" : ""
                 } ${syncStatus === "syncing" ? "sync-account-marker-syncing" : ""}`}
                 title={syncMarkerTitle}
                 type="button"

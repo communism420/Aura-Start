@@ -151,12 +151,14 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     mode,
     deviceId,
     lastSyncedAt: normalizeOptionalIso(sync.lastSyncedAt),
+    lastSyncedLocalUpdatedAt: normalizeOptionalIso(sync.lastSyncedLocalUpdatedAt),
     lastCloudUpdatedAt: normalizeOptionalIso(sync.lastCloudUpdatedAt),
     accountEmail: optionalTrimmedString(sync.accountEmail),
     accountName: optionalTrimmedString(sync.accountName),
     accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
     connected: mode !== "off" && asBoolean(sync.connected, false),
+    reconnectRequired: mode !== "off" && asBoolean(sync.connected, false) && asBoolean(sync.reconnectRequired, false),
     deleteCloudFileOnDisconnect: asBoolean(sync.deleteCloudFileOnDisconnect, DEFAULT_SETTINGS.sync.deleteCloudFileOnDisconnect)
   };
 }

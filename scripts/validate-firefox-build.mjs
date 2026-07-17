@@ -129,8 +129,8 @@ function validateManifest(manifest, sourceLabel) {
     fail(`${sourceLabel}: Firefox manifest must not contain Chromium-only background.service_worker.`);
   }
 
-  if (manifest.background?.type) {
-    fail(`${sourceLabel}: Firefox manifest must not contain Chromium-only background.type.`);
+  if (manifest.background?.type !== "module") {
+    fail(`${sourceLabel}: Firefox background.scripts must use type: module because the Vite background entry contains ES module imports.`);
   }
 
   if (!manifest.optional_permissions?.includes("tabs")) {

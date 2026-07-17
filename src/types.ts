@@ -9,6 +9,7 @@ export type AuraSyncStatus =
   | "connecting"
   | "connected"
   | "syncing"
+  | "reconnect_required"
   | "error"
   | "conflict";
 
@@ -16,12 +17,14 @@ export type AuraSyncSettings = {
   mode: AuraSyncMode;
   deviceId: string;
   lastSyncedAt?: string;
+  lastSyncedLocalUpdatedAt?: string;
   lastCloudUpdatedAt?: string;
   accountEmail?: string;
   accountName?: string;
   accountAvatarUrl?: string;
   cloudFileId?: string;
   connected?: boolean;
+  reconnectRequired?: boolean;
   deleteCloudFileOnDisconnect: boolean;
 };
 

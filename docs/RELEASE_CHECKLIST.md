@@ -25,7 +25,7 @@ Use this checklist before preparing a Chrome Web Store or Firefox package. Do no
 - Confirm permissions are least-privilege.
 - Confirm there is no full Google Drive scope.
 - Inspect `dist-firefox/manifest.json`.
-- Confirm Firefox `background.scripts` references `background.js`.
+- Confirm Firefox `background.scripts` references `background.js` with `type: module`, so Vite's generated imports execute correctly.
 - Confirm Firefox `browser_specific_settings.gecko.id` is the intended add-on ID.
 - Confirm Firefox build removes Chrome-only `manifest.oauth2`.
 
@@ -63,6 +63,10 @@ Run the exact installed-extension matrix in [`INSTALLED_EXTENSION_TEST_MATRIX.md
 - Confirm the Chrome manifest has no full Drive scope and no `drive.file` scope.
 - Confirm the Firefox build has no full Drive scope and uses Device OAuth only.
 - Install the final build as unpacked, then test connect, automatic backup after local edits, first-run restore from an existing Drive sync file, no-file messaging when no Drive sync file exists, disconnect, and delete-backup flows.
+- Start an automatic upload, immediately close every Aura Start page, then verify from a newly opened page that the background upload completed and the latest local revision is recorded as synced.
+- Expire or invalidate only the current access token, then verify that Aura Start silently renews authorization, retries the Drive request once, and remains connected.
+- Simulate a temporary token refresh failure (`429`, `5xx`, or network loss), then verify that the stored Device OAuth refresh token and sync metadata remain intact and a later sync succeeds without another sign-in.
+- Simulate a confirmed `invalid_grant`, then verify that Aura Start preserves local data and the Drive file reference, displays Reconnect Google Drive, and reconnects only after the user clicks it.
 - Install `dist-firefox` in Firefox (`about:debugging` -> This Firefox -> Load Temporary Add-on -> choose `manifest.json`) and repeat the Google Drive connect, automatic backup, restore, disconnect, and delete-backup flows through the device-code UI.
 - Re-check `Chrome Submit/REVIEWER_NOTES.md` and the Chrome Web Store privacy form before submission.
 - If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.

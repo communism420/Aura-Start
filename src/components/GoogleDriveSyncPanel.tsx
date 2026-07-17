@@ -1,4 +1,4 @@
-import { AlertTriangle, Cloud, LogOut, Trash2, X } from "lucide-react";
+import { AlertTriangle, Cloud, LogOut, RefreshCw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { t } from "../i18n";
 import type {
@@ -47,6 +47,7 @@ export function GoogleDriveSyncPanel({
   const language = data.settings.language;
   const sync = data.settings.sync;
   const busy = isBusy(syncStatus);
+  const reconnectRequired = syncStatus === "reconnect_required";
   const hasGoogleConnection = Boolean(sync.connected);
   const connected = sync.mode !== "off" && hasGoogleConnection;
   const canManageConnection = hasGoogleConnection && !busy;
@@ -87,7 +88,7 @@ export function GoogleDriveSyncPanel({
           <h3 className="font-semibold">{t(language, "googleDriveSyncTitle")}</h3>
           <p className="muted mt-1 text-sm leading-6">{t(language, "googleDriveSyncDescription")}</p>
         </div>
-        <Cloud className={syncStatus === "error" || syncStatus === "conflict" ? "text-[var(--danger)]" : "text-[var(--accent)]"} size={20} />
+        <Cloud className={syncStatus === "error" || syncStatus === "conflict" || reconnectRequired ? "text-[var(--danger)]" : "text-[var(--accent)]"} size={20} />
       </div>
 
       <ul className="muted mt-3 list-disc space-y-1 pl-5 text-sm leading-6">
@@ -211,6 +212,27 @@ export function GoogleDriveSyncPanel({
             <Cloud className="shrink-0" size={17} />
             <span className="truncate">{t(language, "googleDriveConnect")}</span>
           </button>
+        ) : reconnectRequired ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
+              disabled={busy}
+              type="button"
+              onClick={() => run(onConnect)}
+            >
+              <RefreshCw className="shrink-0" size={17} />
+              <span className="truncate">{t(language, "googleDriveReconnect")}</span>
+            </button>
+            <button
+              className={`${sync.deleteCloudFileOnDisconnect ? "btn-danger" : "btn-secondary"} btn h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm`}
+              disabled={!canManageConnection}
+              type="button"
+              onClick={() => setPendingConfirm(sync.deleteCloudFileOnDisconnect ? "delete_backup_and_disconnect" : "disconnect")}
+            >
+              {sync.deleteCloudFileOnDisconnect ? <Trash2 className="shrink-0" size={17} /> : <LogOut className="shrink-0" size={17} />}
+              <span className="truncate">{t(language, sync.deleteCloudFileOnDisconnect ? "googleDriveDeleteBackupAndDisconnect" : "googleDriveDisconnectAccount")}</span>
+            </button>
+          </div>
         ) : (
           <button
             className={`${sync.deleteCloudFileOnDisconnect ? "btn-danger" : "btn-secondary"} btn h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm`}

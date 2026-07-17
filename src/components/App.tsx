@@ -19,6 +19,7 @@ import { Toasts } from "./Toasts";
 import { WidgetPanel } from "./widgets";
 import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
+import { isGoogleDriveBackgroundSyncEvent } from "../services/googleDriveBackgroundSync";
 import { GOOGLE_DEVICE_AUTH_EVENT, type GoogleDeviceAuthEventDetail } from "../services/googleDriveSync";
 import { useAuraStore, type GroupDeleteMode } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
@@ -110,6 +111,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     deleteGoogleDriveBackupAndDisconnect,
     restoreFromGoogleDrive,
     resolveSyncConflict,
+    handleBackgroundGoogleDriveSyncResult,
     getSearchView,
     setCustomBackgroundImage,
     setSearchFilter,
@@ -421,6 +423,10 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     );
 
     const handleRuntimeMessage = (message: unknown) => {
+      if (isGoogleDriveBackgroundSyncEvent(message)) {
+        void handleBackgroundGoogleDriveSyncResult(message.result);
+        return;
+      }
       if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== TOGGLE_COMMAND_PALETTE_MESSAGE) {
         return;
       }
@@ -435,6 +441,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     duplicateFinderOpen,
     deviceAuth,
     groupDialogOpen,
+    handleBackgroundGoogleDriveSyncResult,
     importOpen,
     linkDialogOpen,
     onboardingOpen,

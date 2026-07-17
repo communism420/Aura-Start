@@ -24,7 +24,8 @@ manifest.browser_specific_settings = {
 };
 
 manifest.background = {
-  scripts: ["background.js"]
+  scripts: ["background.js"],
+  type: "module"
 };
 
 delete manifest.oauth2;

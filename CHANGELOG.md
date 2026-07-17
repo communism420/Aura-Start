@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added automatic Google Drive access-token recovery: a Drive API `401` now refreshes or reacquires the short-lived token and retries the failed request once.
+- Hardened Device OAuth persistence so temporary network, rate-limit, server, storage, and OAuth client-configuration errors never erase the stored refresh token; only Google's confirmed `invalid_grant` response does.
+- Added an explicit reconnect-required state and action that preserve local data, sync metadata, and the Drive file reference instead of silently disconnecting the account.
+- Moved automatic Google Drive synchronization into the extension background context so closing the Aura Start page no longer interrupts an active sync.
+- Added a serialized background sync queue, storage-change triggering, browser-start retry, and race-safe tracking of the exact local data revision uploaded to Drive.
+- Kept sync status, conflicts, errors, and success toasts live while an Aura Start page is open without making the background task depend on that page.
+- Fixed Firefox release finalization to load the generated background entry as an ES module, and hardened validation so a classic-script/background-import mismatch cannot ship again.
+- Bumped both Chromium and Firefox extension build versions to 2.0.5.
+- Added a success toast after every completed Google Drive sync, including automatic background uploads and already-synchronized checks.
+- Bumped both Chromium and Firefox extension build versions to 2.0.4.
 - Added an explicit GitHub Pages deployment workflow for the static `docs` site and disabled Jekyll processing with `docs/.nojekyll`.
 - Added a public docs-site download section with Chrome Web Store and Firefox Add-ons links.
 - Added official Chrome Web Store and Firefox Add-ons download links to README.

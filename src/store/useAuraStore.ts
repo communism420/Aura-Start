@@ -17,6 +17,10 @@ import {
   restoreFromDrive,
   type GoogleDriveSyncDownload
 } from "../services/googleDriveSync";
+import {
+  requestGoogleDriveBackgroundSync,
+  type GoogleDriveBackgroundSyncResult
+} from "../services/googleDriveBackgroundSync";
 import type {
   AuraRestorePoint,
   AuraRestorePointContext,
@@ -35,6 +39,7 @@ import type {
   RestoreTimelineDay
 } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
+import { hasExtensionRuntime } from "../utils/browserApi";
 import { nowIso } from "../utils/dates";
 import { buildGroupTree, groupsInTreeOrder, groupTitlePath, normalizeGroupOrders } from "../utils/groupTree";
 import { createId } from "../utils/ids";
@@ -70,7 +75,7 @@ export type LinkDeleteTarget = {
 type AuraStoreStatus = "idle" | "loading" | "ready" | "corrupt" | "error";
 type GoogleDriveBackupOptions = { silent?: boolean; token?: string };
 type GoogleDriveRestoreOptions = { requireExistingFile?: boolean };
-type GoogleDriveSyncNowOptions = { silent?: boolean };
+type GoogleDriveSyncNowOptions = { foreground?: boolean; silent?: boolean };
 type CommitOptions = { skipAutoSync?: boolean };
 type ImportBackupSource = "aura_json" | "a_fine_start";
 export type GroupDeleteMode = "promote_children" | "delete_children";
@@ -137,6 +142,7 @@ type AuraStore = {
   deleteGoogleDriveSyncFile: () => Promise<void>;
   deleteGoogleDriveBackupAndDisconnect: () => Promise<void>;
   resolveSyncConflict: (choice: AuraSyncConflictChoice) => Promise<void>;
+  handleBackgroundGoogleDriveSyncResult: (result: GoogleDriveBackgroundSyncResult) => Promise<void>;
   addToast: (toast: Omit<ToastMessage, "id">) => void;
   removeToast: (toastId: string) => void;
 };
@@ -180,7 +186,9 @@ function mergeSyncSettings(data: AuraStartData, patch: Partial<AuraSyncSettings>
 }
 
 function syncStatusFromData(data: AuraStartData): AuraSyncStatus {
-  return data.settings.sync.mode !== "off" && data.settings.sync.connected ? "connected" : "idle";
+  const sync = data.settings.sync;
+  if (sync.mode === "off" || !sync.connected) return "idle";
+  return sync.reconnectRequired ? "reconnect_required" : "connected";
 }
 
 async function getTokenForSync(sync: AuraSyncSettings, allowInteractive = true): Promise<string> {
@@ -199,10 +207,18 @@ function normalizeOrders(groups: AuraStartGroup[]): AuraStartGroup[] {
   return groupsInTreeOrder(normalizeGroupOrders(groups));
 }
 
+function nextUpdatedAt(previous: string): string {
+  const previousTime = new Date(previous).getTime();
+  const nextTime = Number.isFinite(previousTime)
+    ? Math.max(Date.now(), previousTime + 1)
+    : Date.now();
+  return new Date(nextTime).toISOString();
+}
+
 function touch(data: AuraStartData): AuraStartData {
   return {
     ...data,
-    updatedAt: nowIso(),
+    updatedAt: nextUpdatedAt(data.updatedAt),
     groups: normalizeOrders(data.groups)
   };
 }
@@ -457,10 +473,10 @@ function clearAutoSyncQueue(): void {
   autoSyncTimer = undefined;
 }
 
-function scheduleAutoSync(data: AuraStartData): void {
+function schedulePageAutoSync(data: AuraStartData): void {
   if (typeof window === "undefined") return;
   const sync = data.settings.sync;
-  if (sync.mode !== "auto" || !sync.connected) return;
+  if (sync.mode !== "auto" || !sync.connected || sync.reconnectRequired) return;
 
   autoSyncDirty = true;
   if (autoSyncTimer) {
@@ -471,20 +487,65 @@ function scheduleAutoSync(data: AuraStartData): void {
     autoSyncTimer = undefined;
     const state = useAuraStore.getState();
     const current = state.data;
-    if (!autoSyncDirty || !current || current.settings.sync.mode !== "auto" || !current.settings.sync.connected) {
+    if (
+      !autoSyncDirty
+      || !current
+      || current.settings.sync.mode !== "auto"
+      || !current.settings.sync.connected
+      || current.settings.sync.reconnectRequired
+    ) {
       autoSyncDirty = false;
       return;
     }
     if (isActiveSyncStatus(state.syncStatus)) {
-      scheduleAutoSync(current);
+      schedulePageAutoSync(current);
       return;
     }
 
     autoSyncDirty = false;
-    void state.syncNow({ silent: true }).catch(() => {
+    void state.syncNow({ foreground: true, silent: true }).catch(() => {
       // The store records sync errors and keeps local work uninterrupted.
     });
   }, AUTO_SYNC_DELAY_MS);
+}
+
+function scheduleAutoSync(data: AuraStartData): void {
+  const sync = data.settings.sync;
+  if (sync.mode !== "auto" || !sync.connected || sync.reconnectRequired) return;
+
+  if (!hasExtensionRuntime()) {
+    schedulePageAutoSync(data);
+    return;
+  }
+
+  useAuraStore.setState({
+    syncStatus: "syncing",
+    syncMessage: text(data, "googleDriveSyncing"),
+    syncConflict: null
+  });
+  void requestGoogleDriveBackgroundSync()
+    .then((result) => {
+      if (!result) {
+        throw new Error("Extension background sync is unavailable.");
+      }
+      if (result.status === "skipped") {
+        const current = useAuraStore.getState().data ?? data;
+        useAuraStore.setState({
+          syncStatus: syncStatusFromData(current),
+          syncMessage: null,
+          syncConflict: null
+        });
+      }
+    })
+    .catch(() => {
+      const current = useAuraStore.getState().data ?? data;
+      useAuraStore.setState({
+        syncStatus: syncStatusFromData(current),
+        syncMessage: null,
+        syncConflict: null
+      });
+      schedulePageAutoSync(current);
+    });
 }
 
 async function safeCommit(
@@ -554,13 +615,23 @@ async function commitSyncMetadata(
   return next;
 }
 
-function driveFailure(
+async function driveFailure(
   set: (partial: Partial<AuraStore>) => void,
   get: () => AuraStore,
   error: unknown
-): string {
+): Promise<string> {
   const data = get().data;
   const message = mapDriveError(error);
+  if (data?.settings.sync.connected && isGoogleDriveAuthorizationUnavailable(error)) {
+    await markGoogleDriveSyncNeedsReconnect(set, get, error);
+    get().addToast({
+      type: "error",
+      title: text(data, "googleDriveNeedsReconnect"),
+      message
+    });
+    return message;
+  }
+
   set({ syncStatus: "error", syncMessage: message });
   get().addToast({
     type: "error",
@@ -576,19 +647,28 @@ async function markGoogleDriveSyncNeedsReconnect(
   error: unknown
 ): Promise<void> {
   clearAutoSyncQueue();
-  await clearAuthToken().catch(() => undefined);
 
   const data = get().data;
   if (!data) {
-    set({ syncStatus: "connected", syncMessage: mapDriveError(error), syncConflict: null });
+    set({ syncStatus: "reconnect_required", syncMessage: mapDriveError(error), syncConflict: null });
     return;
   }
 
-  set({
-    syncStatus: "connected",
-    syncMessage: text(data, "googleDriveNeedsReconnect"),
-    syncConflict: null
-  });
+  try {
+    await commitSyncMetadata(
+      set,
+      data,
+      { reconnectRequired: true },
+      "reconnect_required",
+      text(data, "googleDriveNeedsReconnect")
+    );
+  } catch {
+    set({
+      syncStatus: "reconnect_required",
+      syncMessage: text(data, "googleDriveNeedsReconnect"),
+      syncConflict: null
+    });
+  }
 }
 
 async function applyCloudDownload(
@@ -611,8 +691,10 @@ async function applyCloudDownload(
     ...syncPatch,
     mode: "auto",
     connected: true,
+    reconnectRequired: false,
     cloudFileId: download.metadata.id,
     lastSyncedAt: syncedAt,
+    lastSyncedLocalUpdatedAt: download.data.updatedAt,
     lastCloudUpdatedAt: download.cloudUpdatedAt
   };
   const next: AuraStartData = {
@@ -716,6 +798,20 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         customBackgroundImage: uiState.customBackgroundImage,
         widgetNotes: uiState.widgetNotes
       });
+      if (data.settings.sync.mode === "auto" && data.settings.sync.connected && hasExtensionRuntime()) {
+        set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveSyncing") });
+        void requestGoogleDriveBackgroundSync()
+          .then((result) => {
+            if (!result) throw new Error("Extension background sync is unavailable.");
+            if (result.status === "skipped") {
+              set({ syncStatus: syncStatusFromData(get().data ?? data), syncMessage: null });
+            }
+          })
+          .catch(() => {
+            set({ syncStatus: syncStatusFromData(get().data ?? data), syncMessage: null });
+            schedulePageAutoSync(get().data ?? data);
+          });
+      }
     } catch (caught) {
       set({
         status: "error",
@@ -1369,10 +1465,15 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async connectGoogleDrive() {
     const data = get().data;
     if (!data) return;
+    const reconnectRequired = data.settings.sync.connected
+      && (data.settings.sync.reconnectRequired || get().syncStatus === "reconnect_required");
 
     set({ syncStatus: "connecting", syncMessage: text(data, "googleDriveConnecting"), syncConflict: null });
     try {
       const sync = ensureSyncDevice(data.settings.sync);
+      if (reconnectRequired) {
+        await clearAuthToken();
+      }
       const token = await getAuthToken(true);
       const metadata = await findSyncFile(token);
       const account = await getConnectedAccountInfo().catch(() => undefined);
@@ -1398,7 +1499,8 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       const nextSync = mergeSyncSettings(data, {
         ...accountPatch,
         mode: "auto",
-        connected: true
+        connected: true,
+        reconnectRequired: false
       });
       const uploadData: AuraStartData = {
         ...data,
@@ -1418,8 +1520,10 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           ...accountPatch,
           mode: "auto",
           connected: true,
+          reconnectRequired: false,
           cloudFileId: createdMetadata.id,
           lastSyncedAt: nowIso(),
+          lastSyncedLocalUpdatedAt: data.updatedAt,
           lastCloudUpdatedAt: data.updatedAt
         },
         "connected",
@@ -1432,7 +1536,16 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         message: text(next, "googleDriveNoSyncFileCreated")
       });
     } catch (error) {
-      driveFailure(set, get, error);
+      if (reconnectRequired) {
+        await markGoogleDriveSyncNeedsReconnect(set, get, error);
+        get().addToast({
+          type: "error",
+          title: text(data, "googleDriveNeedsReconnect"),
+          message: mapDriveError(error)
+        });
+      } else {
+        await driveFailure(set, get, error);
+      }
       throw error;
     }
   },
@@ -1451,11 +1564,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         {
           mode: "off",
           connected: false,
+          reconnectRequired: false,
           accountEmail: undefined,
           accountName: undefined,
           accountAvatarUrl: undefined,
           cloudFileId: undefined,
           lastSyncedAt: undefined,
+          lastSyncedLocalUpdatedAt: undefined,
           lastCloudUpdatedAt: undefined
         },
         "idle",
@@ -1470,7 +1585,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           : text(next, "googleDriveAccountDisconnectedDescription")
       });
     } catch (error) {
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1495,8 +1610,10 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         {
           mode: "auto",
           connected: true,
+          reconnectRequired: false,
           cloudFileId: metadata.id,
           lastSyncedAt: syncedAt,
+          lastSyncedLocalUpdatedAt: data.updatedAt,
           lastCloudUpdatedAt: data.updatedAt
         },
         "connected",
@@ -1516,7 +1633,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         return;
       }
 
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1540,6 +1657,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           data,
           {
             connected: true,
+            reconnectRequired: false,
             cloudFileId: undefined,
             lastCloudUpdatedAt: undefined
           },
@@ -1561,7 +1679,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       });
       return true;
     } catch (error) {
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1569,6 +1687,21 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
   async syncNow(options = {}) {
     const data = get().data;
     if (!data) return;
+
+    if (!options.foreground && hasExtensionRuntime()) {
+      set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveSyncing"), syncConflict: null });
+      try {
+        const result = await requestGoogleDriveBackgroundSync(true);
+        if (!result) throw new Error("Extension background sync is unavailable.");
+        if (result.status === "skipped") {
+          const current = get().data ?? data;
+          set({ syncStatus: syncStatusFromData(current), syncMessage: null, syncConflict: null });
+        }
+        return;
+      } catch {
+        // Development pages without an active extension background use the page runner.
+      }
+    }
 
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveSyncing"), syncConflict: null });
     try {
@@ -1579,13 +1712,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
 
       if (comparison === "no_cloud_file") {
         await get().backupToGoogleDrive({ silent: true, token });
-        if (!options.silent) {
-          get().addToast({
-            type: "success",
-            title: text(get().data, "googleDriveBackupSuccess"),
-            message: text(get().data, "googleDriveNoFileUploadedLocal")
-          });
-        }
+        get().addToast({
+          type: "success",
+          title: text(get().data, "googleDriveBackupSuccess"),
+          message: text(get().data, "googleDriveNoFileUploadedLocal")
+        });
         return;
       }
 
@@ -1598,28 +1729,26 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           {
             mode: "auto",
             connected: true,
+            reconnectRequired: false,
             cloudFileId: download.metadata.id,
             lastSyncedAt: nowIso(),
+            lastSyncedLocalUpdatedAt: data.updatedAt,
             lastCloudUpdatedAt: download.cloudUpdatedAt
           },
           "connected",
           text(data, "googleDriveAlreadySynced")
         );
-        if (!options.silent) {
-          get().addToast({ type: "success", title: text(next, "googleDriveAlreadySynced") });
-        }
+        get().addToast({ type: "success", title: text(next, "googleDriveAlreadySynced") });
         return;
       }
 
       if (comparison === "local_newer") {
         await get().backupToGoogleDrive({ silent: true, token });
-        if (!options.silent) {
-          get().addToast({
-            type: "success",
-            title: text(get().data, "googleDriveBackupSuccess"),
-            message: text(get().data, "googleDriveLocalUploaded")
-          });
-        }
+        get().addToast({
+          type: "success",
+          title: text(get().data, "googleDriveBackupSuccess"),
+          message: text(get().data, "googleDriveLocalUploaded")
+        });
         return;
       }
 
@@ -1630,6 +1759,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
           {
             mode: "auto",
             connected: true,
+            reconnectRequired: false,
             cloudFileId: download.metadata.id,
             lastCloudUpdatedAt: download.cloudUpdatedAt
           },
@@ -1666,7 +1796,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         return;
       }
 
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1704,9 +1834,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         data,
         {
           connected: true,
+          reconnectRequired: false,
           cloudFileId: undefined,
           lastCloudUpdatedAt: undefined,
-          lastSyncedAt: undefined
+          lastSyncedAt: undefined,
+          lastSyncedLocalUpdatedAt: undefined
         },
         "connected",
         deleted ? text(data, "googleDriveSyncFileDeleted") : text(data, "googleDriveNoSyncFileFound")
@@ -1718,7 +1850,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         message: deleted ? text(next, "googleDriveSyncFileDeletedDescription") : undefined
       });
     } catch (error) {
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1730,7 +1862,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     clearAutoSyncQueue();
     set({ syncStatus: "syncing", syncMessage: text(data, "googleDriveDeleteBackupAndDisconnecting"), syncConflict: null });
     try {
-      const token = await getCachedAuthToken();
+      const token = await getCachedAuthToken().catch(() => undefined);
       let deleted = false;
       let deleteError: string | undefined;
       if (token) {
@@ -1748,11 +1880,13 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         {
           mode: "off",
           connected: false,
+          reconnectRequired: false,
           accountEmail: undefined,
           accountName: undefined,
           accountAvatarUrl: undefined,
           cloudFileId: undefined,
           lastSyncedAt: undefined,
+          lastSyncedLocalUpdatedAt: undefined,
           lastCloudUpdatedAt: undefined
         },
         "idle",
@@ -1778,7 +1912,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         message: toastMessage
       });
     } catch (error) {
-      driveFailure(set, get, error);
+      await driveFailure(set, get, error);
       throw error;
     }
   },
@@ -1813,6 +1947,93 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
       type: "success",
       title: text(get().data, "googleDriveRestoreSuccess"),
       message: text(get().data, "googleDriveRestoreSuccessDescription")
+    });
+  },
+
+  async handleBackgroundGoogleDriveSyncResult(result) {
+    if (result.status === "skipped") return;
+
+    const loaded = await loadAuraData();
+    const data = loaded.status === "ready" ? loaded.data : get().data;
+    if (!data) return;
+
+    if (result.status === "uploaded") {
+      set({
+        data,
+        status: "ready",
+        syncStatus: "connected",
+        syncMessage: text(data, "googleDriveBackupSuccess"),
+        syncConflict: null
+      });
+      get().addToast({
+        type: "success",
+        title: text(data, "googleDriveBackupSuccess"),
+        message: text(data, result.reason === "created" ? "googleDriveNoFileUploadedLocal" : "googleDriveLocalUploaded")
+      });
+      return;
+    }
+
+    if (result.status === "in_sync") {
+      set({
+        data,
+        status: "ready",
+        syncStatus: "connected",
+        syncMessage: text(data, "googleDriveAlreadySynced"),
+        syncConflict: null
+      });
+      get().addToast({ type: "success", title: text(data, "googleDriveAlreadySynced") });
+      return;
+    }
+
+    if (result.status === "cloud_newer") {
+      set({
+        data,
+        status: "ready",
+        syncStatus: "connected",
+        syncMessage: text(data, "googleDriveCloudNewer"),
+        syncConflict: null
+      });
+      get().addToast({
+        type: "info",
+        title: text(data, "googleDriveCloudNewer"),
+        message: text(data, "googleDriveCloudNewerDescription")
+      });
+      return;
+    }
+
+    if (result.status === "conflict") {
+      set({
+        data,
+        status: "ready",
+        syncStatus: "conflict",
+        syncMessage: text(data, "googleDriveConflictDetected"),
+        syncConflict: result.conflict
+      });
+      get().addToast({
+        type: "error",
+        title: text(data, "googleDriveConflictDetected"),
+        message: text(data, "googleDriveConflictDescription")
+      });
+      return;
+    }
+
+    if (result.status === "needs_reconnect") {
+      clearAutoSyncQueue();
+      set({
+        data,
+        status: "ready",
+        syncStatus: "reconnect_required",
+        syncMessage: text(data, "googleDriveNeedsReconnect"),
+        syncConflict: null
+      });
+      return;
+    }
+
+    set({ data, status: "ready", syncStatus: "error", syncMessage: result.message, syncConflict: null });
+    get().addToast({
+      type: "error",
+      title: text(data, "googleDriveSyncFailed"),
+      message: result.message
     });
   },
 

@@ -35,6 +35,7 @@ export const DEFAULT_SETTINGS: AuraStartSettings = {
     mode: "off",
     deviceId: "",
     connected: false,
+    reconnectRequired: false,
     deleteCloudFileOnDisconnect: true
   }
 };

@@ -1,9 +1,9 @@
 {
   "name": "aura-start",
-  "version": "2.0.1",
+  "version": "2.0.5",
   "extensionVersions": {
-    "chromium": "2.0.1",
-    "firefox": "2.0.3"
+    "chromium": "2.0.5",
+    "firefox": "2.0.5"
   },
   "license": "MIT",
   "type": "module",

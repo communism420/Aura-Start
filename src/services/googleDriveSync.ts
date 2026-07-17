@@ -37,11 +37,14 @@ const CLOUD_APP_NAME = "Aura Start";
 const PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID = "pdhhnnmcampmmklkbbtfbmnijmgjliabi";
 const TOKEN_EXPIRY_SAFETY_MS = 60_000;
 const CHROME_IDENTITY_PROBE_TIMEOUT_MS = 2_500;
+const OAUTH_REFRESH_MAX_ATTEMPTS = 3;
+const OAUTH_REFRESH_RETRY_BASE_MS = 400;
 const DEVICE_OAUTH_INITIAL_POLL_DELAY_MS = 1_000;
 const DEVICE_OAUTH_FAST_POLL_DELAY_MS = 1_500;
 const DEVICE_OAUTH_FAST_POLL_WINDOW_MS = 15_000;
 const WEB_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-web-auth-token";
 const DEVICE_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-device-auth-token";
+const AUTH_TOKEN_STORAGE_LOCK_NAME = "aura-start-google-auth-token-storage";
 export const GOOGLE_DEVICE_AUTH_EVENT = "aura-start:google-device-auth";
 const FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS: ExtensionDataCollectionPermission[] = [
   "browsingActivity",
@@ -197,6 +200,40 @@ export class GoogleDriveSyncError extends Error {
 
 let webAuthTokenCache: CachedToken | undefined;
 let deviceAuthTokenCache: CachedDeviceToken | undefined;
+let fallbackAuthTokenLock: Promise<void> = Promise.resolve();
+const authTokenReplacements = new Map<string, string>();
+
+async function withAuthTokenStorageLock<T>(operation: () => Promise<T>): Promise<T> {
+  const locks = globalThis.navigator?.locks;
+  if (locks) {
+    return await locks.request(AUTH_TOKEN_STORAGE_LOCK_NAME, operation);
+  }
+
+  const pending = fallbackAuthTokenLock.then(operation, operation);
+  fallbackAuthTokenLock = pending.then(() => undefined, () => undefined);
+  return await pending;
+}
+
+function rememberAuthTokenReplacement(previousToken: string, nextToken: string): void {
+  if (!previousToken || !nextToken || previousToken === nextToken) return;
+  authTokenReplacements.set(previousToken, nextToken);
+}
+
+function currentAuthToken(token: string): string {
+  let current = token;
+  const visited = new Set<string>();
+  while (!visited.has(current)) {
+    visited.add(current);
+    const replacement = authTokenReplacements.get(current);
+    if (!replacement) break;
+    current = replacement;
+  }
+
+  if (current !== token) {
+    authTokenReplacements.set(token, current);
+  }
+  return current;
+}
 
 export function isFirefoxUserInputPermissionRequestError(error: unknown): boolean {
   const message = error instanceof Error
@@ -575,7 +612,7 @@ export function googleDriveDeviceOAuthScopes(): string[] {
 }
 
 function storageModeForToken(token: string): GoogleDriveStorageMode {
-  return deviceAuthTokenCache?.token === token ? "drive_file" : "app_data_folder";
+  return deviceAuthTokenCache?.token === currentAuthToken(token) ? "drive_file" : "app_data_folder";
 }
 
 function cachedWebAuthToken(): string | undefined {
@@ -589,7 +626,13 @@ function cachedWebAuthToken(): string | undefined {
 }
 
 function normalizeCachedToken(value: unknown): CachedToken | undefined {
-  if (!isRecord(value) || typeof value.token !== "string" || typeof value.expiresAt !== "number") {
+  if (
+    !isRecord(value)
+    || typeof value.token !== "string"
+    || !value.token.trim()
+    || typeof value.expiresAt !== "number"
+    || !Number.isFinite(value.expiresAt)
+  ) {
     return undefined;
   }
 
@@ -624,10 +667,56 @@ function deviceAuthTokenStorageAreas(): ExtensionStorageArea[] {
   return authTokenStorageAreas();
 }
 
+async function writeAuthTokenToStorage(key: string, value: unknown): Promise<void> {
+  const local = getExtensionStorageArea("local");
+  const session = getExtensionStorageArea("session");
+  const item = { [key]: value };
+
+  if (local) {
+    await local.set(item);
+    if (session) {
+      await session.set(item).catch(() => undefined);
+    }
+    return;
+  }
+
+  if (session) {
+    await session.set(item);
+  }
+}
+
+async function removeAuthTokenFromStorage(key: string): Promise<void> {
+  const local = getExtensionStorageArea("local");
+  const session = getExtensionStorageArea("session");
+
+  if (local) {
+    await local.remove(key);
+    if (session) {
+      await session.remove(key).catch(() => undefined);
+    }
+    return;
+  }
+
+  if (session) {
+    await session.remove(key);
+  }
+}
+
 async function readStoredWebAuthToken(): Promise<string | undefined> {
-  for (const area of webAuthTokenStorageAreas()) {
-    const result = await area.get(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-    const cached = result ? normalizeCachedToken(result[WEB_AUTH_TOKEN_STORAGE_KEY]) : undefined;
+  const areas = webAuthTokenStorageAreas();
+  let successfulReads = 0;
+  for (const area of areas) {
+    let result: Record<string, unknown>;
+    try {
+      result = await area.get(WEB_AUTH_TOKEN_STORAGE_KEY);
+      successfulReads += 1;
+    } catch {
+      continue;
+    }
+
+    const stored = result[WEB_AUTH_TOKEN_STORAGE_KEY];
+    if (stored === undefined) continue;
+    const cached = normalizeCachedToken(stored);
     if (!cached) {
       await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
       continue;
@@ -637,21 +726,31 @@ async function readStoredWebAuthToken(): Promise<string | undefined> {
     return cached.token;
   }
 
+  if (areas.length > 0 && successfulReads === 0) {
+    throw new GoogleDriveSyncError("unknown", "Google authorization storage is temporarily unavailable.");
+  }
+
   return undefined;
 }
 
 async function writeStoredWebAuthToken(token: CachedToken): Promise<void> {
-  await Promise.all(
-    webAuthTokenStorageAreas().map((area) => area.set({ [WEB_AUTH_TOKEN_STORAGE_KEY]: token }).catch(() => undefined))
-  );
+  await writeAuthTokenToStorage(WEB_AUTH_TOKEN_STORAGE_KEY, token);
 }
 
 async function removeStoredWebAuthToken(): Promise<void> {
-  await Promise.all(webAuthTokenStorageAreas().map((area) => area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined)));
+  await removeAuthTokenFromStorage(WEB_AUTH_TOKEN_STORAGE_KEY);
 }
 
 function normalizeCachedDeviceToken(value: unknown): CachedDeviceToken | undefined {
-  if (!isRecord(value) || typeof value.token !== "string" || typeof value.refreshToken !== "string" || typeof value.expiresAt !== "number") {
+  if (
+    !isRecord(value)
+    || typeof value.token !== "string"
+    || !value.token.trim()
+    || typeof value.refreshToken !== "string"
+    || !value.refreshToken.trim()
+    || typeof value.expiresAt !== "number"
+    || !Number.isFinite(value.expiresAt)
+  ) {
     return undefined;
   }
 
@@ -663,9 +762,20 @@ function normalizeCachedDeviceToken(value: unknown): CachedDeviceToken | undefin
 }
 
 async function readStoredDeviceAuthToken(): Promise<CachedDeviceToken | undefined> {
-  for (const area of deviceAuthTokenStorageAreas()) {
-    const result = await area.get(DEVICE_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-    const cached = result ? normalizeCachedDeviceToken(result[DEVICE_AUTH_TOKEN_STORAGE_KEY]) : undefined;
+  const areas = deviceAuthTokenStorageAreas();
+  let successfulReads = 0;
+  for (const area of areas) {
+    let result: Record<string, unknown>;
+    try {
+      result = await area.get(DEVICE_AUTH_TOKEN_STORAGE_KEY);
+      successfulReads += 1;
+    } catch {
+      continue;
+    }
+
+    const stored = result[DEVICE_AUTH_TOKEN_STORAGE_KEY];
+    if (stored === undefined) continue;
+    const cached = normalizeCachedDeviceToken(stored);
     if (!cached) {
       await area.remove(DEVICE_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
       continue;
@@ -675,18 +785,20 @@ async function readStoredDeviceAuthToken(): Promise<CachedDeviceToken | undefine
     return cached;
   }
 
+  if (areas.length > 0 && successfulReads === 0) {
+    throw new GoogleDriveSyncError("unknown", "Google authorization storage is temporarily unavailable.");
+  }
+
   return undefined;
 }
 
 async function writeStoredDeviceAuthToken(token: CachedDeviceToken): Promise<void> {
-  await Promise.all(
-    deviceAuthTokenStorageAreas().map((area) => area.set({ [DEVICE_AUTH_TOKEN_STORAGE_KEY]: token }).catch(() => undefined))
-  );
+  await writeAuthTokenToStorage(DEVICE_AUTH_TOKEN_STORAGE_KEY, token);
 }
 
 async function removeStoredDeviceAuthToken(): Promise<void> {
   deviceAuthTokenCache = undefined;
-  await Promise.all(deviceAuthTokenStorageAreas().map((area) => area.remove(DEVICE_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined)));
+  await removeAuthTokenFromStorage(DEVICE_AUTH_TOKEN_STORAGE_KEY);
 }
 
 async function getCachedWebAuthToken(): Promise<string | undefined> {
@@ -901,8 +1013,10 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     token,
     expiresAt: Date.now() + expiresIn * 1000
   };
-  webAuthTokenCache = cachedToken;
-  await writeStoredWebAuthToken(cachedToken);
+  await withAuthTokenStorageLock(async () => {
+    await writeStoredWebAuthToken(cachedToken);
+    webAuthTokenCache = cachedToken;
+  });
 
   return token;
 }
@@ -925,7 +1039,26 @@ type GoogleDeviceTokenResponse = {
   token_type?: string;
   error?: string;
   error_description?: string;
+  error_subtype?: string;
 };
+
+export function isPermanentGoogleOAuthRefreshFailure(status: number, reason?: string): boolean {
+  return status === 400 && reason?.toLowerCase() === "invalid_grant";
+}
+
+export function isTransientGoogleOAuthRefreshFailure(status: number, reason?: string): boolean {
+  const normalizedReason = reason?.toLowerCase() ?? "";
+  return status === 408
+    || status === 425
+    || status === 429
+    || status >= 500
+    || normalizedReason === "temporarily_unavailable"
+    || normalizedReason === "server_error";
+}
+
+export function googleOAuthRefreshRetryDelayMs(attempt: number): number {
+  return OAUTH_REFRESH_RETRY_BASE_MS * 2 ** Math.max(0, Math.min(attempt, OAUTH_REFRESH_MAX_ATTEMPTS - 1));
+}
 
 async function readGoogleOAuthJson<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => undefined);
@@ -1066,7 +1199,7 @@ async function exchangeGoogleDeviceCode(
   );
 }
 
-async function refreshGoogleDeviceToken(
+async function refreshGoogleDeviceTokenOnce(
   client: { clientId: string; clientSecret: string },
   refreshToken: string
 ): Promise<CachedDeviceToken> {
@@ -1076,19 +1209,32 @@ async function refreshGoogleDeviceToken(
     refresh_token: refreshToken,
     grant_type: "refresh_token"
   });
-  const response = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
+  let response: Response;
+  try {
+    response = await fetch(GOOGLE_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body
+    });
+  } catch (error) {
+    throw new GoogleDriveSyncError(
+      "network",
+      error instanceof Error ? error.message : "Google Device OAuth refresh could not reach Google."
+    );
+  }
   const json = await readGoogleOAuthJson<GoogleDeviceTokenResponse>(response);
 
   if (!response.ok) {
-    if (json.error === "invalid_grant" || response.status === 401) {
-      await removeStoredDeviceAuthToken();
+    const permanentlyRejected = isPermanentGoogleOAuthRefreshFailure(response.status, json.error);
+    if (permanentlyRejected) {
+      await removeStoredDeviceAuthToken().catch(() => undefined);
     }
     throw new GoogleDriveSyncError(
-      response.status === 401 ? "unauthorized" : "identity_unavailable",
+      permanentlyRejected
+        ? "unauthorized"
+        : isTransientGoogleOAuthRefreshFailure(response.status, json.error)
+          ? response.status === 429 ? "rate_limited" : "network"
+          : "identity_unavailable",
       json.error_description ?? json.error ?? "Google Device OAuth refresh failed.",
       response.status,
       json.error
@@ -1096,6 +1242,72 @@ async function refreshGoogleDeviceToken(
   }
 
   return deviceTokenFromResponse(json, refreshToken);
+}
+
+function isTransientGoogleOAuthRefreshError(error: unknown): boolean {
+  return error instanceof GoogleDriveSyncError
+    && (
+      error.code === "network"
+      || error.code === "rate_limited"
+      || isTransientGoogleOAuthRefreshFailure(error.status ?? 0, error.reason)
+    );
+}
+
+async function refreshGoogleDeviceToken(
+  client: { clientId: string; clientSecret: string },
+  refreshToken: string
+): Promise<CachedDeviceToken> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < OAUTH_REFRESH_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await refreshGoogleDeviceTokenOnce(client, refreshToken);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientGoogleOAuthRefreshError(error) || attempt === OAUTH_REFRESH_MAX_ATTEMPTS - 1) {
+        throw error;
+      }
+      await new Promise((resolve) => globalThis.setTimeout(resolve, googleOAuthRefreshRetryDelayMs(attempt)));
+    }
+  }
+
+  throw lastError;
+}
+
+async function refreshStoredDeviceAuthToken(
+  client: { clientId: string; clientSecret: string },
+  options: { failedAccessToken?: string; force?: boolean } = {}
+): Promise<CachedDeviceToken> {
+  return await withAuthTokenStorageLock(async () => {
+    const hasExtensionStorage = deviceAuthTokenStorageAreas().length > 0;
+    const cached = hasExtensionStorage
+      ? await readStoredDeviceAuthToken()
+      : deviceAuthTokenCache;
+    if (!cached) {
+      throw new GoogleDriveSyncError("unauthorized", "Google Drive needs sign-in to continue syncing.");
+    }
+
+    if (
+      options.force
+      && options.failedAccessToken
+      && cached.token !== options.failedAccessToken
+      && isCachedAccessTokenUsable(cached)
+    ) {
+      deviceAuthTokenCache = cached;
+      rememberAuthTokenReplacement(options.failedAccessToken, cached.token);
+      return cached;
+    }
+
+    if (!options.force && isCachedAccessTokenUsable(cached)) {
+      deviceAuthTokenCache = cached;
+      return cached;
+    }
+
+    const refreshed = await refreshGoogleDeviceToken(client, cached.refreshToken);
+    await writeStoredDeviceAuthToken(refreshed);
+    deviceAuthTokenCache = refreshed;
+    rememberAuthTokenReplacement(cached.token, refreshed.token);
+    return refreshed;
+  });
 }
 
 async function getDeviceAuthToken(interactive: boolean): Promise<string> {
@@ -1110,12 +1322,10 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
   const cached = await getCachedDeviceAuthToken();
   if (cached) {
     if (isCachedAccessTokenUsable(cached)) {
-      return cached.token;
+      return currentAuthToken(cached.token);
     }
 
-    const refreshed = await refreshGoogleDeviceToken(client, cached.refreshToken);
-    deviceAuthTokenCache = refreshed;
-    await writeStoredDeviceAuthToken(refreshed);
+    const refreshed = await refreshStoredDeviceAuthToken(client);
     return refreshed.token;
   }
 
@@ -1162,8 +1372,10 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
       continue;
     }
 
-    deviceAuthTokenCache = result;
-    await writeStoredDeviceAuthToken(result);
+    await withAuthTokenStorageLock(async () => {
+      await writeStoredDeviceAuthToken(result);
+      deviceAuthTokenCache = result;
+    });
     return result.token;
   }
 
@@ -1199,10 +1411,9 @@ async function errorFromResponse(response: Response): Promise<GoogleDriveSyncErr
   return new GoogleDriveSyncError(statusCodeToErrorCode(response.status), message, response.status, reason);
 }
 
-async function driveFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
-  let response: Response;
+async function performDriveFetch(token: string, url: string, init: RequestInit): Promise<Response> {
   try {
-    response = await fetch(url, {
+    return await fetch(url, {
       ...init,
       headers: driveHeaders(token, init.headers)
     });
@@ -1211,6 +1422,40 @@ async function driveFetch<T>(token: string, url: string, init: RequestInit = {})
       "network",
       error instanceof Error ? error.message : "Network connection failed."
     );
+  }
+}
+
+async function renewAuthTokenAfterUnauthorized(failedAccessToken: string): Promise<string> {
+  const deviceClient = configuredDeviceOAuthClient();
+  if (deviceClient) {
+    const cachedDeviceToken = await getCachedDeviceAuthToken();
+    if (cachedDeviceToken?.token === failedAccessToken) {
+      const refreshed = await refreshStoredDeviceAuthToken(deviceClient, {
+        failedAccessToken,
+        force: true
+      });
+      return refreshed.token;
+    }
+  }
+
+  await withAuthTokenStorageLock(async () => {
+    webAuthTokenCache = undefined;
+    await removeStoredWebAuthToken();
+  });
+  await removeCachedExtensionAuthToken(failedAccessToken).catch(() => undefined);
+
+  const renewedToken = await getAuthToken(false);
+  rememberAuthTokenReplacement(failedAccessToken, renewedToken);
+  return renewedToken;
+}
+
+async function driveFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
+  let requestToken = currentAuthToken(token);
+  let response = await performDriveFetch(requestToken, url, init);
+
+  if (response.status === 401) {
+    requestToken = await renewAuthTokenAfterUnauthorized(requestToken);
+    response = await performDriveFetch(requestToken, url, init);
   }
 
   if (!response.ok) {
@@ -1466,20 +1711,35 @@ export async function getCachedAuthToken(): Promise<string | undefined> {
 }
 
 export async function clearAuthToken(token?: string): Promise<void> {
-  const tokenToClear = token ?? await getNonInteractiveCachedToken();
-  if (!tokenToClear) return;
-  if (webAuthTokenCache?.token === tokenToClear) {
-    webAuthTokenCache = undefined;
-  }
-  await removeStoredWebAuthToken();
-  if (deviceAuthTokenCache?.token === tokenToClear) {
-    deviceAuthTokenCache = undefined;
-  }
-  await removeStoredDeviceAuthToken();
+  const cachedToken = token ?? await getNonInteractiveCachedToken().catch(() => undefined);
+  const tokenToClear = cachedToken ? currentAuthToken(cachedToken) : undefined;
 
-  await removeCachedExtensionAuthToken(tokenToClear).catch((error) => {
-    throw new GoogleDriveSyncError("unknown", error instanceof Error ? error.message : "Could not clear cached auth token.");
+  await withAuthTokenStorageLock(async () => {
+    webAuthTokenCache = undefined;
+    deviceAuthTokenCache = undefined;
+    authTokenReplacements.clear();
+
+    let storageError: unknown;
+    try {
+      await removeStoredWebAuthToken();
+    } catch (error) {
+      storageError = error;
+    }
+    try {
+      await removeStoredDeviceAuthToken();
+    } catch (error) {
+      storageError ??= error;
+    }
+    if (storageError) {
+      throw storageError;
+    }
   });
+
+  if (tokenToClear) {
+    await removeCachedExtensionAuthToken(tokenToClear).catch((error) => {
+      throw new GoogleDriveSyncError("unknown", error instanceof Error ? error.message : "Could not clear cached auth token.");
+    });
+  }
 }
 
 export async function revokeAuthToken(token: string): Promise<void> {
@@ -1501,9 +1761,14 @@ export async function revokeAuthToken(token: string): Promise<void> {
 }
 
 export async function disconnectGoogleAccount(token?: string): Promise<{ revokeError?: string }> {
-  const tokenToDisconnect = token ?? await getNonInteractiveCachedToken();
+  const tokenToDisconnect = token ?? await getNonInteractiveCachedToken().catch(() => undefined);
   if (!tokenToDisconnect) {
-    return {};
+    try {
+      await clearAuthToken();
+      return {};
+    } catch (error) {
+      return { revokeError: mapDriveError(error) };
+    }
   }
 
   let revokeError: string | undefined;
@@ -1722,7 +1987,8 @@ export function compareLocalAndCloud(
     return "no_cloud_file";
   }
 
-  const lastSyncedTime = syncSettings.lastSyncedAt ? new Date(syncSettings.lastSyncedAt).getTime() : 0;
+  const localSyncBaseline = syncSettings.lastSyncedLocalUpdatedAt ?? syncSettings.lastSyncedAt;
+  const lastSyncedTime = localSyncBaseline ? new Date(localSyncBaseline).getTime() : 0;
   const localTime = new Date(localData.updatedAt).getTime();
   const cloudTime = new Date(cloud.cloudUpdatedAt).getTime();
 
@@ -1763,7 +2029,7 @@ export function mapDriveError(error: unknown): string {
     const reason = error.reason?.toLowerCase() ?? "";
 
     if (isGoogleDriveAuthorizationUnavailable(error)) {
-      return "Google authorization expired or was revoked. Reconnect Google Drive to resume sync.";
+      return "Google authorization could not be refreshed automatically. Reconnect Google Drive to resume sync.";
     }
     if (error.code === "auth_cancelled") {
       return error.message || "Google authorization was cancelled or did not complete.";

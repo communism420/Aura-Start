@@ -66,10 +66,12 @@
         <h2>Automatic sync after connection</h2>
         <p>
           After Google Drive is connected, local group and link changes are queued and
-          backed up automatically. There is no separate Sync now button in the current
-          UI. Aura Start preserves the local Google Drive connection metadata when you
-          import a JSON backup, so changing bookmark data does not disconnect sync by
-          itself.
+          backed up automatically by the extension background context. Closing the Aura
+          Start page does not cancel an active upload, and a pending interrupted upload
+          is retried when the browser starts again. There is no separate Sync now button
+          in the current UI. Aura Start preserves the local Google Drive connection
+          metadata when you import a JSON backup, so changing bookmark data does not
+          disconnect sync by itself.
         </p>
 
         <h2>Authorization</h2>
@@ -83,6 +85,16 @@
           only Aura Start's own <code>aura-start-sync.json</code> file marked with Aura
           Start app properties. Users do not enter OAuth client IDs in Aura Start
           settings.
+        </p>
+        <p>
+          Aura Start automatically renews expired short-lived access tokens and retries
+          a failed Drive request once. Device OAuth refresh credentials are kept in
+          extension-local storage and are not removed for temporary network failures,
+          Google rate limits, server errors, or OAuth client-configuration errors. They
+          are removed automatically only when Google explicitly returns
+          <code>invalid_grant</code>. If that happens, Aura Start preserves the local
+          data, sync metadata, and Drive file reference and shows a Reconnect Google
+          Drive action in Settings.
         </p>
 
         <h2>Disconnect and delete backup</h2>

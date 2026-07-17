@@ -7,7 +7,15 @@ type GlobalWithExtensionApis = typeof globalThis & {
   chrome?: AnyExtensionApi;
 };
 
-type RuntimeMessageListener = (message: unknown, sender?: chrome.runtime.MessageSender) => void;
+type RuntimeMessageListener = (
+  message: unknown,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void
+) => boolean | void;
+type ExtensionStorageChangeListener = (
+  changes: Record<string, chrome.storage.StorageChange>,
+  areaName: string
+) => void;
 type CallbackResult<T> = (resolve: (value: T) => void, reject: (reason?: unknown) => void) => void;
 type WebAuthFlowDetails = {
   interactive?: boolean;
@@ -146,6 +154,23 @@ export async function sendExtensionRuntimeMessage(message: unknown): Promise<voi
   ).catch(() => undefined);
 }
 
+export async function sendExtensionRuntimeMessageWithResponse<T>(message: unknown): Promise<T | undefined> {
+  const runtime = getExtensionApi()?.runtime;
+  if (!runtime?.sendMessage) {
+    return undefined;
+  }
+
+  return await callPromiseOrCallback(
+    async () => await (runtime.sendMessage as (message: unknown) => Promise<T>)(message),
+    (resolve, reject) => {
+      runtime.sendMessage(message, (response) => {
+        if (rejectLastError(reject)) return;
+        resolve(response as T);
+      });
+    }
+  );
+}
+
 export function addExtensionRuntimeMessageListener(listener: RuntimeMessageListener): boolean {
   const onMessage = getExtensionApi()?.runtime?.onMessage;
   if (!onMessage) {
@@ -158,6 +183,26 @@ export function addExtensionRuntimeMessageListener(listener: RuntimeMessageListe
 
 export function removeExtensionRuntimeMessageListener(listener: RuntimeMessageListener): void {
   getExtensionApi()?.runtime?.onMessage?.removeListener(listener);
+}
+
+export function addExtensionRuntimeStartupListener(listener: () => void): boolean {
+  const onStartup = getExtensionApi()?.runtime?.onStartup;
+  if (!onStartup) {
+    return false;
+  }
+
+  onStartup.addListener(listener);
+  return true;
+}
+
+export function addExtensionStorageChangeListener(listener: ExtensionStorageChangeListener): boolean {
+  const onChanged = getExtensionApi()?.storage?.onChanged;
+  if (!onChanged) {
+    return false;
+  }
+
+  onChanged.addListener(listener);
+  return true;
 }
 
 export async function openExtensionOptionsPage(): Promise<boolean> {

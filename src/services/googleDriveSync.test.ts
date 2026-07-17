@@ -7,9 +7,12 @@ import {
   GoogleDriveSyncError,
   googleDriveDeviceOAuthPollDelayMs,
   googleDriveDeviceOAuthScopes,
+  googleOAuthRefreshRetryDelayMs,
   isChromeIdentityUnsupportedError,
   isFirefoxUserInputPermissionRequestError,
   isGoogleDriveAuthorizationUnavailable,
+  isPermanentGoogleOAuthRefreshFailure,
+  isTransientGoogleOAuthRefreshFailure,
   mapDriveError,
   selectGoogleDriveAuthFlow,
   webOAuthRedirectPath
@@ -572,7 +575,7 @@ describe("Google Drive OAuth error handling", () => {
     const error = new GoogleDriveSyncError("auth_cancelled", "OAuth2 not granted or revoked.");
 
     expect(isGoogleDriveAuthorizationUnavailable(error)).toBe(true);
-    expect(mapDriveError(error)).toBe("Google authorization expired or was revoked. Reconnect Google Drive to resume sync.");
+    expect(mapDriveError(error)).toBe("Google authorization could not be refreshed automatically. Reconnect Google Drive to resume sync.");
   });
 
   it("does not treat an interactive cancellation as a revoked authorization", () => {
@@ -580,6 +583,34 @@ describe("Google Drive OAuth error handling", () => {
 
     expect(isGoogleDriveAuthorizationUnavailable(error)).toBe(false);
     expect(mapDriveError(error)).toBe("The user did not approve access.");
+  });
+});
+
+describe("Google Device OAuth refresh protection", () => {
+  it("removes a refresh token only after Google's confirmed invalid_grant response", () => {
+    expect(isPermanentGoogleOAuthRefreshFailure(400, "invalid_grant")).toBe(true);
+    expect(isPermanentGoogleOAuthRefreshFailure(401, "invalid_client")).toBe(false);
+    expect(isPermanentGoogleOAuthRefreshFailure(400, "invalid_client")).toBe(false);
+  });
+
+  it("retries temporary token endpoint failures without classifying them as logout", () => {
+    expect(isTransientGoogleOAuthRefreshFailure(429)).toBe(true);
+    expect(isTransientGoogleOAuthRefreshFailure(503)).toBe(true);
+    expect(isTransientGoogleOAuthRefreshFailure(400, "temporarily_unavailable")).toBe(true);
+    expect(isTransientGoogleOAuthRefreshFailure(400, "invalid_grant")).toBe(false);
+  });
+
+  it("uses bounded exponential backoff for refresh retries", () => {
+    expect(googleOAuthRefreshRetryDelayMs(0)).toBe(400);
+    expect(googleOAuthRefreshRetryDelayMs(1)).toBe(800);
+    expect(googleOAuthRefreshRetryDelayMs(2)).toBe(1_600);
+    expect(googleOAuthRefreshRetryDelayMs(20)).toBe(1_600);
+  });
+
+  it("recognizes confirmed invalid_grant as requiring an explicit reconnect", () => {
+    const error = new GoogleDriveSyncError("unauthorized", "Token was revoked.", 400, "invalid_grant");
+
+    expect(isGoogleDriveAuthorizationUnavailable(error)).toBe(true);
   });
 });
 

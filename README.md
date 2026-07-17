@@ -110,7 +110,7 @@ npm run validate:zip
 
 In Vite development mode, Aura Start falls back to `localStorage` when the WebExtension storage API is not available. Production extension builds use browser-local extension storage.
 
-`npm run build:local` creates a local unpacked-extension build in `dist-local`. `npm run build:firefox` creates a Firefox-oriented package in `dist-firefox` and rewrites the built manifest for Firefox background scripts plus `browser_specific_settings.gecko`. `npm run build:store` builds the Chrome Web Store release package in `dist` and validates Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, OAuth configuration, and no obvious remote-code patterns. `npm run validate:zip` checks the Chrome Submit ZIP against the current `dist` package after a fresh ZIP is created.
+`npm run build:local` creates a local unpacked-extension build in `dist-local`. `npm run build:firefox` creates a Firefox-oriented package in `dist-firefox` and rewrites the built manifest for Firefox ES-module background scripts plus `browser_specific_settings.gecko`. `npm run build:store` builds the Chrome Web Store release package in `dist` and validates Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, OAuth configuration, and no obvious remote-code patterns. `npm run validate:zip` checks the Chrome Submit ZIP against the current `dist` package after a fresh ZIP is created.
 
 Extension store versions are configured separately in `package.json` under `extensionVersions.chromium` and `extensionVersions.firefox`. Build-time manifest injection writes the target browser version into the generated `manifest.json`, and release validators fail if a Chromium or Firefox package contains the wrong target version. Use `AURA_CHROMIUM_EXTENSION_VERSION`, `AURA_FIREFOX_EXTENSION_VERSION`, or `AURA_EXTENSION_VERSION` only for one-off build overrides.
 
@@ -135,7 +135,9 @@ If stored data is corrupted, Aura Start shows a recovery screen instead of overw
 
 ## Optional Google Drive Sync
 
-Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive. On connection, Aura Start looks for its existing sync file. If the file exists, Aura Start restores it after creating a local restore point. If the file does not exist, Aura Start creates it from the current local data. New users can also choose Restore from Google Drive during onboarding; if no sync file exists, Aura Start shows a clear error and leaves local data unchanged. After connection, local changes are queued and synced automatically.
+Google Drive Sync is available in Settings and is disabled by default. Aura Start keeps local storage as the primary source of truth unless the user connects Google Drive. On connection, Aura Start looks for its existing sync file. If the file exists, Aura Start restores it after creating a local restore point. If the file does not exist, Aura Start creates it from the current local data. New users can also choose Restore from Google Drive during onboarding; if no sync file exists, Aura Start shows a clear error and leaves local data unchanged. After connection, local changes are queued and synced automatically by the extension background context. Closing the Aura Start page does not cancel an active upload; an interrupted pending upload is retried when the browser starts again.
+
+Aura Start automatically renews expired short-lived Google access tokens and retries a failed Drive request once. Device OAuth refresh credentials are stored in extension-local storage and are retained across temporary network failures, Google rate limits, server errors, and OAuth client-configuration errors. Aura Start removes them automatically only when Google explicitly reports `invalid_grant`, which means the grant is no longer usable. In that case the existing sync metadata and Drive file reference are preserved, and Settings shows an explicit Reconnect Google Drive action.
 
 Storage mode depends on the browser authentication path:
 
@@ -145,6 +147,7 @@ Storage mode depends on the browser authentication path:
 Available actions:
 
 - Connect Google Drive
+- Reconnect Google Drive without discarding existing sync metadata
 - Disconnect Google Drive and keep the Drive sync file
 - Delete Drive backup and disconnect
 
