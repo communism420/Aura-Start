@@ -30,6 +30,7 @@ For this project's delivery workflow, refresh all four browser/credential varian
 - Cover meaningful sync/storage changes with regression tests for concurrent writes, deletion, offline recovery, and older data. Use the [installed-extension test matrix](docs/INSTALLED_EXTENSION_TEST_MATRIX.md) for browser checks and their recorded limits.
 - Keep README, the privacy policy, the English site in `docs`, and store materials consistent with shipped behavior. Refresh screenshots when the interface changes. Keep historical release notes clearly marked as history.
 - Keep `docs/google3bfd9cfed5085545.html` unchanged; it verifies the site for Google.
+- Keep `Chrome Submit/`, `Firefox Submit/`, and root `STORE_SUBMISSION.md` local only. They are excluded from Git; do not force-add them or add ignore exceptions for their contents.
 - Do not commit `.env.local`, credential notes, account tokens, private browser profiles, or personal test data. The bundled Device OAuth public-client credential is not a confidential server secret; unrelated secrets and personal credentials must never enter a package.
 - Do not publish, push, or create submission archives as a side effect of a documentation update. Package and publish only as part of a requested release.
 

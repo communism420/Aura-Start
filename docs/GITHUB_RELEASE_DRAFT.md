@@ -67,7 +67,7 @@ npm run build
 
 For Firefox, configure the intended `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID`, `AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET`, and add-on ID, then run `npm run build:firefox`. This produces `dist-firefox` and runs sanitization, manifest finalization, and validation. Unpacked Chromium loads from its selected folder through the browser's extension manager; Firefox temporary testing uses `about:debugging` and the generated manifest.
 
-The project workflow refreshes `dist-google`, `dist-google-local`, `dist-firefox`, and `dist-firefox-local` after changes. Creating those exact paths requires the intended Vite `--outDir`, browser/mode and credential role, plus validation of each actual folder. See the [release checklist](RELEASE_CHECKLIST.md) and [submission notes](../STORE_SUBMISSION.md) for the validation environment variables and package requirements.
+The project workflow refreshes `dist-google`, `dist-google-local`, `dist-firefox`, and `dist-firefox-local` after changes. Creating those exact paths requires the intended Vite `--outDir`, browser/mode and credential role, plus validation of each actual folder. See the [release checklist](RELEASE_CHECKLIST.md) for the validation environment variables and package requirements.
 
 Create store ZIPs separately from validated release outputs, with `manifest.json` at archive root and all referenced background, worker, decoder, locale, icon, and license files included. Rebuilding a folder does not refresh an old ZIP. Upload and publish manually only after verifying the actual archives. Do not describe a prepared directory as a published or reviewed store release.
 
