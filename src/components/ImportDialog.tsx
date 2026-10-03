@@ -1,9 +1,10 @@
 import { Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import type { AuraLanguage, AuraStartData, ImportMode } from "../types";
 import { parseAFineStartExportWithReport } from "../utils/importAFineStart";
 import { parseJsonBackup } from "../utils/importJson";
+import { MAX_ZIP_BACKUP_BYTES, parseZipBackup } from "../utils/zipBackup";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { Modal } from "./Modal";
 
@@ -118,6 +119,11 @@ export function ImportDialog({
   const [sourceCounts, setSourceCounts] = useState({ groups: 0, links: 0 });
   const [localError, setLocalError] = useState<string | null>(null);
   const [pendingReplace, setPendingReplace] = useState<PendingReplaceImport>(null);
+  const [zipImport, setZipImport] = useState(false);
+  const [readingFile, setReadingFile] = useState(false);
+  const fileRequest = useRef(0);
+  const applyingRef = useRef(false);
+  const [applying, setApplying] = useState(false);
 
   function parseText(text: string, nextFormat = format): ParsedImport {
     if (nextFormat === "a_fine_start") {
@@ -169,32 +175,84 @@ export function ImportDialog({
 
   useEffect(() => {
     if (!open) return;
+    fileRequest.current += 1;
+    setReadingFile(false);
+    setZipImport(false);
     setFormat(initialFormat);
     validateText(rawText, initialFormat);
   }, [initialFormat, open]);
 
   useEffect(() => {
     if (!open) {
+      fileRequest.current += 1;
+      setReadingFile(false);
       setPendingReplace(null);
     }
   }, [open]);
 
+  useEffect(() => () => { fileRequest.current += 1; }, []);
+
   async function handleFile(file: File | undefined) {
+    if (applyingRef.current) return;
+    const request = ++fileRequest.current;
     setLocalError(null);
     setParsed(null);
+    setPendingReplace(null);
+    setImportWarnings([]);
+    setRejectedLinks(0);
+    setSourceCounts({ groups: 0, links: 0 });
     setFileName(file?.name ?? "");
+    setRawText("");
+    setZipImport(false);
+    setReadingFile(Boolean(file));
     if (!file) return;
 
     try {
+      if (file.size > MAX_ZIP_BACKUP_BYTES) throw new Error(t(language, "backupFileTooLarge"));
+      const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      const zip = /\.zip$/i.test(file.name) || (header[0] === 0x50 && header[1] === 0x4b);
+      if (request !== fileRequest.current) return;
+      if (zip) {
+        setFormat("aura_json");
+        setZipImport(true);
+        const data = await parseZipBackup(new Uint8Array(await file.arrayBuffer()));
+        if (request !== fileRequest.current) return;
+        setParsedResult({ data, warnings: [], rejectedLinks: 0,
+          sourceGroups: data.groups.length, sourceLinks: countLinks(data) });
+        return;
+      }
       const text = await file.text();
+      if (request !== fileRequest.current) return;
       setRawText(text);
       const result = parseText(text);
       setParsedResult(result);
     } catch (error) {
+      if (request !== fileRequest.current) return;
       setImportWarnings([]);
       setRejectedLinks(0);
       setSourceCounts({ groups: 0, links: 0 });
       setLocalError(importErrorMessage(language, format, error));
+    } finally {
+      if (request === fileRequest.current) setReadingFile(false);
+    }
+  }
+
+  async function applyImport(data: AuraStartData, importMode: ImportMode, source: ImportDialogFormat) {
+    if (applyingRef.current) return;
+    applyingRef.current = true;
+    setApplying(true);
+    const request = fileRequest.current;
+    try {
+      await onImport(data, importMode, source);
+      if (request === fileRequest.current) {
+        setPendingReplace(null);
+        onClose();
+      }
+    } catch (error) {
+      onError(error instanceof Error ? error.message : t(language, "importFailed"));
+    } finally {
+      applyingRef.current = false;
+      setApplying(false);
     }
   }
 
@@ -208,22 +266,29 @@ export function ImportDialog({
         title={format === "a_fine_start" ? t(language, "importFromAFineStart") : t(language, "importBackup")}
         description={t(language, "importBackupDescription")}
         closeLabel={t(language, "closeDialog")}
-        onClose={onClose}
+        onClose={() => { if (!applyingRef.current) onClose(); }}
       >
         <form
           className="space-y-5"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!rawText.trim()) {
+            if (readingFile || applyingRef.current) return;
+            if (!rawText.trim() && !(zipImport && parsed)) {
               setLocalError(t(language, "pickImportData"));
               return;
             }
 
             let dataToImport: AuraStartData;
             try {
-              const result = parseText(rawText);
-              dataToImport = result.data;
-              setParsedResult(result);
+              if (zipImport && parsed) {
+                // Keep the verified object: its pending asset bundles are
+                // attached outside JSON until the confirmed import saves them.
+                dataToImport = parsed;
+              } else {
+                const result = parseText(rawText);
+                dataToImport = result.data;
+                setParsedResult(result);
+              }
               setLocalError(null);
             } catch (error) {
               setParsed(null);
@@ -239,9 +304,7 @@ export function ImportDialog({
               return;
             }
 
-            void onImport(dataToImport, mode, format)
-              .then(onClose)
-              .catch((error: unknown) => onError(error instanceof Error ? error.message : t(language, "importFailed")));
+            void applyImport(dataToImport, mode, format);
           }}
         >
           {format === "a_fine_start" ? (
@@ -261,8 +324,13 @@ export function ImportDialog({
           <span className="mb-1 block text-sm font-semibold">{t(language, "importFormat")}</span>
           <select
             className="field"
+            disabled={applying}
             value={format}
             onChange={(event) => {
+              fileRequest.current += 1;
+              setReadingFile(false);
+              setZipImport(false);
+              setPendingReplace(null);
               const nextFormat = event.target.value as "aura_json" | "a_fine_start";
               setFormat(nextFormat);
               validateText(rawText, nextFormat);
@@ -277,19 +345,23 @@ export function ImportDialog({
           <span className="mt-3 block text-sm font-semibold">{fileName || t(language, "chooseImportFile")}</span>
           <span className="muted mt-1 block text-xs">{t(language, "noUploadHappens")}</span>
           <input
-            accept="application/json,text/plain,.json,.txt"
+            accept="application/zip,application/x-zip-compressed,application/json,text/plain,.zip,.json,.txt"
             className="sr-only"
             type="file"
+            disabled={applying}
+            aria-label={t(language, "chooseImportFile")}
             onChange={(event) => {
               void handleFile(event.target.files?.[0]);
             }}
           />
         </label>
-        <label className="block">
+        {readingFile ? <p role="status" className="muted text-sm">{t(language, "readingBackup")}</p> : null}
+        {zipImport ? <p className="muted text-sm">{t(language, "zipImportDescription")}</p> : <label className="block">
           <span className="mb-1 block text-sm font-semibold">
             {format === "a_fine_start" ? t(language, "pasteAFineStartCode") : t(language, "pasteAuraJson")}
           </span>
           <textarea
+            disabled={applying}
             className="field min-h-32 resize-y"
             placeholder={
               format === "a_fine_start"
@@ -298,13 +370,16 @@ export function ImportDialog({
             }
             value={rawText}
             onChange={(event) => {
+              fileRequest.current += 1;
+              setReadingFile(false);
+              setPendingReplace(null);
               const text = event.target.value;
               setRawText(text);
               setFileName("");
               validateText(text);
             }}
           />
-        </label>
+        </label>}
         {parsed ? (
           <div className="rounded-lg bg-[var(--accent-soft)] p-3 text-sm text-[var(--accent-strong)]">
             <div className="font-semibold">{t(language, "reviewImport")}</div>
@@ -355,7 +430,7 @@ export function ImportDialog({
           </div>
         ) : null}
         {localError ? <div className="rounded-lg bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]">{localError}</div> : null}
-        <fieldset className="space-y-2">
+        <fieldset className="space-y-2" disabled={applying}>
           <legend className="text-sm font-semibold">{t(language, "importMode")}</legend>
           <label className="flex items-start gap-3 rounded-lg border border-[var(--border)] p-3">
             <input
@@ -387,10 +462,10 @@ export function ImportDialog({
           </label>
         </fieldset>
           <div className="flex justify-end gap-2">
-            <button className="btn btn-secondary" type="button" onClick={onClose}>
+            <button className="btn btn-secondary" type="button" disabled={applying} onClick={onClose}>
               {t(language, "cancel")}
             </button>
-            <button className="btn btn-primary" type="submit">
+            <button className="btn btn-primary" type="submit" disabled={readingFile || applying || !parsed}>
               {t(language, "import")}
             </button>
           </div>
@@ -401,17 +476,12 @@ export function ImportDialog({
         confirmLabel={t(language, "importReplaceConfirmAction")}
         message={t(language, "importReplaceConfirmMessage")}
         open={pendingReplace !== null}
+        busy={applying}
         title={t(language, "importReplaceConfirmTitle")}
-        onCancel={() => setPendingReplace(null)}
+        onCancel={() => { if (!applyingRef.current) setPendingReplace(null); }}
         onConfirm={async () => {
           if (!pendingReplace) return;
-          try {
-            await onImport(pendingReplace.data, "replace", pendingReplace.format);
-            setPendingReplace(null);
-            onClose();
-          } catch (error) {
-            onError(error instanceof Error ? error.message : t(language, "importFailed"));
-          }
+          await applyImport(pendingReplace.data, "replace", pendingReplace.format);
         }}
       />
     </>

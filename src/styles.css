@@ -427,6 +427,8 @@ select.field {
 .export-menu-popover {
   display: flex;
   width: min(18rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 10rem);
+  overflow-y: auto;
   flex-direction: column;
   gap: 0.15rem;
   white-space: normal;
@@ -644,6 +646,52 @@ select.field {
 .widget-button-row {
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+.countdown-widget {
+  align-self: start;
+}
+
+.countdown-complete {
+  border-color: var(--accent);
+}
+
+.countdown-time {
+  overflow-wrap: anywhere;
+}
+
+.countdown-duration {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  max-width: 24rem;
+  margin-bottom: 0.85rem;
+}
+
+.countdown-duration label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.countdown-duration input {
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-hint,
+.countdown-message {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.countdown-error {
+  color: var(--danger);
 }
 
 .search-control {

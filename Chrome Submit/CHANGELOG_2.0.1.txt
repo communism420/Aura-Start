@@ -1,0 +1,7 @@
+What's new in 2.0.1
+- Fixed bookmark group drag-and-drop so groups keep their new position after being dropped.
+- Fixed reordering groups upward, downward, and between nested group levels.
+- Fixed order normalization so saved group order is no longer reverted during the save cycle.
+- Improved migration handling for older data where top-level groups did not yet have parentId set.
+- Fixed Chromium/Helium Manifest V3 compatibility by removing Firefox-only background.scripts from Chromium builds.
+- Added release validation guards to prevent Chromium and Firefox background manifest formats from being mixed again.

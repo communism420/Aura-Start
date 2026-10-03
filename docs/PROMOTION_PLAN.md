@@ -3,7 +3,7 @@
 > Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
 
 
-This plan supports launch communication after publication without spam, fake reviews, or aggressive competitor language.
+This plan covers Aura Start 2.1.0 and was updated on 2026-10-04. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.
 
 ## 1. Positioning
 
@@ -16,10 +16,10 @@ Core message:
 - No analytics or tracking.
 - Export anytime.
 - Import from A Fine Start export codes.
-- Optional Google Drive backup with Chrome `appDataFolder` sync and Firefox/compatible Chromium Device OAuth fallback.
+- Optional Google Drive sync through one shared, visible `aura-start-sync.json` across Chrome, Firefox, and compatible Chromium browsers.
 - Optional Save open tabs with an explicit runtime tabs permission prompt.
-- Backgrounds and lightweight widgets without analytics.
-- Open-source under the MIT License.
+- Backgrounds, notes, and Countdown with custom audio, including optional sync of that media.
+- MIT-licensed application source; third-party components retain their licenses.
 
 ## 2. Target Users
 
@@ -48,9 +48,9 @@ Title:
 
 Body:
 
-> Aura Start is a browser new tab extension for people who want clean nested groups of links without a required account. It stores data locally by default, has no analytics or tracking, supports fuzzy search, backgrounds, widgets, and export to JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code.
+> Aura Start is a browser new tab extension for people who want clean nested groups of links without a required account. It stores data locally by default, has no analytics or tracking, supports fuzzy search, backgrounds, Countdown with custom audio, and Full Backup ZIP export with settings, notes, links, restore history, and custom media. Media-free JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code are also available.
 >
-> Optional Google Drive sync is off by default. Google Chrome uses the hidden Drive `appDataFolder` scope; Firefox and compatible Chromium fallback builds use Device OAuth only for Aura Start's own sync file. Save open tabs asks for the optional tabs permission only when you preview tabs. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
+> Optional Google Drive sync is off by default. Supported browsers share one visible Aura Start file in your Drive, including notes, the custom background, and selected Countdown audio. Chrome also retains limited access for old hidden backups; the current Device grant in Firefox/Helium does not access those hidden copies. Aura Start never requests full Drive access. Save open tabs asks for the optional tabs permission only when you preview tabs. The application source is open-source under MIT, with separate licenses for bundled dependencies, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.
 
 ## 5. Reddit / Forum Post Draft: Migration From A Fine Start
 
@@ -62,17 +62,17 @@ Body:
 
 > Aura Start is an independent open-source start page inspired by the simple grouped-link workflow. It can import A Fine Start export codes and export an A Fine Start-compatible code for a basic grouped-link format later.
 >
-> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, nested groups, export formats, Restore Timeline, optional Google Drive backup, and explicit runtime permission for saving open tabs. Feedback from people who use grouped-link start pages would be useful.
+> The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, nested groups, export formats, Restore Timeline, optional Google Drive synchronization, and explicit runtime permission for saving open tabs. Feedback from people who use grouped-link start pages would be useful.
 
 ## 6. Reddit / Forum Post Draft: Power-User Workflow
 
 Title:
 
-> Aura Start 2.0.0 adds nested groups, fuzzy search, Restore Timeline, and widgets
+> Aura Start 2.1.0 adds shared Drive sync, Countdown, and full ZIP backups
 
 Body:
 
-> Aura Start is a local-first browser new tab extension for grouped links. The 2.0.0 release adds nested groups, Fuse.js fuzzy search, Restore Timeline, optional Save open tabs, backgrounds, clock/notes/Pomodoro widgets, Command Palette, keyboard shortcuts, Export / Backup, and a Duplicate Finder that scans read-only and deletes only after confirmation.
+> Aura Start is a local-first browser new tab extension for grouped links. The 2.1.0 release unifies Drive synchronization across browsers, including notes, the custom background, and custom Countdown audio. It adds the Countdown widget, full ZIP backups, and migration of new preferences without resetting existing settings. Visible online pages normally check for remote changes about every five seconds; background checks continue about once a minute while the browser runs. It also retains nested groups, fuzzy search, Restore Timeline, Save open tabs, Command Palette, and Duplicate Finder.
 >
 > It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.
 
@@ -104,10 +104,10 @@ Focus on:
 
 - MIT source code
 - Local-first storage
-- No account
+- No account required for local use
 - No analytics/tracking/ads/backend
 - Least-privilege permissions
-- Optional Google Drive sync: Chrome `appDataFolder`, Firefox/compatible Chromium `drive.file` fallback limited to Aura Start's own sync file
+- Optional shared Google Drive sync through one visible file, with conditional merging and limited legacy backup migration/cleanup
 - Optional tabs access only when Save open tabs is used
 - Export formats and Restore Timeline
 
@@ -120,6 +120,11 @@ Focus on:
 - Do not claim Chrome Web Store availability before the listing is live.
 - Do not imply Google Drive sync is required.
 - Do not claim full compatibility with fields not supported by an export format.
+- Do not claim identical internals or equal reliability to A Fine Start.
+- Do not promise instant delivery, an exact five-second maximum, or permanent authorization: polling can be delayed and Google can revoke access.
+- Do not say every audio codec is supported; imported audio is decoded locally, limited to 20 MiB, with an alarm playback clip of at most 60 seconds.
+- Do not describe the shared Drive file as hidden or encrypted by Aura Start.
+- Explain that the Countdown alarm needs an Aura Start page to remain open.
 
 ## 11. First Feedback Checklist
 
@@ -132,7 +137,10 @@ Focus on:
 - Restore Timeline clarity
 - Duplicate Finder false positives
 - Keyboard shortcut conflicts
-- Google Drive OAuth setup issues
+- Google Drive connection, reconnection, deliberate disconnect, and deletion behavior
+- Concurrent edits and link deletions across Chrome, Helium, and Firefox
+- Background/notes/custom-audio sync and full ZIP restore
+- Upgrade and older JSON compatibility
 - Background/widget readability or performance
 - Privacy wording questions
 - Dark/light theme readability
@@ -143,7 +151,7 @@ Focus on:
 - Do not ask specifically for five-star ratings.
 - Reply politely to bug reports.
 - Convert repeated feedback into GitHub issues.
-- Prepare a 2.0.1 patch if reviewers find release-blocking issues.
+- Prepare a focused follow-up patch if reviewers find release-blocking issues.
 
 ## 13. Bug Triage Plan After Launch
 

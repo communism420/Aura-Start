@@ -1,0 +1,32 @@
+Aura Start local audio decoder
+
+@ffmpeg/ffmpeg 0.12.15: MIT, copyright (c) 2019 Jerome Wu.
+See FFMPEG-WASM-LICENSE.txt.
+
+@ffmpeg/core 0.12.10: GPL-2.0-or-later. This binary includes FFmpeg
+n5.1.4 and the external libraries selected by the upstream build.
+See COPYING.GPLv2.txt. Third-party code retains its own license;
+the Aura Start application's MIT license does not replace these terms.
+
+Both packages are pinned in package-lock.json. Only the unmodified,
+single-thread ESM core and WASM binary are shipped. The JS wrapper is
+bundled by Vite. Its default core URL is localized, and the module worker
+uses a literal import of the packaged core. The upstream core JS and WASM
+remain unmodified. No decoder code is fetched from the Internet at runtime.
+
+Matching upstream sources and build recipe:
+https://github.com/ffmpegwasm/ffmpeg.wasm/tree/71aa99d37c02a7b4c435275ca9ef50e612f6efa1
+https://github.com/ffmpegwasm/ffmpeg.wasm/blob/71aa99d37c02a7b4c435275ca9ef50e612f6efa1/Dockerfile
+https://github.com/FFmpeg/FFmpeg/tree/n5.1.4
+
+The upstream Dockerfile lists the source repositories and revisions for
+FFmpeg and every linked external library, including x264, x265, libvpx,
+LAME, Ogg, Theora, Opus, Vorbis, zlib, libwebp, FreeType, FriBidi,
+HarfBuzz, libass, and zimg. Preserve their notices and corresponding
+source/build materials when redistributing the decoder.
+
+SHA-256 of the unmodified npm ESM distribution:
+ffmpeg-core.js
+67a48f11645f85439f3fde4f2119042c16b374b910206b7a7a24f342e28dcae3
+ffmpeg-core.wasm
+9f57947a5bd530d8f00c5b3f2cb2a3492faa7e5d823315342d6a8656d0a6b7b7

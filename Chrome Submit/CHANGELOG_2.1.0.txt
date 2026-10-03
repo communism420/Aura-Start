@@ -1,0 +1,17 @@
+What's new in 2.1.0
+
+- Reworked Google Drive sync around one shared visible file across Chrome, Firefox, and compatible Chromium browsers.
+- Added merging of concurrent and offline edits, deletion tracking, and consolidation of accessible older copies.
+- Added automatic remote checks about every five seconds on visible online pages and about once a minute in the background while the browser runs.
+- Removed unnecessary uploads and sync animations when opening unchanged pages.
+- Added synchronization of Markdown notes, custom backgrounds, Countdown preferences, and the selected custom audio.
+- Added Countdown with pause, resume, reset, adjustable volume, and a completion alarm.
+- Added local custom-audio decoding for many common formats (up to 20 MiB, with a playback clip of at most 60 seconds).
+- Added Full Backup ZIP containing settings, links, notes, restore history, custom backgrounds, and only the selected original custom sound.
+- Renamed the previous JSON export to Settings and links only; it includes notes/history but no media bytes.
+- Improved settings migration and compatibility with older JSON backups and in-place updates from 2.0.5.
+- Strengthened recovery after temporary network and authorization errors while preserving intentional local account disconnection.
+- Improved verified cloud deletion, legacy-access notices, and restoration messages after a clean installation.
+- Improved import, restore, and Undo handling to preserve the current connection and unrelated synchronized changes.
+
+Notes: The Countdown alarm requires an Aura Start page to remain open. Polling intervals are not delivery guarantees. Current Device authorization cannot access hidden legacy backups with its drive.file-only grant. This changelog does not certify or publish a store package.

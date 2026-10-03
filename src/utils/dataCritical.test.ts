@@ -434,7 +434,8 @@ describe("validation and restore point safety", () => {
     expect(validated.settings.widgets).toEqual({
       clock: true,
       notes: DEFAULT_SETTINGS.widgets.notes,
-      pomodoro: true
+      pomodoro: true,
+      timer: DEFAULT_SETTINGS.widgets.timer
     });
     expect(validated.settings.pomodoro).toEqual({
       focusMinutes: 90,

@@ -23,8 +23,8 @@
       <main class="doc">
         <div class="kicker">Aura Start Docs</div>
         <h1>Aura Start Promotion Plan</h1>
-<section class="summary" aria-label="Maintainer-only note"><p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p></section>
-<p>This plan supports launch communication after publication without spam, fake reviews, or aggressive competitor language.</p>
+<section class="summary" aria-label="Maintainer-only note"><p><strong>Maintainer-only document.</strong> This file is for project release preparation and is not needed for normal Aura Start users.</p></section>
+<p>This plan covers Aura Start 2.1.0 and was updated on 2026-10-04. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.</p>
 <h2>1. Positioning</h2>
 <p>Aura Start is a local-first, open-source, customizable start page for people who want nested grouped links, fast search, and exportable data without account lock-in.</p>
 <p>Core message:</p>
@@ -34,10 +34,10 @@
 <li>No analytics or tracking.</li>
 <li>Export anytime.</li>
 <li>Import from A Fine Start export codes.</li>
-<li>Optional Google Drive backup with Chrome <code>appDataFolder</code> sync and Firefox/compatible Chromium Device OAuth fallback.</li>
+<li>Optional Google Drive sync through one shared, visible <code>aura-start-sync.json</code> across Chrome, Firefox, and compatible Chromium browsers.</li>
 <li>Optional Save open tabs with an explicit runtime tabs permission prompt.</li>
-<li>Backgrounds and lightweight widgets without analytics.</li>
-<li>Open-source under the MIT License.</li>
+<li>Backgrounds, notes, and Countdown with custom audio, including optional sync of that media.</li>
+<li>MIT-licensed application source; third-party components retain their licenses.</li>
 </ul>
 <h2>2. Target Users</h2>
 <ul>
@@ -59,25 +59,19 @@
 <p>Do not post identical text everywhere. Adapt each post to the community rules and ask for honest feedback, not ratings.</p>
 <h2>4. Reddit / Forum Post Draft: Open-Source And Privacy</h2>
 <p>Title:</p>
-<blockquote>I built Aura Start, a local-first open-source new tab page for grouped links</blockquote>
+<blockquote><p>I built Aura Start, a local-first open-source new tab page for grouped links</p></blockquote>
 <p>Body:</p>
-<blockquote>Aura Start is a browser new tab extension for people who want clean nested groups of links without a required account. It stores data locally by default, has no analytics or tracking, supports fuzzy search, backgrounds, widgets, and export to JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code.</blockquote>
-<p>&gt;</p>
-<blockquote>Optional Google Drive sync is off by default. Google Chrome uses the hidden Drive <code>appDataFolder</code> scope; Firefox and compatible Chromium fallback builds use Device OAuth only for Aura Start's own sync file. Save open tabs asks for the optional tabs permission only when you preview tabs. The project is open-source under MIT, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.</blockquote>
+<blockquote><p>Aura Start is a browser new tab extension for people who want clean nested groups of links without a required account. It stores data locally by default, has no analytics or tracking, supports fuzzy search, backgrounds, Countdown with custom audio, and Full Backup ZIP export with settings, notes, links, restore history, and custom media. Media-free JSON, browser bookmarks HTML, Markdown, CSV, and an A Fine Start-compatible code are also available.</p><p>Optional Google Drive sync is off by default. Supported browsers share one visible Aura Start file in your Drive, including notes, the custom background, and selected Countdown audio. Chrome also retains limited access for old hidden backups; the current Device grant in Firefox/Helium does not access those hidden copies. Aura Start never requests full Drive access. Save open tabs asks for the optional tabs permission only when you preview tabs. The application source is open-source under MIT, with separate licenses for bundled dependencies, and I would appreciate honest feedback on the UX, privacy wording, and migration flow.</p></blockquote>
 <h2>5. Reddit / Forum Post Draft: Migration From A Fine Start</h2>
 <p>Title:</p>
-<blockquote>Aura Start supports importing A Fine Start export codes</blockquote>
+<blockquote><p>Aura Start supports importing A Fine Start export codes</p></blockquote>
 <p>Body:</p>
-<blockquote>Aura Start is an independent open-source start page inspired by the simple grouped-link workflow. It can import A Fine Start export codes and export an A Fine Start-compatible code for a basic grouped-link format later.</blockquote>
-<p>&gt;</p>
-<blockquote>The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, nested groups, export formats, Restore Timeline, optional Google Drive backup, and explicit runtime permission for saving open tabs. Feedback from people who use grouped-link start pages would be useful.</blockquote>
+<blockquote><p>Aura Start is an independent open-source start page inspired by the simple grouped-link workflow. It can import A Fine Start export codes and export an A Fine Start-compatible code for a basic grouped-link format later.</p><p>The goal is not to criticize A Fine Start. Aura Start focuses on local-first data ownership, nested groups, export formats, Restore Timeline, optional Google Drive synchronization, and explicit runtime permission for saving open tabs. Feedback from people who use grouped-link start pages would be useful.</p></blockquote>
 <h2>6. Reddit / Forum Post Draft: Power-User Workflow</h2>
 <p>Title:</p>
-<blockquote>Aura Start 2.0.0 adds nested groups, fuzzy search, Restore Timeline, and widgets</blockquote>
+<blockquote><p>Aura Start 2.1.0 adds shared Drive sync, Countdown, and full ZIP backups</p></blockquote>
 <p>Body:</p>
-<blockquote>Aura Start is a local-first browser new tab extension for grouped links. The 2.0.0 release adds nested groups, Fuse.js fuzzy search, Restore Timeline, optional Save open tabs, backgrounds, clock/notes/Pomodoro widgets, Command Palette, keyboard shortcuts, Export / Backup, and a Duplicate Finder that scans read-only and deletes only after confirmation.</blockquote>
-<p>&gt;</p>
-<blockquote>It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.</blockquote>
+<blockquote><p>Aura Start is a local-first browser new tab extension for grouped links. The 2.1.0 release unifies Drive synchronization across browsers, including notes, the custom background, and custom Countdown audio. It adds the Countdown widget, full ZIP backups, and migration of new preferences without resetting existing settings. Visible online pages normally check for remote changes about every five seconds; background checks continue about once a minute while the browser runs. It also retains nested groups, fuzzy search, Restore Timeline, Save open tabs, Command Palette, and Duplicate Finder.</p><p>It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.</p></blockquote>
 <h2>7. GitHub Release Text</h2>
 <p>Use <code>docs/GITHUB_RELEASE_DRAFT.md</code> as the release body. Keep the Chrome Web Store availability line accurate at the time of publishing.</p>
 <h2>8. Migration-Focused Post</h2>
@@ -102,10 +96,10 @@
 <ul>
 <li>MIT source code</li>
 <li>Local-first storage</li>
-<li>No account</li>
+<li>No account required for local use</li>
 <li>No analytics/tracking/ads/backend</li>
 <li>Least-privilege permissions</li>
-<li>Optional Google Drive sync: Chrome <code>appDataFolder</code>, Firefox/compatible Chromium <code>drive.file</code> fallback limited to Aura Start's own sync file</li>
+<li>Optional shared Google Drive sync through one visible file, with conditional merging and limited legacy backup migration/cleanup</li>
 <li>Optional tabs access only when Save open tabs is used</li>
 <li>Export formats and Restore Timeline</li>
 </ul>
@@ -118,6 +112,11 @@
 <li>Do not claim Chrome Web Store availability before the listing is live.</li>
 <li>Do not imply Google Drive sync is required.</li>
 <li>Do not claim full compatibility with fields not supported by an export format.</li>
+<li>Do not claim identical internals or equal reliability to A Fine Start.</li>
+<li>Do not promise instant delivery, an exact five-second maximum, or permanent authorization: polling can be delayed and Google can revoke access.</li>
+<li>Do not say every audio codec is supported; imported audio is decoded locally, limited to 20 MiB, with an alarm playback clip of at most 60 seconds.</li>
+<li>Do not describe the shared Drive file as hidden or encrypted by Aura Start.</li>
+<li>Explain that the Countdown alarm needs an Aura Start page to remain open.</li>
 </ul>
 <h2>11. First Feedback Checklist</h2>
 <ul>
@@ -130,7 +129,10 @@
 <li>Restore Timeline clarity</li>
 <li>Duplicate Finder false positives</li>
 <li>Keyboard shortcut conflicts</li>
-<li>Google Drive OAuth setup issues</li>
+<li>Google Drive connection, reconnection, deliberate disconnect, and deletion behavior</li>
+<li>Concurrent edits and link deletions across Chrome, Helium, and Firefox</li>
+<li>Background/notes/custom-audio sync and full ZIP restore</li>
+<li>Upgrade and older JSON compatibility</li>
 <li>Background/widget readability or performance</li>
 <li>Privacy wording questions</li>
 <li>Dark/light theme readability</li>
@@ -141,7 +143,7 @@
 <li>Do not ask specifically for five-star ratings.</li>
 <li>Reply politely to bug reports.</li>
 <li>Convert repeated feedback into GitHub issues.</li>
-<li>Prepare a 2.0.1 patch if reviewers find release-blocking issues.</li>
+<li>Prepare a focused follow-up patch if reviewers find release-blocking issues.</li>
 </ul>
 <h2>13. Bug Triage Plan After Launch</h2>
 <ol>
@@ -153,7 +155,7 @@
 </ol>
       </main>
       <footer class="site-footer">
-        <p>Aura Start is independent and open-source under the MIT License.</p>
+        <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="index.html">Home</a>
           <a href="documentation.html">Documentation</a>

@@ -23,12 +23,12 @@ const VALID_MANIFEST = {
     service_worker: "background.js",
     type: "module"
   },
-  permissions: ["storage", "identity"],
+  permissions: ["storage", "identity", "alarms"],
   optional_permissions: ["tabs"],
   host_permissions: ["https://www.googleapis.com/*", "https://oauth2.googleapis.com/*"],
   oauth2: {
     client_id: VALID_CLIENT_ID,
-    scopes: [DRIVE_APPDATA_SCOPE]
+    scopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE]
   },
   content_security_policy: {
     extension_pages: "script-src 'self'; object-src 'none'; base-uri 'none'"
@@ -118,18 +118,30 @@ describe("Chrome Web Store validation OAuth guards", () => {
     expect(result.stderr).toContain(".apps.googleusercontent.com");
   });
 
-  it("fails unless the only OAuth scope is drive.appdata", async () => {
+  it("fails when the shared-file OAuth scope needed for multi-device sync is missing", async () => {
     const result = await runValidateStore({
       ...VALID_MANIFEST,
       oauth2: {
         ...VALID_MANIFEST.oauth2,
-        scopes: [DRIVE_APPDATA_SCOPE, "https://www.googleapis.com/auth/drive.file"]
+        scopes: [DRIVE_APPDATA_SCOPE]
       }
     });
 
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("drive.appdata");
     expect(result.stderr).toContain("drive.file");
+  });
+
+  it("rejects full Drive access even when the sync scopes are present", async () => {
+    const result = await runValidateStore({
+      ...VALID_MANIFEST,
+      oauth2: {
+        ...VALID_MANIFEST.oauth2,
+        scopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE, "https://www.googleapis.com/auth/drive"]
+      }
+    });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("full Google Drive access");
   });
 
   it("fails when tabs is requested as a required permission", async () => {

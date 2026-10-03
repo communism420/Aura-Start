@@ -1,4 +1,4 @@
-import type { AuraStartData, AuraSyncSettings } from "../types";
+import type { AuraStartData } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
 import {
   createExtensionTab,
@@ -19,9 +19,15 @@ import {
 } from "../utils/browserApi";
 import { nowIso } from "../utils/dates";
 import { validateAuraData } from "../utils/importJson";
+import { DEFAULT_SETTINGS } from "../constants";
+import { ensureSyncReplica, mergeSyncData } from "../utils/syncReplica";
+import { isBackgroundImageId, loadBackgroundImage, normalizeCustomBackgroundImage, storeBackgroundImage } from "../utils/backgroundImageStorage";
+import { isTimerSoundId, loadTimerSound, normalizeTimerSoundAsset, storeTimerSound, type TimerSoundAsset } from "../utils/timerSoundStorage";
 
 const DRIVE_API_BASE = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD_BASE = "https://www.googleapis.com/upload/drive/v3";
+const DRIVE_CONDITIONAL_API_BASE = "https://www.googleapis.com/drive/v2";
+const DRIVE_CONDITIONAL_UPLOAD_BASE = "https://www.googleapis.com/upload/drive/v2";
 const GOOGLE_OAUTH_AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_DEVICE_CODE_URL = "https://oauth2.googleapis.com/device/code";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -34,9 +40,8 @@ const SYNC_FILE_APP_PROPERTY = "auraStartSync";
 const SYNC_FILE_APP_PROPERTY_VALUE = "true";
 const CLOUD_SCHEMA_VERSION = 1;
 const CLOUD_APP_NAME = "Aura Start";
-const PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID = "pdhhnnmcampmmklkbbtfbmnijmgjliabi";
+const PUBLISHED_CHROME_WEB_STORE_EXTENSION_ID = "pdhhhnmcampmmklkbbfbmniijmgjiabi";
 const TOKEN_EXPIRY_SAFETY_MS = 60_000;
-const CHROME_IDENTITY_PROBE_TIMEOUT_MS = 2_500;
 const OAUTH_REFRESH_MAX_ATTEMPTS = 3;
 const OAUTH_REFRESH_RETRY_BASE_MS = 400;
 const DEVICE_OAUTH_INITIAL_POLL_DELAY_MS = 1_000;
@@ -45,12 +50,18 @@ const DEVICE_OAUTH_FAST_POLL_WINDOW_MS = 15_000;
 const WEB_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-web-auth-token";
 const DEVICE_AUTH_TOKEN_STORAGE_KEY = "aura-start-google-device-auth-token";
 const AUTH_TOKEN_STORAGE_LOCK_NAME = "aura-start-google-auth-token-storage";
+const AUTH_SESSION_STORAGE_KEY = "aura-start-google-auth-session";
 export const GOOGLE_DEVICE_AUTH_EVENT = "aura-start:google-device-auth";
 const FIREFOX_DRIVE_SYNC_DATA_COLLECTION_PERMISSIONS: ExtensionDataCollectionPermission[] = [
   "browsingActivity",
   "technicalAndInteraction"
 ];
 const OAUTH_CLIENT_ID_PATTERN = /^[a-z0-9-]+\.apps\.googleusercontent\.com$/i;
+const DRIVE_REQUEST_TIMEOUT_MS = 25_000;
+const DRIVE_MEDIA_TIMEOUT_MS = 180_000;
+const DRIVE_UPLOAD_BUDGET_MS = 240_000;
+const DRIVE_RESUMABLE_THRESHOLD_BYTES = 1024 * 1024;
+const DRIVE_UPLOAD_CHUNK_BYTES = 256 * 1024;
 const WEB_OAUTH_FALLBACK_ENABLED =
   typeof __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__ === "boolean"
     ? __AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK__
@@ -93,6 +104,7 @@ type CachedToken = {
 };
 type CachedDeviceToken = CachedToken & {
   refreshToken: string;
+  grantedScopes?: string[];
 };
 type GoogleDriveStorageMode = "app_data_folder" | "drive_file";
 
@@ -145,6 +157,7 @@ type GoogleApiErrorBody = {
 
 export type GoogleDriveErrorCode =
   | "auth_cancelled"
+  | "cloud_deleted"
   | "identity_unavailable"
   | "network"
   | "not_found"
@@ -157,8 +170,12 @@ export type GoogleDriveErrorCode =
 export type GoogleDriveFileMetadata = {
   id: string;
   name: string;
+  createdTime?: string;
   modifiedTime?: string;
+  version?: string;
   size?: string;
+  appProperties?: Record<string, string>;
+  legacyAppData?: boolean;
 };
 
 export type GoogleDriveSyncPayload = {
@@ -168,6 +185,8 @@ export type GoogleDriveSyncPayload = {
   updatedAt: string;
   deviceId: string;
   data: AuraStartData;
+  backgroundImage?: { id: string; dataUrl: string };
+  timerSound?: TimerSoundAsset & { id: string };
 };
 
 export type GoogleDriveSyncDownload = {
@@ -176,13 +195,6 @@ export type GoogleDriveSyncDownload = {
   data: AuraStartData;
   cloudUpdatedAt: string;
 };
-
-export type GoogleDriveComparison =
-  | "no_cloud_file"
-  | "in_sync"
-  | "local_newer"
-  | "cloud_newer"
-  | "conflict";
 
 export class GoogleDriveSyncError extends Error {
   code: GoogleDriveErrorCode;
@@ -202,6 +214,105 @@ let webAuthTokenCache: CachedToken | undefined;
 let deviceAuthTokenCache: CachedDeviceToken | undefined;
 let fallbackAuthTokenLock: Promise<void> = Promise.resolve();
 const authTokenReplacements = new Map<string, string>();
+// Retain only in-memory credential lineage for in-flight requests. It lets a
+// stale 401 fail without retrying another account's newly stored access token.
+const deviceTokenLineages = new Map<string, string>();
+const knownWebAuthTokens = new Set<string>();
+type AuthSession = {
+  generation: string;
+  flow?: Exclude<GoogleDriveAuthFlow, "unavailable">;
+  clientId?: string;
+  disconnected?: true;
+};
+let memoryAuthSession: AuthSession = { generation: "legacy" };
+const tokenAuthSessions = new Map<string, AuthSession>();
+const pendingDeviceRefreshes = new Map<string, Promise<CachedDeviceToken>>();
+
+function authFlowClientId(flow: AuthSession["flow"]): string | undefined {
+  return flow === "device_oauth" ? configuredDeviceOAuthClient()?.clientId
+    : flow === "web_oauth" ? configuredWebOAuthClientId()
+      : flow === "chrome_identity" ? manifestOAuthConfig().clientId : undefined;
+}
+
+async function readAuthSession(): Promise<AuthSession> {
+  const area = authTokenStorageAreas()[0];
+  if (!area) return memoryAuthSession;
+  let value: unknown;
+  try { value = (await area.get(AUTH_SESSION_STORAGE_KEY))[AUTH_SESSION_STORAGE_KEY]; }
+  catch { throw new GoogleDriveSyncError("unknown", "Google authorization storage is temporarily unavailable."); }
+  if (value === undefined) return { generation: "legacy" };
+  if (!isRecord(value) || typeof value.generation !== "string" || !value.generation
+    || (value.flow !== undefined && !["device_oauth", "web_oauth", "chrome_identity"].includes(String(value.flow)))) {
+    throw new GoogleDriveSyncError("unknown", "Google authorization session is temporarily unavailable.");
+  }
+  return { generation: value.generation, ...(value.flow ? { flow: value.flow as AuthSession["flow"] } : {}),
+    ...(typeof value.clientId === "string" ? { clientId: value.clientId } : {}),
+    ...(value.disconnected === true ? { disconnected: true as const } : {}) };
+}
+
+async function writeAuthSession(session: AuthSession): Promise<void> {
+  await writeAuthTokenToStorage(AUTH_SESSION_STORAGE_KEY, session);
+  memoryAuthSession = session;
+}
+
+async function requireAuthSession(session: AuthSession): Promise<AuthSession> {
+  const current = await readAuthSession();
+  if (current.generation !== session.generation || current.disconnected) throw authorizationChangedError();
+  if (current.flow && (current.clientId !== authFlowClientId(current.flow)
+    || (session.flow && current.flow !== session.flow))) throw authorizationChangedError();
+  return current;
+}
+
+function rememberTokenSession(token: string, session: AuthSession): void {
+  tokenAuthSessions.set(token, session);
+  if (tokenAuthSessions.size > 64) tokenAuthSessions.delete(tokenAuthSessions.keys().next().value!);
+}
+
+async function bindAuthSession(session: AuthSession, flow: NonNullable<AuthSession["flow"]>, token: string): Promise<void> {
+  const current = await requireAuthSession(session);
+  if (current.flow && current.flow !== flow) throw authorizationChangedError();
+  const bound: AuthSession = { generation: session.generation, flow, clientId: authFlowClientId(flow) };
+  if (current.flow !== flow || current.clientId !== bound.clientId) await writeAuthSession(bound);
+  rememberTokenSession(token, bound);
+}
+
+async function beginInteractiveAuth(session: AuthSession, flow: NonNullable<AuthSession["flow"]>): Promise<AuthSession> {
+  return await withAuthTokenStorageLock(async () => {
+    const current = await readAuthSession();
+    if (current.generation !== session.generation) throw authorizationChangedError();
+    const next: AuthSession = { generation: randomState(), flow, clientId: authFlowClientId(flow) };
+    await writeAuthSession(next);
+    return next;
+  });
+}
+
+async function sessionForAuthentication(interactive: boolean): Promise<AuthSession> {
+  const session = await readAuthSession();
+  if (session.disconnected && !interactive) {
+    throw new GoogleDriveSyncError("unauthorized", "Google Drive is disconnected on this device.", undefined, "local_disconnect");
+  }
+  if (!interactive && session.flow && session.clientId !== authFlowClientId(session.flow)) {
+    throw new GoogleDriveSyncError("unauthorized", "This build uses a different Google OAuth client. Reconnect Google Drive explicitly or install the matching Aura Start build.", undefined, "oauth_client_changed");
+  }
+  return session;
+}
+
+function cacheWebAuthToken(value: CachedToken): void {
+  webAuthTokenCache = value;
+  knownWebAuthTokens.add(value.token);
+  if (knownWebAuthTokens.size > 64) knownWebAuthTokens.delete(knownWebAuthTokens.values().next().value!);
+}
+
+function cacheDeviceAuthToken(value: CachedDeviceToken | undefined): void {
+  deviceAuthTokenCache = value;
+  if (!value) return;
+  deviceTokenLineages.set(value.token, value.refreshToken);
+  if (deviceTokenLineages.size > 64) deviceTokenLineages.delete(deviceTokenLineages.keys().next().value!);
+}
+
+function authorizationChangedError(): GoogleDriveSyncError {
+  return new GoogleDriveSyncError("unknown", "Google authorization changed while this request was running. Sync will retry using the current connection.", undefined, "authorization_changed");
+}
 
 async function withAuthTokenStorageLock<T>(operation: () => Promise<T>): Promise<T> {
   const locks = globalThis.navigator?.locks;
@@ -281,8 +392,9 @@ function isUsableOAuthClientId(clientId: string | undefined): boolean {
   );
 }
 
-function hasExactDriveAppDataScope(scopes: string[] | undefined): boolean {
-  return Array.isArray(scopes) && scopes.length === 1 && scopes[0] === DRIVE_APPDATA_SCOPE;
+function hasSharedDriveScopes(scopes: string[] | undefined): boolean {
+  return Array.isArray(scopes) && scopes.length === 2
+    && scopes.includes(DRIVE_APPDATA_SCOPE) && scopes.includes(DRIVE_FILE_SCOPE);
 }
 
 export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): GoogleDriveAuthFlow {
@@ -307,7 +419,7 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
     return input.hasIdentityApi
       && input.hasGetAuthToken
       && isUsableOAuthClientId(input.manifestClientId)
-      && hasExactDriveAppDataScope(input.manifestScopes)
+      && hasSharedDriveScopes(input.manifestScopes)
       ? "chrome_identity"
       : "unavailable";
   }
@@ -325,7 +437,7 @@ export function selectGoogleDriveAuthFlow(input: GoogleDriveAuthFlowInput): Goog
   }
 
   if (input.hasIdentityApi && input.hasGetAuthToken) {
-    return isUsableOAuthClientId(input.manifestClientId) && hasExactDriveAppDataScope(input.manifestScopes)
+    return isUsableOAuthClientId(input.manifestClientId) && hasSharedDriveScopes(input.manifestScopes)
       ? "chrome_identity"
       : "unavailable";
   }
@@ -379,6 +491,8 @@ type NavigatorWithBrave = Navigator & {
     }>;
   };
 };
+
+export type GoogleDriveConditionalDownload = GoogleDriveSyncDownload & { etag: string };
 
 function chromiumVariantOAuthCapability(variant: GoogleDriveChromiumVariant): GoogleDriveBrowserOAuthCapability {
   return variant === "google_chrome" ? "chrome_identity" : "web_oauth";
@@ -440,40 +554,14 @@ export async function detectGoogleDriveBrowserOAuthCapability(): Promise<GoogleD
   return chromiumVariantOAuthCapability(variant);
 }
 
-async function detectChromeIdentitySupport(): Promise<boolean> {
-  if (!hasExtensionIdentityGetAuthToken()) {
-    return false;
-  }
-
-  try {
-    await getChromeAuthToken(false, CHROME_IDENTITY_PROBE_TIMEOUT_MS);
-    return true;
-  } catch (error) {
-    return !isChromeIdentityUnsupportedError(error);
-  }
-}
-
-async function detectInteractiveChromeIdentityUnsupported(variant: GoogleDriveChromiumVariant): Promise<boolean> {
-  if (chromiumVariantOAuthCapability(variant) === "web_oauth") {
-    return true;
-  }
-
-  return !await detectChromeIdentitySupport();
-}
-
 async function detectInteractiveAuthContext(): Promise<{
   browserOAuthCapability: GoogleDriveBrowserOAuthCapability;
   chromiumVariant: GoogleDriveChromiumVariant;
   chromeIdentityUnsupported: boolean;
 }> {
-  const chromiumVariant = await detectGoogleDriveChromiumVariant();
-  const browserOAuthCapability = chromiumVariantOAuthCapability(chromiumVariant);
-  const chromeIdentityUnsupported = await detectInteractiveChromeIdentityUnsupported(chromiumVariant);
-  return {
-    browserOAuthCapability,
-    chromiumVariant,
-    chromeIdentityUnsupported
-  };
+  // Use the real authorization call to detect an unsupported API. A separate
+  // short silent probe can time out or finish after the user disconnects.
+  return await detectNonInteractiveAuthContext();
 }
 
 async function detectNonInteractiveAuthContext(): Promise<{
@@ -577,8 +665,8 @@ function manifestOAuthConfigurationError(config: { clientId?: string; scopes?: s
     return oauthClientConfigurationError(config.clientId);
   }
 
-  if (!hasExactDriveAppDataScope(config.scopes)) {
-    return "Google Drive sync is not configured correctly. The extension manifest must request only the Google Drive appDataFolder OAuth scope.";
+  if (!hasSharedDriveScopes(config.scopes)) {
+    return "Google Drive sync needs drive.file for shared device snapshots and drive.appdata to migrate existing Chrome backups.";
   }
 
   return "Google Drive sync is not configured correctly. Rebuild Aura Start with a valid Google OAuth manifest configuration.";
@@ -604,7 +692,7 @@ function configuredDeviceOAuthClient(): { clientId: string; clientSecret: string
 function oauthScopes(): string[] {
   const manifest = getExtensionManifest() as ManifestWithOAuth | undefined;
   const scopes = manifest?.oauth2?.scopes?.filter((scope) => typeof scope === "string" && scope.trim());
-  return scopes?.length ? scopes : [DRIVE_APPDATA_SCOPE];
+  return scopes?.length ? scopes : [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE];
 }
 
 export function googleDriveDeviceOAuthScopes(): string[] {
@@ -612,7 +700,8 @@ export function googleDriveDeviceOAuthScopes(): string[] {
 }
 
 function storageModeForToken(token: string): GoogleDriveStorageMode {
-  return deviceAuthTokenCache?.token === currentAuthToken(token) ? "drive_file" : "app_data_folder";
+  const current = currentAuthToken(token);
+  return tokenAuthSessions.get(current)?.flow === "device_oauth" || deviceAuthTokenCache?.token === current ? "drive_file" : "app_data_folder";
 }
 
 function cachedWebAuthToken(): string | undefined {
@@ -647,16 +736,10 @@ function normalizeCachedToken(value: unknown): CachedToken | undefined {
 }
 
 function authTokenStorageAreas(): ExtensionStorageArea[] {
-  const areas: ExtensionStorageArea[] = [];
-  const local = getExtensionStorageArea("local");
-  const session = getExtensionStorageArea("session");
-  if (local) {
-    areas.push(local);
-  }
-  if (session) {
-    areas.push(session);
-  }
-  return areas;
+  // Local storage is authoritative even when its value was removed. A stale
+  // session mirror must not resurrect an account disconnected in another page.
+  const primary = getExtensionStorageArea("local") ?? getExtensionStorageArea("session");
+  return primary ? [primary] : [];
 }
 
 function webAuthTokenStorageAreas(): ExtensionStorageArea[] {
@@ -704,6 +787,7 @@ async function removeAuthTokenFromStorage(key: string): Promise<void> {
 
 async function readStoredWebAuthToken(): Promise<string | undefined> {
   const areas = webAuthTokenStorageAreas();
+  webAuthTokenCache = undefined;
   let successfulReads = 0;
   for (const area of areas) {
     let result: Record<string, unknown>;
@@ -717,12 +801,9 @@ async function readStoredWebAuthToken(): Promise<string | undefined> {
     const stored = result[WEB_AUTH_TOKEN_STORAGE_KEY];
     if (stored === undefined) continue;
     const cached = normalizeCachedToken(stored);
-    if (!cached) {
-      await area.remove(WEB_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-      continue;
-    }
+    if (!cached) continue;
 
-    webAuthTokenCache = cached;
+    cacheWebAuthToken(cached);
     return cached.token;
   }
 
@@ -741,6 +822,12 @@ async function removeStoredWebAuthToken(): Promise<void> {
   await removeAuthTokenFromStorage(WEB_AUTH_TOKEN_STORAGE_KEY);
 }
 
+function normalizeGrantedScopes(value: unknown): string[] | undefined {
+  const items = typeof value === "string" ? value.split(/\s+/) : value;
+  if (!Array.isArray(items) || !items.every((item) => typeof item === "string")) return undefined;
+  return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
+}
+
 function normalizeCachedDeviceToken(value: unknown): CachedDeviceToken | undefined {
   if (
     !isRecord(value)
@@ -757,12 +844,14 @@ function normalizeCachedDeviceToken(value: unknown): CachedDeviceToken | undefin
   return {
     token: value.token,
     refreshToken: value.refreshToken,
-    expiresAt: value.expiresAt
+    expiresAt: value.expiresAt,
+    ...(value.grantedScopes !== undefined ? { grantedScopes: normalizeGrantedScopes(value.grantedScopes) } : {})
   };
 }
 
 async function readStoredDeviceAuthToken(): Promise<CachedDeviceToken | undefined> {
   const areas = deviceAuthTokenStorageAreas();
+  deviceAuthTokenCache = undefined;
   let successfulReads = 0;
   for (const area of areas) {
     let result: Record<string, unknown>;
@@ -776,12 +865,9 @@ async function readStoredDeviceAuthToken(): Promise<CachedDeviceToken | undefine
     const stored = result[DEVICE_AUTH_TOKEN_STORAGE_KEY];
     if (stored === undefined) continue;
     const cached = normalizeCachedDeviceToken(stored);
-    if (!cached) {
-      await area.remove(DEVICE_AUTH_TOKEN_STORAGE_KEY).catch(() => undefined);
-      continue;
-    }
+    if (!cached) continue;
 
-    deviceAuthTokenCache = cached;
+    cacheDeviceAuthToken(cached);
     return cached;
   }
 
@@ -802,48 +888,31 @@ async function removeStoredDeviceAuthToken(): Promise<void> {
 }
 
 async function getCachedWebAuthToken(): Promise<string | undefined> {
-  return cachedWebAuthToken() ?? await readStoredWebAuthToken();
+  return webAuthTokenStorageAreas().length > 0 ? await readStoredWebAuthToken() : cachedWebAuthToken();
 }
 
 async function getCachedDeviceAuthToken(): Promise<CachedDeviceToken | undefined> {
-  if (deviceAuthTokenCache) {
-    return deviceAuthTokenCache;
-  }
-
-  return await readStoredDeviceAuthToken();
+  return deviceAuthTokenStorageAreas().length > 0 ? await readStoredDeviceAuthToken() : deviceAuthTokenCache;
 }
 
 function isCachedAccessTokenUsable(cached: CachedToken): boolean {
   return Date.now() + TOKEN_EXPIRY_SAFETY_MS < cached.expiresAt;
 }
 
-async function getCachedWebAuthTokenBeforeLaunch(interactive: boolean): Promise<string | undefined> {
-  const cached = cachedWebAuthToken();
-  if (cached || interactive) {
-    return cached;
-  }
-
-  return await readStoredWebAuthToken();
-}
-
 async function getNonInteractiveCachedToken(): Promise<string | undefined> {
+  const session = await sessionForAuthentication(false).catch((error: unknown) => {
+    if (error instanceof GoogleDriveSyncError && error.reason === "local_disconnect") return undefined;
+    throw error;
+  });
+  if (!session) return undefined;
+  if (session.flow === "device_oauth") return await getDeviceAuthToken(false, session).catch(() => undefined);
+  if (session.flow === "web_oauth") return await getCachedWebAuthToken();
+  if (session.flow === "chrome_identity") return await getBoundChromeAuthToken(false, session).catch(() => undefined);
   const installSource = detectGoogleDriveInstallSource();
   const deviceOAuthClient = configuredDeviceOAuthClient();
-  if (deviceOAuthClient) {
-    const cachedDeviceToken = await getDeviceAuthToken(false).catch(() => undefined);
-    if (cachedDeviceToken) {
-      return cachedDeviceToken;
-    }
-  }
-
   const webOAuthClientId = configuredWebOAuthClientId();
-  if (webOAuthClientId) {
-    const cachedWebToken = await getCachedWebAuthToken();
-    if (cachedWebToken) {
-      return cachedWebToken;
-    }
-  }
-
+  // Cached credentials belong to an authorization flow (and may belong to a
+  // different account). Never fall through to another flow's cached account.
   const { chromeIdentityUnsupported } = await detectNonInteractiveAuthContext();
   const manifestConfig = manifestOAuthConfig();
   const flow = selectGoogleDriveAuthFlow({
@@ -860,7 +929,7 @@ async function getNonInteractiveCachedToken(): Promise<string | undefined> {
   });
 
   if (flow === "device_oauth") {
-    return await getDeviceAuthToken(false).catch(() => undefined);
+    return await getDeviceAuthToken(false, session).catch(() => undefined);
   }
 
   if (flow === "web_oauth") {
@@ -868,7 +937,15 @@ async function getNonInteractiveCachedToken(): Promise<string | undefined> {
   }
 
   if (flow === "chrome_identity") {
-    return await getChromeAuthToken(false, CHROME_IDENTITY_PROBE_TIMEOUT_MS).catch(() => undefined);
+    return await getBoundChromeAuthToken(false, session).catch(async (error: unknown) => {
+      // Match getAuthToken's explicit unsupported-identity fallback, while an
+      // expired or missing native grant must not select another cached account.
+      if (isChromeIdentityUnsupportedError(error)) {
+        if (deviceOAuthClient) return await getDeviceAuthToken(false, session).catch(() => undefined);
+        if (webOAuthClientId) return await getCachedWebAuthToken();
+      }
+      return undefined;
+    });
   }
 
   return undefined;
@@ -905,13 +982,13 @@ function isBrowserSigninDisabledError(error: unknown): boolean {
 export function isChromeIdentityUnsupportedError(error: unknown): boolean {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   return isBrowserSigninDisabledError(error)
-    || message.includes("did not respond")
     || message.includes("custom uri scheme")
     || message.includes("not supported on chrome apps");
 }
 
 async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Promise<string> {
   requireIdentityApi();
+  timeoutMs ??= interactive ? undefined : DRIVE_REQUEST_TIMEOUT_MS;
   return await new Promise<string>((resolve, reject) => {
     let settled = false;
     const timeout = timeoutMs && timeoutMs > 0
@@ -946,7 +1023,24 @@ async function getChromeAuthToken(interactive: boolean, timeoutMs?: number): Pro
   });
 }
 
-async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
+async function getBoundChromeAuthToken(interactive: boolean, session: AuthSession): Promise<string> {
+  const active = session.disconnected && interactive ? await beginInteractiveAuth(session, "chrome_identity") : session;
+  await requireAuthSession(active);
+  const token = await getChromeAuthToken(interactive);
+  try {
+    await withAuthTokenStorageLock(async () => { await bindAuthSession(active, "chrome_identity", token); });
+  } catch (error) {
+    const current = await readAuthSession().catch(() => undefined);
+    if (current?.disconnected || current?.generation === active.generation) {
+      await removeCachedExtensionAuthToken(token).catch(() => undefined);
+    }
+    throw error;
+  }
+  return token;
+}
+
+async function launchGoogleWebAuthFlow(interactive: boolean, expectedSession?: AuthSession): Promise<string> {
+  const session = expectedSession ?? await sessionForAuthentication(interactive);
   const clientId = configuredWebOAuthClientId();
   if (!clientId) {
     throw new GoogleDriveSyncError(
@@ -955,8 +1049,9 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
-  const cached = await getCachedWebAuthTokenBeforeLaunch(interactive);
+  const cached = session.disconnected ? undefined : await getCachedWebAuthToken();
   if (cached) {
+    await withAuthTokenStorageLock(async () => { await bindAuthSession(session, "web_oauth", cached); });
     return cached;
   }
 
@@ -968,6 +1063,7 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     );
   }
 
+  const active = interactive ? await beginInteractiveAuth(session, "web_oauth") : session;
   const redirectUri = webOAuthRedirectUri(webOAuthRedirectPath());
   const state = randomState();
   const authUrl = new URL(GOOGLE_OAUTH_AUTHORIZE_URL);
@@ -983,9 +1079,15 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
 
   const redirectResult = await launchExtensionWebAuthFlow({ interactive, url: authUrl.toString() })
     .catch((error) => {
+      const message = error instanceof Error ? error.message : typeof error === "string" ? error : "Google authorization did not complete.";
+      // Silent Web OAuth can require consent/login without a revoked grant.
+      // Only this explicit browser response warrants an interactive retry;
+      // network failures and a user's cancellation must remain recoverable.
+      const reason = !interactive && /^user interaction (?:is )?required\.?$/i.test(message.trim())
+        ? "interaction_required" : undefined;
       throw new GoogleDriveSyncError(
         "auth_cancelled",
-        error instanceof Error ? error.message : "Google authorization did not complete."
+        message, undefined, reason
       );
     });
 
@@ -993,13 +1095,12 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
   const fragmentParams = new URLSearchParams(redirectedUrl.hash.startsWith("#") ? redirectedUrl.hash.slice(1) : "");
   const queryParams = redirectedUrl.searchParams;
   const params = fragmentParams.size ? fragmentParams : queryParams;
-  const error = params.get("error");
-  if (error) {
-    throw new GoogleDriveSyncError("auth_cancelled", params.get("error_description") ?? error);
-  }
-
   if (params.get("state") !== state) {
     throw new GoogleDriveSyncError("auth_cancelled", "Google authorization returned an invalid state.");
+  }
+  const error = params.get("error");
+  if (error) {
+    throw new GoogleDriveSyncError("auth_cancelled", params.get("error_description") ?? error, undefined, error);
   }
 
   const token = params.get("access_token");
@@ -1014,8 +1115,10 @@ async function launchGoogleWebAuthFlow(interactive: boolean): Promise<string> {
     expiresAt: Date.now() + expiresIn * 1000
   };
   await withAuthTokenStorageLock(async () => {
+    await requireAuthSession(active);
     await writeStoredWebAuthToken(cachedToken);
-    webAuthTokenCache = cachedToken;
+    cacheWebAuthToken(cachedToken);
+    await bindAuthSession(active, "web_oauth", token);
   });
 
   return token;
@@ -1037,6 +1140,7 @@ type GoogleDeviceTokenResponse = {
   expires_in?: number;
   refresh_token?: string;
   token_type?: string;
+  scope?: string;
   error?: string;
   error_description?: string;
   error_subtype?: string;
@@ -1065,19 +1169,11 @@ async function readGoogleOAuthJson<T>(response: Response): Promise<T> {
   return (isRecord(body) ? body : {}) as T;
 }
 
-async function requestGoogleDeviceCode(clientId: string): Promise<Required<Pick<GoogleDeviceCodeResponse, "device_code" | "user_code" | "verification_url">> & {
+async function requestGoogleDeviceCode(clientId: string, scopes = googleDriveDeviceOAuthScopes()): Promise<Required<Pick<GoogleDeviceCodeResponse, "device_code" | "user_code" | "verification_url">> & {
   verification_url_complete?: string;
   expires_in: number;
   interval: number;
 }> {
-  const scopes = googleDriveDeviceOAuthScopes();
-  if (scopes.includes(DRIVE_APPDATA_SCOPE)) {
-    throw new GoogleDriveSyncError(
-      "identity_unavailable",
-      "Google Device OAuth cannot request the appDataFolder scope. Rebuild Aura Start with the device-code Drive file scope."
-    );
-  }
-
   const body = new URLSearchParams({
     client_id: clientId,
     scope: scopes.join(" ")
@@ -1085,7 +1181,8 @@ async function requestGoogleDeviceCode(clientId: string): Promise<Required<Pick<
   const response = await fetch(GOOGLE_DEVICE_CODE_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
+    body,
+    signal: AbortSignal.timeout(DRIVE_REQUEST_TIMEOUT_MS)
   });
   const json = await readGoogleOAuthJson<GoogleDeviceCodeResponse>(response);
 
@@ -1154,8 +1251,19 @@ function deviceTokenFromResponse(json: GoogleDeviceTokenResponse, fallbackRefres
   return {
     token: json.access_token,
     refreshToken,
-    expiresAt: Date.now() + expiresIn * 1000
+    expiresAt: Date.now() + expiresIn * 1000,
+    ...(json.scope !== undefined ? { grantedScopes: normalizeGrantedScopes(json.scope) } : {})
   };
+}
+
+function requireGrantedDriveScopes(token: CachedDeviceToken, required: string[]): void {
+  // Older cached grants and some OAuth responses omit scope. API probes remain
+  // authoritative for those; an explicitly partial grant must not be persisted.
+  const scopes = token.grantedScopes;
+  if (scopes && required.some((scope) => !scopes.includes(scope))) {
+    const access = required.includes(DRIVE_APPDATA_SCOPE) ? "Aura Start files and hidden app data" : "Aura Start files";
+    throw new GoogleDriveSyncError("forbidden", `Google did not grant all required Drive permissions. Allow access to ${access}, then retry.`, 403, "insufficientPermissions");
+  }
 }
 
 async function exchangeGoogleDeviceCode(
@@ -1171,7 +1279,8 @@ async function exchangeGoogleDeviceCode(
   const response = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
+    body,
+    signal: AbortSignal.timeout(DRIVE_REQUEST_TIMEOUT_MS)
   });
   const json = await readGoogleOAuthJson<GoogleDeviceTokenResponse>(response);
 
@@ -1214,7 +1323,8 @@ async function refreshGoogleDeviceTokenOnce(
     response = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body
+      body,
+      signal: AbortSignal.timeout(DRIVE_REQUEST_TIMEOUT_MS)
     });
   } catch (error) {
     throw new GoogleDriveSyncError(
@@ -1226,9 +1336,6 @@ async function refreshGoogleDeviceTokenOnce(
 
   if (!response.ok) {
     const permanentlyRejected = isPermanentGoogleOAuthRefreshFailure(response.status, json.error);
-    if (permanentlyRejected) {
-      await removeStoredDeviceAuthToken().catch(() => undefined);
-    }
     throw new GoogleDriveSyncError(
       permanentlyRejected
         ? "unauthorized"
@@ -1275,65 +1382,117 @@ async function refreshGoogleDeviceToken(
 
 async function refreshStoredDeviceAuthToken(
   client: { clientId: string; clientSecret: string },
-  options: { failedAccessToken?: string; force?: boolean } = {}
+  options: { failedAccessToken?: string; force?: boolean; expectedRefreshToken?: string; session?: AuthSession } = {}
 ): Promise<CachedDeviceToken> {
+  const captured = await withAuthTokenStorageLock(async () => {
+    const session = options.session ?? await sessionForAuthentication(false);
+    await requireAuthSession(session);
+    const cached = await getCachedDeviceAuthToken();
+    if (options.expectedRefreshToken && cached?.refreshToken !== options.expectedRefreshToken) throw authorizationChangedError();
+    if (!cached) throw new GoogleDriveSyncError("unauthorized", "Google Drive needs sign-in to continue syncing.", undefined, "missing_authorization");
+    const ready = isCachedAccessTokenUsable(cached) && (!options.force
+      || Boolean(options.failedAccessToken && cached.token !== options.failedAccessToken));
+    if (ready) {
+      await bindAuthSession(session, "device_oauth", cached.token);
+      if (options.failedAccessToken) rememberAuthTokenReplacement(options.failedAccessToken, cached.token);
+    }
+    return { session, cached, ready };
+  });
+  if (captured.ready) return captured.cached;
+
+  // Never hold the storage lock during a network request: a user's disconnect
+  // must be able to fence this refresh immediately, even while Google is offline.
+  const key = JSON.stringify([captured.session.generation, captured.cached.refreshToken]);
+  let pending = pendingDeviceRefreshes.get(key);
+  if (!pending) {
+    pending = refreshGoogleDeviceToken(client, captured.cached.refreshToken);
+    pendingDeviceRefreshes.set(key, pending);
+    const release = () => { if (pendingDeviceRefreshes.get(key) === pending) pendingDeviceRefreshes.delete(key); };
+    void pending.then(release, release);
+  }
+  let refreshed: CachedDeviceToken;
+  try { refreshed = await pending; }
+  catch (error) {
+    return await withAuthTokenStorageLock(async () => {
+      await requireAuthSession(captured.session);
+      const current = await getCachedDeviceAuthToken();
+      if (current && current.refreshToken === captured.cached.refreshToken
+        && current.token !== captured.cached.token && isCachedAccessTokenUsable(current)) {
+        await bindAuthSession(captured.session, "device_oauth", current.token);
+        rememberAuthTokenReplacement(captured.cached.token, current.token);
+        return current;
+      }
+      if (!current || current.refreshToken !== captured.cached.refreshToken) throw authorizationChangedError();
+      if (error instanceof GoogleDriveSyncError && isPermanentGoogleOAuthRefreshFailure(error.status ?? 0, error.reason)) {
+        await removeStoredDeviceAuthToken();
+      }
+      throw error;
+    });
+  }
   return await withAuthTokenStorageLock(async () => {
-    const hasExtensionStorage = deviceAuthTokenStorageAreas().length > 0;
-    const cached = hasExtensionStorage
-      ? await readStoredDeviceAuthToken()
-      : deviceAuthTokenCache;
-    if (!cached) {
-      throw new GoogleDriveSyncError("unauthorized", "Google Drive needs sign-in to continue syncing.");
+    await requireAuthSession(captured.session);
+    const current = await getCachedDeviceAuthToken();
+    if (!current) throw authorizationChangedError();
+    // Another context may already have committed this refresh (including a
+    // rotated refresh token). Reuse it, never overwrite a different grant.
+    if (current.token !== captured.cached.token) {
+      if ((current.refreshToken === captured.cached.refreshToken || current.refreshToken === refreshed.refreshToken)
+        && isCachedAccessTokenUsable(current)) {
+        await bindAuthSession(captured.session, "device_oauth", current.token);
+        rememberAuthTokenReplacement(captured.cached.token, current.token);
+        return current;
+      }
+      throw authorizationChangedError();
     }
-
-    if (
-      options.force
-      && options.failedAccessToken
-      && cached.token !== options.failedAccessToken
-      && isCachedAccessTokenUsable(cached)
-    ) {
-      deviceAuthTokenCache = cached;
-      rememberAuthTokenReplacement(options.failedAccessToken, cached.token);
-      return cached;
-    }
-
-    if (!options.force && isCachedAccessTokenUsable(cached)) {
-      deviceAuthTokenCache = cached;
-      return cached;
-    }
-
-    const refreshed = await refreshGoogleDeviceToken(client, cached.refreshToken);
+    if (current.refreshToken !== captured.cached.refreshToken) throw authorizationChangedError();
+    refreshed.grantedScopes ??= current.grantedScopes;
+    await bindAuthSession(captured.session, "device_oauth", refreshed.token);
     await writeStoredDeviceAuthToken(refreshed);
-    deviceAuthTokenCache = refreshed;
-    rememberAuthTokenReplacement(cached.token, refreshed.token);
+    cacheDeviceAuthToken(refreshed);
+    rememberAuthTokenReplacement(captured.cached.token, refreshed.token);
     return refreshed;
   });
 }
 
-async function getDeviceAuthToken(interactive: boolean): Promise<string> {
+async function getDeviceAuthToken(interactive: boolean, expectedSession?: AuthSession): Promise<string> {
+  const session = expectedSession ?? await sessionForAuthentication(interactive);
   const client = configuredDeviceOAuthClient();
-  if (!client) {
-    throw new GoogleDriveSyncError(
-      "identity_unavailable",
-      "This build does not include the Google Device OAuth fallback required by this browser."
-    );
-  }
-
-  const cached = await getCachedDeviceAuthToken();
+  if (!client) throw new GoogleDriveSyncError("identity_unavailable", "This build does not include the Google Device OAuth fallback required by this browser.");
+  const cached = session.disconnected ? undefined : await getCachedDeviceAuthToken();
   if (cached) {
-    if (isCachedAccessTokenUsable(cached)) {
-      return currentAuthToken(cached.token);
+    try {
+      requireGrantedDriveScopes(cached, googleDriveDeviceOAuthScopes());
+      const refreshed = await refreshStoredDeviceAuthToken(client, { session });
+      return refreshed.token;
+    } catch (error) {
+      if (!interactive || !(error instanceof GoogleDriveSyncError)
+        || !(isPermanentGoogleOAuthRefreshFailure(error.status ?? 0, error.reason) || isGoogleDriveScopeError(error))) throw error;
+      // A confirmed revoked/insufficient grant can be replaced only following
+      // this explicit user action; transient failures retain the existing grant.
+      await clearAuthToken(cached.token, session.generation);
+      return await getDeviceAuthToken(true);
     }
-
-    const refreshed = await refreshStoredDeviceAuthToken(client);
-    return refreshed.token;
   }
+  if (!interactive) throw new GoogleDriveSyncError("unauthorized", "Google Drive needs sign-in to continue syncing.", undefined, "missing_authorization");
+  const active = await beginInteractiveAuth(session, "device_oauth");
+  const result = await authorizeGoogleDeviceToken(client, active);
+  requireGrantedDriveScopes(result, googleDriveDeviceOAuthScopes());
+  await withAuthTokenStorageLock(async () => {
+    await requireAuthSession(active);
+    await bindAuthSession(active, "device_oauth", result.token);
+    await writeStoredDeviceAuthToken(result);
+    cacheDeviceAuthToken(result);
+  });
+  return result.token;
+}
 
-  if (!interactive) {
-    throw new GoogleDriveSyncError("unauthorized", "Google Drive needs sign-in to continue syncing.");
-  }
-
-  const code = await requestGoogleDeviceCode(client.clientId);
+async function authorizeGoogleDeviceToken(
+  client: { clientId: string; clientSecret: string },
+  session: AuthSession
+): Promise<CachedDeviceToken> {
+  await requireAuthSession(session);
+  const code = await requestGoogleDeviceCode(client.clientId, googleDriveDeviceOAuthScopes());
+  await requireAuthSession(session);
   const verificationUrl = code.verification_url_complete ?? code.verification_url;
   emitGoogleDeviceAuthEvent({
     userCode: code.user_code,
@@ -1349,6 +1508,7 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
   let firstPoll = true;
   let slowedDown = false;
   while (Date.now() < expiresAt) {
+    await requireAuthSession(session);
     const now = Date.now();
     const delayMs = Math.min(
       googleDriveDeviceOAuthPollDelayMs({
@@ -1361,8 +1521,10 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
       Math.max(expiresAt - now, 0)
     );
     await new Promise((resolve) => globalThis.setTimeout(resolve, delayMs));
+    await requireAuthSession(session);
     firstPoll = false;
     const result = await exchangeGoogleDeviceCode(client, code.device_code);
+    await requireAuthSession(session);
     if (result === "authorization_pending") {
       continue;
     }
@@ -1372,11 +1534,7 @@ async function getDeviceAuthToken(interactive: boolean): Promise<string> {
       continue;
     }
 
-    await withAuthTokenStorageLock(async () => {
-      await writeStoredDeviceAuthToken(result);
-      deviceAuthTokenCache = result;
-    });
-    return result.token;
+    return result;
   }
 
   throw new GoogleDriveSyncError("auth_cancelled", "Google Device OAuth code expired before sign-in completed.");
@@ -1403,7 +1561,10 @@ async function errorFromResponse(response: Response): Promise<GoogleDriveSyncErr
   try {
     const body = await response.json() as GoogleApiErrorBody;
     message = body.error?.message ?? message;
-    reason = body.error?.errors?.find((item) => item.reason)?.reason ?? body.error?.status;
+    const scopeDetail = body.error?.details?.find((item) => isRecord(item)
+      && item.reason === "ACCESS_TOKEN_SCOPE_INSUFFICIENT");
+    reason = scopeDetail ? "ACCESS_TOKEN_SCOPE_INSUFFICIENT"
+      : body.error?.errors?.find((item) => item.reason)?.reason ?? body.error?.status;
   } catch {
     // Keep the HTTP status text when Google returns a non-JSON error body.
   }
@@ -1415,6 +1576,7 @@ async function performDriveFetch(token: string, url: string, init: RequestInit):
   try {
     return await fetch(url, {
       ...init,
+      signal: init.signal ?? AbortSignal.timeout(DRIVE_REQUEST_TIMEOUT_MS),
       headers: driveHeaders(token, init.headers)
     });
   } catch (error) {
@@ -1425,48 +1587,194 @@ async function performDriveFetch(token: string, url: string, init: RequestInit):
   }
 }
 
-async function renewAuthTokenAfterUnauthorized(failedAccessToken: string): Promise<string> {
+async function renewAuthTokenAfterUnauthorized(failedAccessToken: string, expectedRefreshToken?: string, knownWebToken = false): Promise<string> {
+  const requestSession = tokenAuthSessions.get(failedAccessToken);
+  if (requestSession) await requireAuthSession(requestSession);
   const deviceClient = configuredDeviceOAuthClient();
   if (deviceClient) {
+    const lineage = expectedRefreshToken ?? deviceTokenLineages.get(failedAccessToken);
+    if (lineage) {
+      const refreshed = await refreshStoredDeviceAuthToken(deviceClient, {
+        failedAccessToken, force: true, expectedRefreshToken: lineage
+      });
+      return refreshed.token;
+    }
     const cachedDeviceToken = await getCachedDeviceAuthToken();
     if (cachedDeviceToken?.token === failedAccessToken) {
       const refreshed = await refreshStoredDeviceAuthToken(deviceClient, {
         failedAccessToken,
-        force: true
+        force: true,
+        expectedRefreshToken: cachedDeviceToken.refreshToken
       });
       return refreshed.token;
     }
   }
 
-  await withAuthTokenStorageLock(async () => {
-    webAuthTokenCache = undefined;
-    await removeStoredWebAuthToken();
-  });
+  // A native Chrome request must not erase an unrelated Web fallback grant.
+  if (knownWebToken || knownWebAuthTokens.has(failedAccessToken)) {
+    await withAuthTokenStorageLock(async () => {
+      const cachedWebToken = await getCachedWebAuthToken();
+      if (cachedWebToken !== failedAccessToken) throw authorizationChangedError();
+      webAuthTokenCache = undefined;
+      await removeStoredWebAuthToken();
+    });
+  }
   await removeCachedExtensionAuthToken(failedAccessToken).catch(() => undefined);
 
   const renewedToken = await getAuthToken(false);
+  if (requestSession) await requireAuthSession(requestSession);
   rememberAuthTokenReplacement(failedAccessToken, renewedToken);
   return renewedToken;
 }
 
-async function driveFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
+async function driveFetchResponse(token: string, url: string, init: RequestInit = {}, acceptIncomplete = false): Promise<Response> {
   let requestToken = currentAuthToken(token);
+  const requestSession = tokenAuthSessions.get(requestToken);
+  if (requestSession) await requireAuthSession(requestSession);
+  const expectedRefreshToken = deviceTokenLineages.get(requestToken);
+  const knownWebToken = knownWebAuthTokens.has(requestToken);
   let response = await performDriveFetch(requestToken, url, init);
 
   if (response.status === 401) {
-    requestToken = await renewAuthTokenAfterUnauthorized(requestToken);
+    requestToken = await renewAuthTokenAfterUnauthorized(requestToken, expectedRefreshToken, knownWebToken);
     response = await performDriveFetch(requestToken, url, init);
+    if (response.status === 401) {
+      throw new GoogleDriveSyncError("network", "Google Drive temporarily rejected the renewed access token. Aura Start will retry automatically.", 401, "renewed_token_rejected");
+    }
   }
 
-  if (!response.ok) {
+  if (!response.ok && !(acceptIncomplete && response.status === 308)) {
     throw await errorFromResponse(response);
   }
+  return response;
+}
 
+async function driveFetch<T>(token: string, url: string, init: RequestInit = {}): Promise<T> {
+  const response = await driveFetchResponse(token, url, init);
   if (response.status === 204) {
     return undefined as T;
   }
 
   return await response.json() as T;
+}
+
+/** Keep only a bounded, active media transfer alive in an MV3 worker. */
+async function withDriveMediaTransfer<T>(operation: () => Promise<T>): Promise<T> {
+  const area = typeof document === "undefined" ? getExtensionStorageArea("local") : undefined;
+  // Chrome documents periodic extension API calls for exceptional long-running
+  // operations. This reads an unused key; it writes no state and stops in finally.
+  const keepAlive = area ? globalThis.setInterval(() => {
+    void area.get("aura-start-active-drive-transfer").catch(() => undefined);
+  }, 20_000) : undefined;
+  try {
+    return await operation();
+  } finally {
+    if (keepAlive !== undefined) globalThis.clearInterval(keepAlive);
+  }
+}
+
+function resumableSessionUrl(value: string | null, expectedUrl: string): string {
+  try {
+    const session = new URL(value ?? "");
+    const expected = new URL(expectedUrl);
+    if (session.origin === expected.origin && session.pathname === expected.pathname
+      && !session.username && !session.password && !session.hash
+      && session.searchParams.get("uploadType") === "resumable" && session.searchParams.get("upload_id")) {
+      return session.href;
+    }
+  } catch { /* Treat an invalid session URL as a failed transfer, never a token destination. */ }
+  throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive returned an invalid upload session.");
+}
+
+function acknowledgedUploadBytes(response: Response, previous: number, sentEnd: number, total: number): number {
+  const range = response.headers.get("Range");
+  const match = range?.match(/^bytes=0-(\d+)$/);
+  const received = range === null ? 0 : match ? Number(match[1]) + 1 : NaN;
+  if (!Number.isSafeInteger(received) || received < previous || received > sentEnd || received > total) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive returned an invalid upload position.");
+  }
+  return received;
+}
+
+async function sendSyncPayload(
+  token: string, url: string, method: "POST" | "PATCH" | "PUT", metadata: RecordValue, payload: GoogleDriveSyncPayload,
+  extraHeaders: Record<string, string> = {}
+): Promise<GoogleDriveFileMetadata> {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  if (bytes.byteLength <= DRIVE_RESUMABLE_THRESHOLD_BYTES) {
+    const multipart = createMultipartBody(metadata, payload);
+    return await driveFetch<GoogleDriveFileMetadata>(token, url, {
+      method, body: multipart.body, headers: { ...extraHeaders, "Content-Type": multipart.contentType }
+    });
+  }
+  // A single large upload can exceed Chrome's 30-second fetch-response limit.
+  // Resumable chunks keep each request small; Drive publishes the complete JSON
+  // only when the session finishes, preserving the previous replica on failure.
+  return await withDriveMediaTransfer(async () => {
+    const deadline = Date.now() + DRIVE_UPLOAD_BUDGET_MS;
+    const signal = () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new GoogleDriveSyncError("network", "The audio sync transfer took too long. Sync will retry later.");
+      return AbortSignal.timeout(Math.min(DRIVE_REQUEST_TIMEOUT_MS, remaining));
+    };
+    const initialUrl = new URL(url);
+    initialUrl.searchParams.set("uploadType", "resumable");
+    const initialized = await driveFetchResponse(token, initialUrl.href, {
+      method, signal: signal(), body: JSON.stringify(metadata),
+      headers: { ...extraHeaders, "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": "application/json",
+        "X-Upload-Content-Length": String(bytes.byteLength) }
+    });
+    const session = resumableSessionUrl(initialized.headers.get("Location"), initialUrl.href);
+    let position = 0;
+    let recoveryAttempts = 0;
+    let stalledResponses = 0;
+    while (position < bytes.byteLength) {
+      const end = Math.min(position + DRIVE_UPLOAD_CHUNK_BYTES, bytes.byteLength);
+      let response: Response;
+      try {
+        response = await driveFetchResponse(token, session, {
+          method: "PUT", signal: signal(), body: new Blob([bytes.slice(position, end)], { type: "application/json" }),
+          headers: { ...extraHeaders, "Content-Type": "application/json", "Content-Range": `bytes ${position}-${end - 1}/${bytes.byteLength}` }
+        }, true);
+      } catch (error) {
+        if (!(error instanceof GoogleDriveSyncError)) throw error;
+        if (error.code === "not_found") {
+          // A session 404 is not a deleted replica; do not create a duplicate file.
+          throw new GoogleDriveSyncError("network", "The Google Drive upload session expired. Sync will retry later.");
+        }
+        if ((error.code !== "network" && (error.status ?? 0) < 500) || ++recoveryAttempts > 3) throw error;
+        // A lost response may have followed a successful write. Ask Drive for
+        // its committed offset before sending any bytes again.
+        response = await driveFetchResponse(token, session, {
+          method: "PUT", signal: signal(), body: new Blob([]),
+          headers: { ...extraHeaders, "Content-Range": `bytes */${bytes.byteLength}` }
+        }, true).catch((statusError: unknown) => {
+          if (statusError instanceof GoogleDriveSyncError && statusError.code === "not_found") {
+            throw new GoogleDriveSyncError("network", "The Google Drive upload session expired. Sync will retry later.");
+          }
+          throw statusError;
+        });
+      }
+      if (response.status === 200 || response.status === 201) {
+        if (end < bytes.byteLength) {
+          throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive confirmed an incomplete upload.");
+        }
+        const result: unknown = await response.json();
+        if (!isRecord(result) || typeof result.id !== "string" || !result.id) {
+          throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive did not confirm a complete upload.");
+        }
+        return result as GoogleDriveFileMetadata;
+      }
+      if (response.status !== 308) throw new GoogleDriveSyncError("network", "Google Drive did not complete the upload. Sync will retry later.");
+      const next = acknowledgedUploadBytes(response, position, end, bytes.byteLength);
+      if (next === position && ++stalledResponses > 2) {
+        throw new GoogleDriveSyncError("network", "Google Drive made no upload progress. Sync will retry later.");
+      }
+      if (next > position) stalledResponses = 0;
+      position = next;
+    }
+    throw new GoogleDriveSyncError("network", "Google Drive did not confirm the final upload. Sync will retry later.");
+  });
 }
 
 function createMultipartBody(metadata: RecordValue, payload: GoogleDriveSyncPayload): {
@@ -1493,15 +1801,70 @@ function createMultipartBody(metadata: RecordValue, payload: GoogleDriveSyncPayl
   };
 }
 
-function cloudPayload(data: AuraStartData, deviceId: string): GoogleDriveSyncPayload {
+async function cloudPayload(data: AuraStartData, deviceId: string): Promise<GoogleDriveSyncPayload> {
+  const syncReplica = ensureSyncReplica(data);
+  const imageId = data.settings.background.customImageId ?? null;
+  if (syncReplica.settings["background.customImageId"].value !== imageId) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Custom background image and sync history do not match.");
+  }
+  const dataUrl = imageId ? await loadBackgroundImage(imageId) : null;
+  if (imageId && !dataUrl) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Custom background image is unavailable locally. Sync will retry without replacing the cloud backup.");
+  }
+  const soundId = data.settings.timer.customSoundId ?? null;
+  if (syncReplica.settings["timer.customSoundId"].value !== soundId) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Custom timer sound and sync history do not match.");
+  }
+  const sound = soundId ? await loadTimerSound(soundId) : null;
+  if (soundId && !sound) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Custom timer sound is unavailable locally. Sync will retry without replacing the cloud backup.");
+  }
   return {
     schemaVersion: CLOUD_SCHEMA_VERSION,
     app: CLOUD_APP_NAME,
     appVersion: appVersion(),
     updatedAt: nowIso(),
     deviceId,
-    data
+    ...(imageId && dataUrl ? { backgroundImage: { id: imageId, dataUrl } } : {}),
+    ...(soundId && sound ? { timerSound: { id: soundId, ...sound } } : {}),
+    data: {
+      ...data,
+      syncReplica,
+      settings: {
+        ...data.settings,
+        sync: { ...DEFAULT_SETTINGS.sync, deviceId,
+          deleteCloudFileOnDisconnect: data.settings.sync.deleteCloudFileOnDisconnect }
+      },
+      restorePoints: []
+    }
   };
+}
+
+/** Older uploads replaced device-local preferences with constant placeholders.
+ * Only causal registers prove that a cloud file actually shared these choices.
+ * Local storage and JSON backups retain their original preference values.
+ */
+function withoutLegacyCloudPreferencePlaceholders(value: unknown): unknown {
+  if (!isRecord(value) || !isRecord(value.settings)) return value;
+  const replica = isRecord(value.syncReplica) ? value.syncReplica : undefined;
+  const registers = replica && isRecord(replica.settings) ? replica.settings : undefined;
+  const absent = ["captureOpenTabs", "sync.deleteCloudFileOnDisconnect"]
+    .filter((path) => !registers || !Object.hasOwn(registers, path));
+  if (!absent.length) return value;
+  const settings = { ...value.settings };
+  if (absent.includes("captureOpenTabs")) delete settings.captureOpenTabs;
+  if (absent.includes("sync.deleteCloudFileOnDisconnect") && isRecord(settings.sync)) {
+    const sync = { ...settings.sync };
+    delete sync.deleteCloudFileOnDisconnect;
+    settings.sync = sync;
+  }
+  const result: RecordValue = { ...value, settings };
+  if (isRecord(value.settingsCompatibility) && isRecord(value.settingsCompatibility.preserved)) {
+    const preserved = { ...value.settingsCompatibility.preserved };
+    for (const path of absent) delete preserved[path];
+    result.settingsCompatibility = { ...value.settingsCompatibility, preserved };
+  }
+  return result;
 }
 
 function normalizeCloudUpdatedAt(payload: GoogleDriveSyncPayload): string {
@@ -1514,7 +1877,7 @@ function normalizeCloudUpdatedAt(payload: GoogleDriveSyncPayload): string {
   return Number.isFinite(payloadTime) ? new Date(payloadTime).toISOString() : nowIso();
 }
 
-function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
+async function validateCloudPayload(value: unknown): Promise<GoogleDriveSyncPayload> {
   if (!isRecord(value)) {
     throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive sync file must be a JSON object.");
   }
@@ -1540,13 +1903,50 @@ function validateCloudPayload(value: unknown): GoogleDriveSyncPayload {
   }
 
   try {
+    const data = validateAuraData(withoutLegacyCloudPreferencePlaceholders(value.data));
+    const imageId = data.settings.background.customImageId ?? null;
+    if (ensureSyncReplica(data).settings["background.customImageId"].value !== imageId) {
+      throw new Error("Custom background image and sync history do not match.");
+    }
+    let backgroundImage: GoogleDriveSyncPayload["backgroundImage"];
+    if (value.backgroundImage !== undefined || imageId) {
+      const asset = value.backgroundImage;
+      if (!isRecord(asset) || !isBackgroundImageId(asset.id) || asset.id !== imageId) {
+        throw new Error("Google Drive sync file has a missing or mismatched custom background image.");
+      }
+      const dataUrl = normalizeCustomBackgroundImage(asset.dataUrl);
+      if (!dataUrl) throw new Error("Google Drive sync file contains an invalid custom background image.");
+      // Verify the content hash and durably store the bytes before exposing
+      // their reference to the page or background synchronizer.
+      await storeBackgroundImage(dataUrl, asset.id);
+      backgroundImage = { id: asset.id, dataUrl };
+    }
+    const soundId = data.settings.timer.customSoundId ?? null;
+    if (ensureSyncReplica(data).settings["timer.customSoundId"].value !== soundId) {
+      throw new Error("Custom timer sound and sync history do not match.");
+    }
+    let timerSound: GoogleDriveSyncPayload["timerSound"];
+    if (value.timerSound !== undefined || soundId) {
+      const asset = value.timerSound;
+      if (!isRecord(asset) || !isTimerSoundId(asset.id) || asset.id !== soundId) {
+        throw new Error("Google Drive sync file has a missing or mismatched custom timer sound.");
+      }
+      const sound = normalizeTimerSoundAsset(asset);
+      if (!sound) throw new Error("Google Drive sync file contains an invalid custom timer sound.");
+      // The original file and portable playback audio travel together under
+      // one hash; publish their reference only after both are verified/saved.
+      await storeTimerSound(sound, asset.id);
+      timerSound = { id: asset.id, ...sound };
+    }
     return {
       schemaVersion: CLOUD_SCHEMA_VERSION,
       app: CLOUD_APP_NAME,
       appVersion: value.appVersion,
       updatedAt: new Date(value.updatedAt).toISOString(),
       deviceId: value.deviceId,
-      data: validateAuraData(value.data)
+      data,
+      ...(backgroundImage ? { backgroundImage } : {}),
+      ...(timerSound ? { timerSound } : {})
     };
   } catch (error) {
     if (error instanceof GoogleDriveSyncError) {
@@ -1588,17 +1988,37 @@ async function requestFirefoxDriveSyncDataCollectionConsent(interactive: boolean
   }
 }
 
-export async function getAuthToken(interactive: boolean): Promise<string> {
+export async function getAuthToken(interactive: boolean, options: { forceReauthorize?: boolean } = {}): Promise<string> {
+  let session = await sessionForAuthentication(interactive);
+  let preferredFlow: AuthSession["flow"];
+  const changedClient = session.flow && session.clientId !== authFlowClientId(session.flow);
+  if (options.forceReauthorize || changedClient) {
+    if (!interactive) throw new GoogleDriveSyncError("auth_cancelled", "A new Google authorization requires an explicit user action.");
+    preferredFlow = session.flow;
+    await clearAuthToken(undefined, session.generation);
+    session = await sessionForAuthentication(true);
+  }
+  if (session.disconnected && interactive) {
+    session = await withAuthTokenStorageLock(async () => {
+      const current = await readAuthSession();
+      if (current.generation !== session.generation) throw authorizationChangedError();
+      await removeStoredDeviceAuthToken();
+      await removeStoredWebAuthToken();
+      const next: AuthSession = { generation: randomState(),
+        ...(preferredFlow && authFlowClientId(preferredFlow) ? { flow: preferredFlow, clientId: authFlowClientId(preferredFlow) } : {}) };
+      await writeAuthSession(next);
+      return next;
+    });
+  }
   await requestFirefoxDriveSyncDataCollectionConsent(interactive);
-
-  const installSource = detectGoogleDriveInstallSource();
-  if (!interactive && installSource !== "chrome_web_store") {
-    const cachedWebToken = await getCachedWebAuthToken();
-    if (cachedWebToken) {
-      return cachedWebToken;
-    }
+  if (session.flow === "device_oauth") return await getDeviceAuthToken(interactive, session);
+  if (session.flow === "web_oauth") return await launchGoogleWebAuthFlow(interactive, session);
+  if (session.flow === "chrome_identity") {
+    const active = interactive ? await beginInteractiveAuth(session, "chrome_identity") : session;
+    return await getBoundChromeAuthToken(interactive, active);
   }
 
+  const installSource = detectGoogleDriveInstallSource();
   const manifestConfig = manifestOAuthConfig();
   const hasIdentityApi = hasExtensionIdentityApi();
   const hasGetAuthToken = hasExtensionIdentityGetAuthToken();
@@ -1612,14 +2032,14 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
     console.debug?.("Aura Start Google Drive sync: using Device OAuth fallback for unpacked install.", {
       installSource
     });
-    return await getDeviceAuthToken(interactive);
+    return await getDeviceAuthToken(interactive, session);
   }
 
   if (interactive && installSource === "unpacked" && webOAuthClientId) {
     console.debug?.("Aura Start Google Drive sync: using Web OAuth fallback for unpacked install.", {
       installSource
     });
-    return await launchGoogleWebAuthFlow(interactive);
+    return await launchGoogleWebAuthFlow(interactive, session);
   }
 
   const {
@@ -1648,7 +2068,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
       chromiumVariant,
       installSource
     });
-    return await getDeviceAuthToken(interactive);
+    return await getDeviceAuthToken(interactive, session);
   }
 
   if (flow === "chrome_identity") {
@@ -1657,14 +2077,19 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
       chromiumVariant,
       installSource
     });
-    return await getChromeAuthToken(interactive).catch(async (error) => {
+    const active = interactive ? await beginInteractiveAuth(session, "chrome_identity") : session;
+    return await getBoundChromeAuthToken(interactive, active).catch(async (error) => {
       if (isChromeIdentityUnsupportedError(error) && deviceOAuthClient) {
         console.debug?.("Aura Start Google Drive sync: chrome.identity.getAuthToken is unsupported here; using Device OAuth fallback.", {
           browserOAuthCapability,
           chromiumVariant,
           installSource
         });
-        return await getDeviceAuthToken(interactive);
+        if (interactive) {
+          await clearAuthToken(undefined, active.generation);
+          return await getDeviceAuthToken(true);
+        }
+        return await getDeviceAuthToken(false, session);
       }
 
       if (isChromeIdentityUnsupportedError(error) && webOAuthClientId) {
@@ -1673,7 +2098,11 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
           chromiumVariant,
           installSource
         });
-        return await launchGoogleWebAuthFlow(interactive);
+        if (interactive) {
+          await clearAuthToken(undefined, active.generation);
+          return await launchGoogleWebAuthFlow(true);
+        }
+        return await launchGoogleWebAuthFlow(false, session);
       }
 
       if (isChromeIdentityUnsupportedError(error)) {
@@ -1693,7 +2122,7 @@ export async function getAuthToken(interactive: boolean): Promise<string> {
       chromiumVariant,
       installSource
     });
-    return await launchGoogleWebAuthFlow(interactive);
+    return await launchGoogleWebAuthFlow(interactive, session);
   }
 
   if (chromeIdentityUnsupported && !deviceOAuthClient && !webOAuthClientId) {
@@ -1710,43 +2139,89 @@ export async function getCachedAuthToken(): Promise<string | undefined> {
   return await getNonInteractiveCachedToken();
 }
 
-export async function clearAuthToken(token?: string): Promise<void> {
-  const cachedToken = token ?? await getNonInteractiveCachedToken().catch(() => undefined);
-  const tokenToClear = cachedToken ? currentAuthToken(cachedToken) : undefined;
+async function verifyDeletionSpaceAccess(token: string, space: "drive" | "appDataFolder"): Promise<void> {
+  const params = new URLSearchParams({ spaces: space, pageSize: "1", fields: "files(id)" });
+  if (space === "appDataFolder") params.set("q", `'appDataFolder' in parents`);
+  await driveFetch(token, `${DRIVE_API_BASE}/files?${params.toString()}`);
+}
 
+export async function getGoogleDriveDeletionAuthToken(_interactive = true): Promise<string> {
+  // Never open a fresh account sign-in here: only an existing session can
+  // establish which account the user meant to delete. Device OAuth uses its
+  // existing drive.file grant; the configured endpoint rejects drive.appdata.
+  const token = await getAuthToken(false).catch((error: unknown) => {
+    if (error instanceof GoogleDriveSyncError && error.code === "auth_cancelled") {
+      throw new GoogleDriveSyncError("unauthorized", "The existing Google authorization is unavailable. Reconnect Google Drive before deleting its backups.", error.status, "deletion_authorization_required");
+    }
+    throw error;
+  });
+  try {
+    const deviceToken = storageModeForToken(token) === "drive_file";
+    await verifyDeletionSpaceAccess(token, "drive");
+    if (!deviceToken) await verifyDeletionSpaceAccess(token, "appDataFolder");
+    return currentAuthToken(token);
+  } catch (error) {
+    if (!isGoogleDriveScopeError(error)) throw error;
+    const access = storageModeForToken(token) === "drive_file" ? "Aura Start files" : "Aura Start files and hidden app data";
+    throw new GoogleDriveSyncError("unauthorized", `Reconnect Google Drive and grant the requested access to ${access} before deleting its backups.`, 403, "deletion_scope_required");
+  }
+}
+
+export async function clearAuthToken(token?: string, expectedGeneration?: string): Promise<void> {
+  const requestedToken = token ? currentAuthToken(token) : undefined;
+  const nativeTokens = new Set<string>();
+  let clearError: unknown;
   await withAuthTokenStorageLock(async () => {
+    const session = await readAuthSession();
+    if (expectedGeneration && session.generation !== expectedGeneration) throw authorizationChangedError();
+    if (requestedToken) {
+      const recorded = tokenAuthSessions.get(requestedToken) ?? tokenAuthSessions.get(token!);
+      if (recorded && recorded.generation !== session.generation) return;
+      const device = await getCachedDeviceAuthToken();
+      const web = await getCachedWebAuthToken();
+      const lineage = deviceTokenLineages.get(requestedToken) ?? deviceTokenLineages.get(token!);
+      const deviceMatches = device?.token === requestedToken || Boolean(device && lineage && device.refreshToken === lineage);
+      const webMatches = web === requestedToken;
+      const nativeMatches = recorded?.flow === "chrome_identity" && session.flow === "chrome_identity";
+      if (!deviceMatches && !webMatches && !nativeMatches) return;
+      if (nativeMatches) nativeTokens.add(requestedToken);
+    } else {
+      for (const [knownToken, recorded] of tokenAuthSessions) {
+        if (recorded.flow === "chrome_identity" && recorded.generation === session.generation) nativeTokens.add(knownToken);
+      }
+    }
+    // Persist the fence before deleting credentials. Even a later storage/API
+    // failure cannot make a pending consent result reconnect this installation.
+    await writeAuthSession({ generation: randomState(), disconnected: true });
     webAuthTokenCache = undefined;
     deviceAuthTokenCache = undefined;
     authTokenReplacements.clear();
-
+    deviceTokenLineages.clear();
+    knownWebAuthTokens.clear();
+    // Keep bounded provenance for already-issued tokens. Forgetting it here
+    // would let an old in-flight caller look like an untracked credential and
+    // bypass the disconnected-generation check before its next Drive request.
     let storageError: unknown;
-    try {
-      await removeStoredWebAuthToken();
-    } catch (error) {
-      storageError = error;
-    }
-    try {
-      await removeStoredDeviceAuthToken();
-    } catch (error) {
-      storageError ??= error;
-    }
-    if (storageError) {
-      throw storageError;
-    }
-  });
-
-  if (tokenToClear) {
-    await removeCachedExtensionAuthToken(tokenToClear).catch((error) => {
-      throw new GoogleDriveSyncError("unknown", error instanceof Error ? error.message : "Could not clear cached auth token.");
+    try { await removeStoredWebAuthToken(); } catch (error) { storageError = error; }
+    try { await removeStoredDeviceAuthToken(); } catch (error) { storageError ??= error; }
+    if (storageError) throw storageError;
+  }).catch((error) => { clearError = error; });
+  for (const nativeToken of nativeTokens) {
+    await removeCachedExtensionAuthToken(nativeToken).catch((error) => {
+      clearError ??= new GoogleDriveSyncError("unknown", error instanceof Error ? error.message : "Could not clear cached auth token.");
     });
   }
+  if (clearError) throw clearError;
 }
 
 export async function revokeAuthToken(token: string): Promise<void> {
   let response: Response;
   try {
-    response = await fetch(`${OAUTH_REVOKE_URL}?token=${encodeURIComponent(token)}`, {
-      method: "POST"
+    response = await fetch(OAUTH_REVOKE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: currentAuthToken(token) }),
+      signal: AbortSignal.timeout(DRIVE_REQUEST_TIMEOUT_MS)
     });
   } catch (error) {
     throw new GoogleDriveSyncError(
@@ -1761,31 +2236,17 @@ export async function revokeAuthToken(token: string): Promise<void> {
 }
 
 export async function disconnectGoogleAccount(token?: string): Promise<{ revokeError?: string }> {
-  const tokenToDisconnect = token ?? await getNonInteractiveCachedToken().catch(() => undefined);
-  if (!tokenToDisconnect) {
-    try {
-      await clearAuthToken();
-      return {};
-    } catch (error) {
-      return { revokeError: mapDriveError(error) };
-    }
+  // Google /revoke invalidates every client in the project's account grant.
+  // Unlink this installation locally so other Aura Start devices remain signed
+  // in. The durable fence also blocks native Chrome from silently reconnecting.
+  const suppliedToken = token ? currentAuthToken(token) : undefined;
+  const knownNative = suppliedToken && tokenAuthSessions.get(suppliedToken)?.flow === "chrome_identity";
+  let clearError: unknown;
+  try { await clearAuthToken(); } catch (error) { clearError = error; }
+  if (suppliedToken && !knownNative) {
+    await removeCachedExtensionAuthToken(suppliedToken).catch((error) => { clearError ??= error; });
   }
-
-  let revokeError: string | undefined;
-  try {
-    await revokeAuthToken(tokenToDisconnect);
-  } catch (error) {
-    revokeError = mapDriveError(error);
-  }
-
-  try {
-    await clearAuthToken(tokenToDisconnect);
-  } catch (error) {
-    const clearError = mapDriveError(error);
-    revokeError = revokeError ? `${revokeError}; ${clearError}` : clearError;
-  }
-
-  return { revokeError };
+  return clearError ? { revokeError: mapDriveError(clearError) } : {};
 }
 
 export async function getConnectedAccountInfo(): Promise<{
@@ -1798,235 +2259,351 @@ export async function getConnectedAccountInfo(): Promise<{
   return email ? { email } : undefined;
 }
 
-function syncFileQuery(storageMode: GoogleDriveStorageMode): string {
-  const nameQuery = `name = '${SYNC_FILE_NAME}' and trashed = false`;
+function syncFileQuery(storageMode: GoogleDriveStorageMode, deleting = false): string {
+  const nameQuery = `name = '${SYNC_FILE_NAME}'${deleting ? "" : " and trashed = false"}`;
   if (storageMode === "drive_file") {
-    return `${nameQuery} and appProperties has { key='${SYNC_FILE_APP_PROPERTY}' and value='${SYNC_FILE_APP_PROPERTY_VALUE}' }`;
+    return `${deleting ? "" : `${nameQuery} and `}appProperties has { key='${SYNC_FILE_APP_PROPERTY}' and value='${SYNC_FILE_APP_PROPERTY_VALUE}' }`;
   }
 
   return `${nameQuery} and 'appDataFolder' in parents`;
 }
 
-function syncFileListParams(storageMode: GoogleDriveStorageMode): URLSearchParams {
-  const params = new URLSearchParams({
-    q: syncFileQuery(storageMode),
-    fields: "files(id,name,modifiedTime,size)",
-    pageSize: "10"
-  });
+const REPLICA_DEVICE_PROPERTY = "auraStartDeviceId";
+export const SHARED_SYNC_FILE_PROPERTY = "auraStartSharedSync";
+const SYNC_METADATA_FIELDS = "id,name,createdTime,version,modifiedTime,size,appProperties";
+const CONDITIONAL_METADATA_FIELDS = "id,title,etag,createdDate,modifiedDate,version,fileSize,properties";
 
-  if (storageMode === "app_data_folder") {
-    params.set("spaces", "appDataFolder");
-  }
-
-  return params;
+async function listSyncFilesInSpace(token: string, storageMode: GoogleDriveStorageMode, deleting = false): Promise<GoogleDriveFileMetadata[]> {
+  const files: GoogleDriveFileMetadata[] = [];
+  const pages = new Set<string>();
+  let pageToken: string | undefined;
+  do {
+    const params = new URLSearchParams({
+      q: syncFileQuery(storageMode, deleting),
+      fields: `nextPageToken,incompleteSearch,files(${SYNC_METADATA_FIELDS})`,
+      pageSize: "100",
+      spaces: storageMode === "app_data_folder" ? "appDataFolder" : "drive"
+    });
+    if (deleting && storageMode === "drive_file") {
+      params.set("corpora", "user");
+      params.set("includeItemsFromAllDrives", "true");
+      params.set("supportsAllDrives", "true");
+    }
+    if (pageToken) params.set("pageToken", pageToken);
+    const result = await driveFetch<{ files?: GoogleDriveFileMetadata[]; nextPageToken?: string; incompleteSearch?: boolean }>(
+      token, `${DRIVE_API_BASE}/files?${params.toString()}`
+    );
+    if (result.incompleteSearch) {
+      throw new GoogleDriveSyncError("unknown", "Google Drive returned an incomplete file listing. Please retry later.");
+    }
+    for (const file of result.files ?? []) {
+      if (!file.id || ((!deleting || storageMode === "app_data_folder") && file.name !== SYNC_FILE_NAME)) continue;
+      if (storageMode === "drive_file" && file.appProperties?.[SYNC_FILE_APP_PROPERTY] !== SYNC_FILE_APP_PROPERTY_VALUE) continue;
+      files.push({ ...file, legacyAppData: storageMode === "app_data_folder" });
+    }
+    pageToken = result.nextPageToken;
+    if (pageToken && pages.has(pageToken)) {
+      throw new GoogleDriveSyncError("unknown", "Google Drive returned a repeated listing page. Sync will retry later.");
+    }
+    if (pageToken) pages.add(pageToken);
+  } while (pageToken);
+  return files;
 }
 
-function syncFileCreateMetadata(storageMode: GoogleDriveStorageMode): RecordValue {
-  const metadata: RecordValue = {
-    name: SYNC_FILE_NAME,
-    mimeType: "application/json"
-  };
-
-  if (storageMode === "app_data_folder") {
-    metadata.parents = ["appDataFolder"];
-  } else {
-    metadata.appProperties = {
-      [SYNC_FILE_APP_PROPERTY]: SYNC_FILE_APP_PROPERTY_VALUE,
-      app: CLOUD_APP_NAME
-    };
+// Discover both the shared snapshot and older copies for safe consolidation.
+export async function listSyncFiles(token?: string): Promise<GoogleDriveFileMetadata[]> {
+  const authToken = token ?? await getAuthToken(false);
+  const files = await listSyncFilesInSpace(authToken, "drive_file");
+  if (storageModeForToken(authToken) === "app_data_folder") {
+    files.push(...await listSyncFilesInSpace(authToken, "app_data_folder"));
   }
-
-  return metadata;
-}
-
-function syncFileUpdateMetadata(storageMode: GoogleDriveStorageMode): RecordValue {
-  const metadata: RecordValue = {
-    name: SYNC_FILE_NAME,
-    mimeType: "application/json"
-  };
-
-  if (storageMode === "drive_file") {
-    metadata.appProperties = {
-      [SYNC_FILE_APP_PROPERTY]: SYNC_FILE_APP_PROPERTY_VALUE,
-      app: CLOUD_APP_NAME
-    };
-  }
-
-  return metadata;
+  return Array.from(new Map(files.map((file) => [file.id, file])).values())
+    .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 export async function findSyncFile(token?: string): Promise<GoogleDriveFileMetadata | undefined> {
-  const authToken = token ?? await getAuthToken(false);
-  const params = syncFileListParams(storageModeForToken(authToken));
-  const result = await driveFetch<{ files?: GoogleDriveFileMetadata[] }>(
-    authToken,
-    `${DRIVE_API_BASE}/files?${params.toString()}`
-  );
-
-  return result.files?.[0];
+  return (await listSyncFiles(token))[0];
 }
 
 export async function getCloudFileMetadata(token?: string): Promise<GoogleDriveFileMetadata | undefined> {
   return await findSyncFile(token);
 }
 
-export async function createSyncFile(
-  data: AuraStartData,
-  deviceId: string,
-  token?: string
-): Promise<GoogleDriveFileMetadata> {
-  const authToken = token ?? await getAuthToken(false);
-  const payload = cloudPayload(data, deviceId);
-  const multipart = createMultipartBody(syncFileCreateMetadata(storageModeForToken(authToken)), payload);
-  const params = new URLSearchParams({
-    uploadType: "multipart",
-    fields: "id,name,modifiedTime,size"
-  });
-
-  return await driveFetch<GoogleDriveFileMetadata>(authToken, `${DRIVE_UPLOAD_BASE}/files?${params.toString()}`, {
-    method: "POST",
-    body: multipart.body,
-    headers: {
-      "Content-Type": multipart.contentType
-    }
-  });
+export function isOwnSyncFile(file: GoogleDriveFileMetadata, deviceId: string): boolean {
+  return !file.legacyAppData && file.name === SYNC_FILE_NAME
+    && file.appProperties?.[SYNC_FILE_APP_PROPERTY] === SYNC_FILE_APP_PROPERTY_VALUE
+    && file.appProperties?.[REPLICA_DEVICE_PROPERTY] === deviceId;
 }
 
-export async function uploadSyncFile(
-  data: AuraStartData,
-  options: { deviceId: string; fileId?: string; token?: string }
-): Promise<GoogleDriveFileMetadata> {
-  const token = options.token ?? await getAuthToken(false);
-  const payload = cloudPayload(data, options.deviceId);
-  const metadata = syncFileUpdateMetadata(storageModeForToken(token));
-  const multipart = createMultipartBody(metadata, payload);
-  const params = new URLSearchParams({
-    uploadType: "multipart",
-    fields: "id,name,modifiedTime,size"
-  });
-  const currentFileId = options.fileId ?? (await findSyncFile(token))?.id;
+export function isSharedSyncFile(file: GoogleDriveFileMetadata): boolean {
+  return !file.legacyAppData && file.name === SYNC_FILE_NAME
+    && file.appProperties?.[SYNC_FILE_APP_PROPERTY] === SYNC_FILE_APP_PROPERTY_VALUE
+    && file.appProperties?.[SHARED_SYNC_FILE_PROPERTY] === "1"
+    && !Object.hasOwn(file.appProperties, REPLICA_DEVICE_PROPERTY);
+}
 
-  if (!currentFileId) {
-    return await createSyncFile(data, options.deviceId, token);
-  }
-
-  try {
-    return await driveFetch<GoogleDriveFileMetadata>(
-      token,
-      `${DRIVE_UPLOAD_BASE}/files/${encodeURIComponent(currentFileId)}?${params.toString()}`,
-      {
-        method: "PATCH",
-        body: multipart.body,
-        headers: {
-          "Content-Type": multipart.contentType
-        }
-      }
-    );
-  } catch (error) {
-    if (error instanceof GoogleDriveSyncError && error.code === "not_found") {
-      return await createSyncFile(data, options.deviceId, token);
+function sharedFileMetadata(): RecordValue {
+  return {
+    name: SYNC_FILE_NAME,
+    mimeType: "application/json",
+    appProperties: {
+      [SYNC_FILE_APP_PROPERTY]: SYNC_FILE_APP_PROPERTY_VALUE,
+      [SHARED_SYNC_FILE_PROPERTY]: "1",
+      app: CLOUD_APP_NAME
     }
+  };
+}
 
+export async function createSharedSyncFile(data: AuraStartData, deviceId: string, token?: string): Promise<GoogleDriveFileMetadata> {
+  const authToken = token ?? await getAuthToken(false);
+  const params = new URLSearchParams({ uploadType: "multipart", fields: SYNC_METADATA_FIELDS });
+  return await sendSyncPayload(authToken, `${DRIVE_UPLOAD_BASE}/files?${params.toString()}`, "POST",
+    sharedFileMetadata(), await cloudPayload(data, deviceId));
+}
+
+function requireConditionalEtag(value: unknown): string {
+  if (typeof value !== "string" || !value.trim() || value.trim() === "*"
+    || value !== value.trim() || /^W\//i.test(value) || /[\r\n]/.test(value)) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive did not provide a usable file ETag. Sync cannot safely update this backup.");
+  }
+  return value;
+}
+
+function conditionalFileMetadata(value: unknown, previous: GoogleDriveFileMetadata): { metadata: GoogleDriveFileMetadata; etag: string } {
+  if (!isRecord(value) || value.id !== previous.id || typeof value.title !== "string" || !value.title) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive returned invalid conditional file metadata.");
+  }
+  const etag = requireConditionalEtag(value.etag);
+  const appProperties: Record<string, string> = {};
+  if (value.properties !== undefined && !Array.isArray(value.properties)) {
+    throw new GoogleDriveSyncError("invalid_cloud_file", "Google Drive returned invalid conditional file properties.");
+  }
+  for (const property of Array.isArray(value.properties) ? value.properties : []) {
+    if (isRecord(property) && property.visibility === "PRIVATE" && typeof property.key === "string"
+      && typeof property.value === "string") {
+      // Define keys without invoking Object.prototype setters for remote input.
+      Object.defineProperty(appProperties, property.key, { value: property.value, enumerable: true, configurable: true, writable: true });
+    }
+  }
+  return {
+    etag,
+    metadata: {
+      id: value.id as string,
+      name: value.title,
+      ...(typeof value.createdDate === "string" ? { createdTime: value.createdDate } : {}),
+      ...(typeof value.modifiedDate === "string" ? { modifiedTime: value.modifiedDate } : {}),
+      ...(typeof value.version === "string" ? { version: value.version } : {}),
+      ...(typeof value.fileSize === "string" ? { size: value.fileSize } : {}),
+      appProperties,
+      ...(previous.legacyAppData !== undefined ? { legacyAppData: previous.legacyAppData } : {})
+    }
+  };
+}
+
+async function getConditionalFileMetadata(metadata: GoogleDriveFileMetadata, token: string): Promise<{ metadata: GoogleDriveFileMetadata; etag: string }> {
+  const params = new URLSearchParams({ fields: CONDITIONAL_METADATA_FIELDS, supportsAllDrives: "true" });
+  const response = await driveFetch<unknown>(token,
+    `${DRIVE_CONDITIONAL_API_BASE}/files/${encodeURIComponent(metadata.id)}?${params.toString()}`);
+  return conditionalFileMetadata(response, metadata);
+}
+
+export function isGoogleDrivePreconditionFailed(error: unknown): boolean {
+  return error instanceof GoogleDriveSyncError && error.status === 412;
+}
+
+export async function downloadConditionalSyncFile(
+  metadata: GoogleDriveFileMetadata, token: string
+): Promise<GoogleDriveConditionalDownload | undefined> {
+  try {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const before = await getConditionalFileMetadata(metadata, token);
+      const downloaded = await downloadListedSyncFile(before.metadata, token);
+      if (!downloaded) return undefined;
+      const after = await getConditionalFileMetadata(before.metadata, token);
+      if (before.etag === after.etag) return { ...downloaded, metadata: after.metadata, etag: after.etag };
+    }
+    throw new GoogleDriveSyncError("unknown", "The Google Drive backup changed during download. Sync will retry after merging its latest version.", 412, "conditional_read_changed");
+  } catch (error) {
+    if (error instanceof GoogleDriveSyncError && error.code === "not_found") return undefined;
     throw error;
   }
 }
 
+export async function updateConditionalSyncFile(
+  data: AuraStartData, options: { deviceId: string; token: string; snapshot: GoogleDriveConditionalDownload }
+): Promise<GoogleDriveFileMetadata> {
+  const etag = requireConditionalEtag(options.snapshot.etag);
+  const params = new URLSearchParams({ uploadType: "multipart", fields: CONDITIONAL_METADATA_FIELDS, supportsAllDrives: "true" });
+  const metadata: RecordValue = {
+    title: SYNC_FILE_NAME,
+    mimeType: "application/json",
+    properties: [
+      { key: SYNC_FILE_APP_PROPERTY, value: SYNC_FILE_APP_PROPERTY_VALUE, visibility: "PRIVATE" },
+      { key: SHARED_SYNC_FILE_PROPERTY, value: "1", visibility: "PRIVATE" },
+      { key: "app", value: CLOUD_APP_NAME, visibility: "PRIVATE" }
+    ]
+  };
+  // Drive v2 exposes File.etag. Chromium's Drive client uses exact If-Match for
+  // multipart PUT and resumable initiation, and handles a final-chunk 412 too.
+  // See chromium/google_apis/drive/drive_api_requests{,_unittest}.cc.
+  // Never retry either path as an unconditional write after a conflict.
+  const result = await sendSyncPayload(options.token,
+    `${DRIVE_CONDITIONAL_UPLOAD_BASE}/files/${encodeURIComponent(options.snapshot.metadata.id)}?${params.toString()}`,
+    "PUT", metadata, await cloudPayload(data, options.deviceId), { "If-Match": etag });
+  return conditionalFileMetadata(result, options.snapshot.metadata).metadata;
+}
+
+export async function deleteConditionalSyncFile(snapshot: GoogleDriveConditionalDownload, token: string): Promise<void> {
+  const etag = requireConditionalEtag(snapshot.etag);
+  const params = new URLSearchParams({ supportsAllDrives: "true" });
+  try {
+    await driveFetch<void>(token,
+      `${DRIVE_CONDITIONAL_API_BASE}/files/${encodeURIComponent(snapshot.metadata.id)}?${params.toString()}`,
+      { method: "DELETE", headers: { "If-Match": etag } });
+  } catch (error) {
+    if (error instanceof GoogleDriveSyncError && error.code === "not_found") return;
+    throw error;
+  }
+}
+
+export async function createSyncFile(data: AuraStartData, deviceId: string, token?: string): Promise<GoogleDriveFileMetadata> {
+  return await createSharedSyncFile(data, deviceId, token);
+}
+
+export async function uploadSyncFile(
+  data: AuraStartData,
+  options: { deviceId: string; fileId?: string; token?: string; expectedExistingFile?: boolean }
+): Promise<GoogleDriveFileMetadata> {
+  const token = options.token ?? await getAuthToken(false);
+  // Compatibility entry point: a persisted per-device ID is only a hint from
+  // older versions. Discovery and every mutation now use the shared CAS flow.
+  const { synchronizeSharedGoogleDrive } = await import("./googleDriveSharedSync");
+  const result = await synchronizeSharedGoogleDrive(data, {
+    token, deviceId: options.deviceId, expectedExistingFile: options.expectedExistingFile
+  });
+  return result.metadata;
+}
+
 export async function backupToDrive(
   data: AuraStartData,
-  options: { deviceId: string; fileId?: string; token?: string }
+  options: { deviceId: string; fileId?: string; token?: string; expectedExistingFile?: boolean }
 ): Promise<GoogleDriveFileMetadata> {
   return await uploadSyncFile(data, options);
 }
 
-export async function downloadSyncFile(
-  fileId?: string,
-  token?: string
-): Promise<GoogleDriveSyncDownload | undefined> {
-  const authToken = token ?? await getAuthToken(false);
-  const metadata = fileId
-    ? await driveFetch<GoogleDriveFileMetadata>(
-        authToken,
-        `${DRIVE_API_BASE}/files/${encodeURIComponent(fileId)}?fields=id,name,modifiedTime,size`
-      ).catch(async (error) => {
-        if (error instanceof GoogleDriveSyncError && error.code === "not_found") {
-          return await findSyncFile(authToken);
-        }
-
-        throw error;
-      })
-    : await findSyncFile(authToken);
-
-  if (!metadata) {
-    return undefined;
+async function downloadListedSyncFile(metadata: GoogleDriveFileMetadata, token: string): Promise<GoogleDriveSyncDownload | undefined> {
+  try {
+    const rawPayload = await withDriveMediaTransfer(async () => await driveFetch<unknown>(token,
+      `${DRIVE_API_BASE}/files/${encodeURIComponent(metadata.id)}?alt=media`, { signal: AbortSignal.timeout(DRIVE_MEDIA_TIMEOUT_MS) }));
+    const payload = await validateCloudPayload(rawPayload);
+    return { metadata, payload, data: payload.data, cloudUpdatedAt: normalizeCloudUpdatedAt(payload) };
+  } catch (error) {
+    if (error instanceof GoogleDriveSyncError && error.code === "not_found") return undefined;
+    throw error;
   }
+}
 
-  const rawPayload = await driveFetch<unknown>(
-    authToken,
-    `${DRIVE_API_BASE}/files/${encodeURIComponent(metadata.id)}?alt=media`
-  );
-  const payload = validateCloudPayload(rawPayload);
+export async function downloadSyncFiles(token?: string, listedFiles?: GoogleDriveFileMetadata[]): Promise<GoogleDriveSyncDownload[]> {
+  const authToken = token ?? await getAuthToken(false);
+  const downloads: GoogleDriveSyncDownload[] = [];
+  for (const metadata of listedFiles ?? await listSyncFiles(authToken)) {
+    const download = await downloadListedSyncFile(metadata, authToken);
+    if (download) downloads.push(download);
+  }
+  return downloads;
+}
 
-  return {
-    metadata,
-    payload,
-    data: payload.data,
-    cloudUpdatedAt: normalizeCloudUpdatedAt(payload)
-  };
+export async function downloadSyncFile(fileId?: string, token?: string): Promise<GoogleDriveSyncDownload | undefined> {
+  const authToken = token ?? await getAuthToken(false);
+  const files = await listSyncFiles(authToken);
+  if (fileId) {
+    const metadata = files.find((file) => file.id === fileId);
+    if (metadata) return await downloadListedSyncFile(metadata, authToken);
+  }
+  let combined: GoogleDriveSyncDownload | undefined;
+  for (const metadata of files) {
+    const download = await downloadListedSyncFile(metadata, authToken);
+    if (!download) continue;
+    if (!combined) combined = download;
+    else {
+      const data = mergeSyncData(combined.data, download.data);
+      const { backgroundImage: previousImage, timerSound: previousSound, ...previousPayload } = combined.payload;
+      const imageId = data.settings.background.customImageId;
+      const backgroundImage = imageId
+        ? [previousImage, download.payload.backgroundImage].find((asset) => asset?.id === imageId)
+        : undefined;
+      const soundId = data.settings.timer.customSoundId;
+      const timerSound = soundId
+        ? [previousSound, download.payload.timerSound].find((asset) => asset?.id === soundId)
+        : undefined;
+      combined = {
+        ...combined, data,
+        payload: { ...previousPayload, data, ...(backgroundImage ? { backgroundImage } : {}), ...(timerSound ? { timerSound } : {}) }
+      };
+    }
+  }
+  return combined;
 }
 
 export async function restoreFromDrive(token?: string): Promise<GoogleDriveSyncDownload | undefined> {
   return await downloadSyncFile(undefined, token);
 }
+export type GoogleDriveDeletionResult = {
+  deleted: boolean;
+  legacyAppData: "verified" | "unavailable";
+};
 
-export function compareLocalAndCloud(
-  localData: AuraStartData,
-  cloud: GoogleDriveSyncDownload | undefined,
-  syncSettings: AuraSyncSettings
-): GoogleDriveComparison {
-  if (!cloud) {
-    return "no_cloud_file";
-  }
-
-  const localSyncBaseline = syncSettings.lastSyncedLocalUpdatedAt ?? syncSettings.lastSyncedAt;
-  const lastSyncedTime = localSyncBaseline ? new Date(localSyncBaseline).getTime() : 0;
-  const localTime = new Date(localData.updatedAt).getTime();
-  const cloudTime = new Date(cloud.cloudUpdatedAt).getTime();
-
-  if (!Number.isFinite(localTime) || !Number.isFinite(cloudTime)) {
-    return "conflict";
-  }
-
-  const localChanged = lastSyncedTime > 0 ? localTime > lastSyncedTime : false;
-  const cloudChanged = lastSyncedTime > 0 ? cloudTime > lastSyncedTime : false;
-
-  if (localChanged && cloudChanged && Math.abs(localTime - cloudTime) > 1000) {
-    return "conflict";
-  }
-
-  if (Math.abs(localTime - cloudTime) <= 1000) {
-    return "in_sync";
-  }
-
-  return localTime > cloudTime ? "local_newer" : "cloud_newer";
-}
-
-export async function deleteSyncFile(token?: string): Promise<boolean> {
+export async function deleteSyncFile(token?: string): Promise<GoogleDriveDeletionResult> {
   const authToken = token ?? await getAuthToken(false);
-  const metadata = await findSyncFile(authToken);
-  if (!metadata) {
-    return false;
+  const cachedDevice = await getCachedDeviceAuthToken();
+  const isDeviceToken = cachedDevice?.token === currentAuthToken(authToken)
+    || deviceTokenLineages.has(currentAuthToken(authToken));
+  const scopes = cachedDevice?.token === currentAuthToken(authToken) ? cachedDevice.grantedScopes : undefined;
+  let legacyAppData: GoogleDriveDeletionResult["legacyAppData"] = "verified";
+  if (isDeviceToken && scopes !== undefined && !scopes.includes(DRIVE_APPDATA_SCOPE)) {
+    legacyAppData = "unavailable";
+  } else if (isDeviceToken && scopes === undefined) {
+    // Older Device credentials did not persist granted scopes. Probe once, then
+    // keep that result fixed: access lost after a successful probe is an error.
+    try {
+      await verifyDeletionSpaceAccess(authToken, "appDataFolder");
+    } catch (error) {
+      if (!isGoogleDriveScopeError(error)) throw error;
+      legacyAppData = "unavailable";
+    }
   }
-
-  await driveFetch<void>(authToken, `${DRIVE_API_BASE}/files/${encodeURIComponent(metadata.id)}`, {
-    method: "DELETE"
-  });
-  return true;
+  let deleted = false;
+  // Complete discovery in every accessible space before deleting anything.
+  // Rechecking catches replicas uploaded during a preceding deletion pass.
+  for (let pass = 0; pass <= 3; pass += 1) {
+    const listed = await listSyncFilesInSpace(authToken, "drive_file", true);
+    if (legacyAppData === "verified") listed.push(...await listSyncFilesInSpace(authToken, "app_data_folder", true));
+    const files = Array.from(new Map(listed.map((file) => [file.id, file])).values())
+      .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    if (files.length === 0) return { deleted, legacyAppData };
+    if (pass === 3) {
+      throw new GoogleDriveSyncError("unknown", "Google Drive backups are still present after deletion. Pause syncing on other devices and retry.");
+    }
+    for (const file of files) {
+      await driveFetch<void>(authToken, `${DRIVE_API_BASE}/files/${encodeURIComponent(file.id)}?supportsAllDrives=true`, { method: "DELETE" })
+        .catch((error: unknown) => {
+          if (!(error instanceof GoogleDriveSyncError) || error.code !== "not_found") throw error;
+        });
+    }
+    deleted = true;
+  }
+  return { deleted, legacyAppData };
 }
 
 export function mapDriveError(error: unknown): string {
   if (error instanceof GoogleDriveSyncError) {
     const message = error.message.toLowerCase();
     const reason = error.reason?.toLowerCase() ?? "";
+
+    if (reason === "deletion_scope_required") return error.message;
+    if (isGoogleDriveScopeError(error)) {
+      return "Google Drive permission is incomplete. Reconnect Google Drive and grant the access requested by Aura Start.";
+    }
 
     if (isGoogleDriveAuthorizationUnavailable(error)) {
       return "Google authorization could not be refreshed automatically. Reconnect Google Drive to resume sync.";
@@ -2079,6 +2656,18 @@ export function mapDriveError(error: unknown): string {
   return error instanceof Error ? error.message : "Google Drive sync failed.";
 }
 
+export function isGoogleDriveScopeError(error: unknown): boolean {
+  if (!(error instanceof GoogleDriveSyncError) || error.code !== "forbidden") return false;
+  const reason = error.reason?.toLowerCase() ?? "";
+  if (reason === "insufficientpermissions"
+    || reason === "access_token_scope_insufficient"
+    || /insufficient authentication scopes/i.test(error.message)
+    || /granted scopes do not give access to all of the requested spaces/i.test(error.message)) return true;
+  // File ACL failures cannot be fixed by requesting another OAuth grant.
+  if (reason === "insufficientfilepermissions" || reason === "appnotauthorizedtofile") return false;
+  return /^insufficient permissions?\.?$/i.test(error.message.trim());
+}
+
 export function isGoogleDriveAuthorizationUnavailable(error: unknown): boolean {
   if (!(error instanceof GoogleDriveSyncError)) {
     return false;
@@ -2088,13 +2677,16 @@ export function isGoogleDriveAuthorizationUnavailable(error: unknown): boolean {
     return true;
   }
 
+  if (isGoogleDriveScopeError(error)) return true;
+
   if (error.code !== "auth_cancelled") {
     return false;
   }
 
   const message = error.message.toLowerCase();
   const reason = error.reason?.toLowerCase() ?? "";
-  return reason.includes("invalid_grant")
+  return ["login_required", "consent_required", "interaction_required", "account_selection_required"].includes(reason)
+    || reason.includes("invalid_grant")
     || message.includes("invalid_grant")
     || message.includes("oauth2 not granted")
     || message.includes("not granted or revoked")

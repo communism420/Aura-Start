@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="User-facing changelog for Aura Start 2.0.0, the Migration and Data Ownership release."
+      content="Aura Start 2.1.0 release notes: shared Google Drive sync, compatible settings upgrades, custom backgrounds, and Countdown with synced custom sounds."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -29,7 +29,46 @@
 
       <main class="doc">
         <span class="kicker">Release notes</span>
-        <h1>Aura Start 2.0.0</h1>
+        <h1>Aura Start 2.1.0</h1>
+        <p>
+          Changes since 2.0.5: shared synchronization, compatible settings upgrades,
+          complete ZIP backups, and Countdown with a customizable completion signal.
+          This describes the current 2.1.0 source/builds; store availability may differ.
+        </p>
+        <ul>
+          <li>Added optional Countdown with a 1-second to 24-hour duration, pause/resume/reset, volume control, and a built-in or custom completion signal.</li>
+          <li>Added local audio preparation for many formats, including WAV, MP3, Ogg, FLAC, AAC, AIFF, and WMA, with a packaged decoder fallback. Original files up to 20 MiB are retained alongside a portable WAV signal from their first 60 seconds.</li>
+          <li>Synced timer preferences and the selected original audio plus playback copy through Google Drive, including while the widget is hidden. The running countdown stays local across this profile's tabs and reloads; keep the widget enabled and an Aura Start page open for its signal.</li>
+          <li>Replaced upload-only backups with bidirectional Google Drive synchronization and deterministic merging across connected devices. Changes to different fields merge independently; deletion records prevent old snapshots from restoring removed links.</li>
+          <li>Added quiet checks about every five seconds while Aura Start is visible and online, and about once a minute with pages hidden or closed while the browser runs. Multiple pages share the same checks. Unchanged verified revisions skip data/media transfers, uploads, animation, and last-sync-time writes. Opening, closing, focusing, or showing a page does not itself trigger sync.</li>
+          <li>Consolidated synchronization into one shared <code>aura-start-sync.json</code> in normal Drive. Conditional writes reject stale revisions and retry after merging concurrent edits. Migration verifies the merged data and selected media in a new shared file before conditionally deleting covered older copies, including accessible hidden backups. Simultaneous first connections can briefly create duplicates; later sync converges on one file. All installations must use the latest 2.1.0 build.</li>
+          <li>Added <code>alarms</code> for connected background sync. Native Chrome uses <code>drive.file</code> for the shared file alongside <code>drive.appdata</code> for legacy hidden backups, so upgrading from 2.0.5 may require reconnection. Device OAuth keeps <code>drive.file</code>; full Drive access is never requested. Media processing and ZIP backups need no additional permission.</li>
+          <li>Added settings migration that fills new options without resetting existing choices. Fields missing from older cloud snapshots, JSON backups, or Restore Points do not erase newer preferences.</li>
+          <li>Added shared Markdown notes, including edits, clearing, hidden-widget sync, and ZIP/JSON backups. Existing local notes migrate only after the main document and a recovery point are saved.</li>
+          <li>Synced Save open tabs and delete-backup-on-disconnect preferences while retaining actual browser permissions, connection state, running timers, and Restore Timeline locally. Concurrent note edits resolve consistently with previous local text protected by recovery points.</li>
+          <li>Added custom background image synchronization and careful migration of images already saved in 2.0.5.</li>
+          <li>Added Full Backup ZIP with settings, links, notes, Restore Points, and current/historical background files. ZIP v2 includes only the selected original Countdown audio, with no playback WAV or other historical sounds; built-in selection includes no audio. Import rebuilds playback locally, preserves the Drive connection, and accepts older v1 ZIPs and portable JSON.</li>
+          <li>Renamed JSON-only export to Settings and links only (JSON). It excludes media bytes and omits custom-file references and active Custom background selections neutrally. Explicit built-in choices and intentional removals remain applicable settings. Older portable JSON files with embedded media remain importable.</li>
+          <li>Made confirmed Drive deletion pause sync, permanently remove matching normal-Drive snapshots including old 2.0.5 files, renamed files and copies in Trash, and verify their absence before clearing this installation's credentials. Hidden legacy backups are included only when already authorized. The current Device OAuth configuration requests only <code>drive.file</code>; a persistent notice explains when hidden data could not be checked. Failure retains a paused account for retry; local data and media remain intact. Stale actions cannot clear a replacement connection, and updated peers pause when an established cloud copy disappears.</li>
+          <li>Hardened authorization recovery with a persisted sign-in flow, bounded silent renewal and retries, and guards against delayed authorization after disconnect. Confirmed invalid grants still require explicit reconnection.</li>
+          <li>Made disconnect local to this installation instead of revoking authorization across all browsers. Manual disconnect stops sync and clears saved credentials; automatic recovery cannot reconnect it.</li>
+          <li>Fixed the Google Drive completion message after restoring on a new installation. Existing cloud data now reports successful synchronization; the first-copy message appears only when Aura Start's cloud storage was empty.</li>
+          <li>Preserved 2.0.5 JSON import compatibility. Old exports did not contain Notes widget text or the actual background image; those migrate from an existing local installation. Import cannot recover content absent from the backup.</li>
+          <li>Improved import, Restore Point restore, and Undo to preserve the current Drive connection and unrelated synchronized edits.</li>
+        </ul>
+
+        <h2>Aura Start 2.0.1–2.0.5</h2>
+        <p>
+          Earlier maintenance releases fixed group ordering, browser-specific manifests,
+          Firefox authorization, and release packaging. Version 2.0.5 moved automatic
+          uploads into the extension background context, added token recovery and pending
+          upload retries, and preserved credentials during temporary failures. The 2.1.0
+          changes above add bidirectional shared synchronization to that foundation.
+          See the <a href="https://github.com/communism420/Aura-Start/blob/main/CHANGELOG.md" rel="noopener noreferrer">repository changelog</a>
+          for the detailed historical entries.
+        </p>
+
+        <h2>Aura Start 2.0.0</h2>
         <p>
           Migration, personalization, Firefox, and data ownership release. This release
           focuses on nested organization, safer recovery, optional customization,
@@ -49,7 +88,7 @@
           <li>Added first-run onboarding, empty state actions, demo data, and Google Drive restore during setup.</li>
           <li>Added Export / Backup hub, Command Palette, Duplicate Finder, and Privacy Promise.</li>
           <li>Fixed Google Drive sync behavior across test and Chrome Web Store builds, including OAuth flow, reconnect states, token persistence, and automatic backup handling (I hope).</li>
-          <li>Kept Google Drive sync optional and limited to the hidden appDataFolder storage used by Aura Start.</li>
+          <li>Kept Google Drive sync optional, with native Google Chrome using hidden appDataFolder storage and Firefox/compatible Chromium fallback builds using Drive file access only for Aura Start's own sync file.</li>
           <li>Improved keyboard shortcuts, Cyrillic-layout shortcut handling, search focus behavior, and Command Palette access.</li>
           <li>Improved destructive-action safety with restore points, confirmations, and clearer recovery messaging.</li>
           <li>Updated translations across all supported languages and fixed untranslated UI labels.</li>

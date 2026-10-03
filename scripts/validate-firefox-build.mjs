@@ -3,6 +3,7 @@ import { mkdtemp, readFile, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { resolveExtensionVersion } from "./extension-versions.mjs";
+import { validateAudioDecoderBuild } from "./validate-audio-decoder.mjs";
 
 const root = process.cwd();
 const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
@@ -175,7 +176,9 @@ function validateManifest(manifest, sourceLabel) {
 if (!await exists(manifestPath)) {
   fail(`Firefox dist manifest not found: ${manifestPath}`);
 } else {
-  validateManifest(JSON.parse(await readFile(manifestPath, "utf8")), `${distDir}/manifest.json`);
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  validateManifest(manifest, `${distDir}/manifest.json`);
+  for (const message of await validateAudioDecoderBuild(join(root, distDir), manifest)) fail(`${distDir}: ${message}`);
   await validateNoUnsafeHtmlSinks(join(root, distDir), distDir);
 }
 
@@ -206,7 +209,9 @@ if (zipPath) {
     try {
       run("tar", ["-xf", zipPath, "-C", temp]);
       if (!errors.length) {
-        validateManifest(JSON.parse(await readFile(join(temp, "manifest.json"), "utf8")), "Firefox ZIP manifest.json");
+        const manifest = JSON.parse(await readFile(join(temp, "manifest.json"), "utf8"));
+        validateManifest(manifest, "Firefox ZIP manifest.json");
+        for (const message of await validateAudioDecoderBuild(temp, manifest)) fail(`Firefox ZIP: ${message}`);
         await validateNoUnsafeHtmlSinks(temp, "Firefox ZIP");
       }
     } finally {

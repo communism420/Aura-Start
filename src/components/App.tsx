@@ -21,10 +21,10 @@ import { DEFAULT_SETTINGS } from "../constants";
 import { t } from "../i18n";
 import { isGoogleDriveBackgroundSyncEvent } from "../services/googleDriveBackgroundSync";
 import { GOOGLE_DEVICE_AUTH_EVENT, type GoogleDeviceAuthEventDetail } from "../services/googleDriveSync";
-import { useAuraStore, type GroupDeleteMode } from "../store/useAuraStore";
+import { installAuraStoreSyncLifecycle, useAuraStore, type GroupDeleteMode } from "../store/useAuraStore";
 import type { AuraStartGroup, AuraStartLink } from "../types";
 import { addExtensionRuntimeMessageListener, removeExtensionRuntimeMessageListener } from "../utils/browserApi";
-import { exportJsonBackup } from "../utils/exportJson";
+import { exportCurrentZipBackup } from "../utils/exportCurrentBackup";
 import { searchResultId, type SearchResult } from "../utils/search";
 
 type AppProps = {
@@ -114,6 +114,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     handleBackgroundGoogleDriveSyncResult,
     getSearchView,
     setCustomBackgroundImage,
+    setCustomTimerSound,
     setSearchFilter,
     setSearchQuery,
     setWidgetNotes,
@@ -148,6 +149,8 @@ export function App({ initialSettingsOpen = false }: AppProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => installAuraStoreSyncLifecycle(), []);
 
   useEffect(() => {
     const handleDeviceAuth = (event: Event) => {
@@ -594,9 +597,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     {
       id: "export-backup",
       title: t(language, "commandExportBackup"),
-      description: t(language, "exportJsonDescription"),
-      keywords: ["backup", "json", "export"],
-      action: () => exportJsonBackup(data)
+      description: t(language, "exportZipDescription"),
+      keywords: ["backup", "zip", "export"],
+      action: () => exportCurrentZipBackup(data)
     },
     {
       id: "import-backup",
@@ -761,6 +764,10 @@ export function App({ initialSettingsOpen = false }: AppProps) {
             notes={widgetNotes}
             settings={data.settings}
             onNotesChange={setWidgetNotes}
+            onTimerDurationChange={(durationSeconds) => {
+              void updateSettings({ timer: { durationSeconds } }).catch((error: unknown) =>
+                showError(error instanceof Error ? error.message : t(language, "couldNotUpdateSettings")));
+            }}
           />
           {filteredGroups.length ? (
             <GroupGrid
@@ -878,6 +885,7 @@ export function App({ initialSettingsOpen = false }: AppProps) {
         onReset={() => setPendingDanger({ type: "resetAll" })}
         customBackgroundImage={customBackgroundImage}
         onSetCustomBackgroundImage={setCustomBackgroundImage}
+        onSetCustomTimerSound={setCustomTimerSound}
         onUpdateSettings={updateSettings}
       />
       <ImportDialog

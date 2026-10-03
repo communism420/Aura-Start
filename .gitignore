@@ -9,7 +9,23 @@ dist-google-local/
 *.local
 *.log
 release-artifacts/
-Chrome Submit/
-Firefox Submit/
+Chrome Submit/*
+Firefox Submit/*
 Photo/
 client_id_and_secret.txt
+context_for_next_chat.txt
+*.tsbuildinfo
+
+# Public store documentation and current artwork; archives stay local.
+!Chrome Submit/*.md
+!Chrome Submit/CHANGELOG_*.txt
+!Chrome Submit/Photo/
+Chrome Submit/Photo/*
+!Chrome Submit/Photo/*.png
+!Chrome Submit/Promo/
+Chrome Submit/Promo/*
+!Chrome Submit/Promo/*.png
+!Firefox Submit/*.md
+!Firefox Submit/Photo/
+Firefox Submit/Photo/*
+!Firefox Submit/Photo/*.png

@@ -46,7 +46,9 @@ Child group under **Research**.
 - Widgets: header clock, Markdown notes, and Pomodoro enabled.
 - Notes widget sample: a short launch note with two checklist items.
 - Search query sample: a typo-tolerant query such as `dashbord`.
-- Sync marker: use non-personal text such as `Google Drive`; never show a real email address.
+- Google Drive: disconnected. Do not fabricate a connected account, successful upload, or sync timestamp.
+- Countdown: a separate capture shows a five-minute timer with built-in sound; the main overview keeps its original clock/notes/Pomodoro layout.
+- Store Markdown notes under `settings.notes.text`, timer preferences under `settings.timer`, and optional widgets under `settings.widgets`; do not seed the old `uiState.widgetNotes` field.
 
 ## Save Open Tabs Setup
 
@@ -77,8 +79,8 @@ Keep at least one item in every duplicate group unselected so the screenshot nev
 
 ## Manual Setup Notes
 
-1. Install the current `dist-google` or `dist-firefox` build as an unpacked extension.
-2. Create the demo groups manually or run the screenshot script against a fresh generated build.
+1. Use an isolated test profile or the automated local-preview capture; never replace a personal profile for screenshots.
+2. Build the current UI, then create demo groups in the isolated installation or run the capture script. The automated preview supplies synthetic extension storage and tabs, blocks external HTTPS requests, and uses its own temporary Chrome profile.
 3. Keep account identifiers, local paths, OAuth data, and browser profile information out of screenshots.
-4. Export a Full Backup JSON before replacing local screenshot data.
-5. After capture, restore your real local data from a backup or restore point if needed.
+4. Keep demo captures separate from integration tests and real Google accounts.
+5. Verify all output images visually and remove only temporary resources owned by the capture process.

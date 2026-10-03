@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { languageOptions, t } from "../i18n";
+import { useRef } from "react";
 import type {
   AuraStartData,
   AuraStartSettings,
@@ -21,9 +22,11 @@ import type {
 } from "../types";
 import { getAuraStartVersion } from "../utils/appVersion";
 import { BUILTIN_BACKGROUNDS } from "../utils/backgrounds";
+import type { AuraSettingsPatch } from "../utils/settingsPatch";
 import { ExportMenu } from "./ExportMenu";
 import { GoogleDriveSyncPanel } from "./GoogleDriveSyncPanel";
 import { Modal } from "./Modal";
+import { TimerSoundSettings } from "./TimerSoundSettings";
 
 type SettingsDialogProps = {
   open: boolean;
@@ -32,7 +35,7 @@ type SettingsDialogProps = {
   syncMessage: string | null;
   syncConflict: AuraSyncConflict | null;
   onClose: () => void;
-  onUpdateSettings: (settings: Partial<AuraStartSettings>) => Promise<void>;
+  onUpdateSettings: (settings: AuraSettingsPatch) => Promise<void>;
   onOpenImport: () => void;
   onOpenImportAFineStart: () => void;
   onOpenDuplicateFinder: () => void;
@@ -41,7 +44,8 @@ type SettingsDialogProps = {
   onReset: () => void;
   hasDemoData: boolean;
   customBackgroundImage: string | null;
-  onSetCustomBackgroundImage: (image: string | null) => void;
+  onSetCustomBackgroundImage: (image: string | null) => Promise<void>;
+  onSetCustomTimerSound: (file: File | null) => Promise<void>;
   onRemoveDemoData: () => void;
   onConnectGoogleDrive: () => Promise<void>;
   onDisconnectGoogleDrive: () => Promise<void>;
@@ -71,6 +75,7 @@ export function SettingsDialog({
   hasDemoData,
   customBackgroundImage,
   onSetCustomBackgroundImage,
+  onSetCustomTimerSound,
   onRemoveDemoData,
   onConnectGoogleDrive,
   onDisconnectGoogleDrive,
@@ -78,6 +83,7 @@ export function SettingsDialog({
   onResolveSyncConflict,
   onError
 }: SettingsDialogProps) {
+  const backgroundUploadRequest = useRef(0);
   const settings = data.settings;
   const language = settings.language;
   const appVersion = getAuraStartVersion();
@@ -102,26 +108,27 @@ export function SettingsDialog({
     ["G", t(language, "shortcutCreateNewGroup")]
   ];
 
-  function update(settingsPatch: Partial<AuraStartSettings>) {
+  function update(settingsPatch: AuraSettingsPatch) {
     void onUpdateSettings(settingsPatch).catch((error: unknown) =>
       onError(error instanceof Error ? error.message : t(language, "couldNotUpdateSettings"))
     );
   }
 
   function updateBackground(backgroundPatch: Partial<AuraStartSettings["background"]>) {
-    update({ background: { ...settings.background, ...backgroundPatch } });
+    update({ background: backgroundPatch });
   }
 
   function updateWidgets(widgetPatch: Partial<AuraStartSettings["widgets"]>) {
-    update({ widgets: { ...settings.widgets, ...widgetPatch } });
+    update({ widgets: widgetPatch });
   }
 
   function updatePomodoro(pomodoroPatch: Partial<AuraStartSettings["pomodoro"]>) {
-    update({ pomodoro: { ...settings.pomodoro, ...pomodoroPatch } });
+    update({ pomodoro: pomodoroPatch });
   }
 
   function handleBackgroundUpload(file: File | undefined) {
     if (!file) return;
+    const request = ++backgroundUploadRequest.current;
     if (!file.type.startsWith("image/")) {
       onError(t(language, "backgroundUploadImageOnly"));
       return;
@@ -132,16 +139,18 @@ export function SettingsDialog({
     }
 
     const reader = new FileReader();
-    reader.onerror = () => onError(t(language, "backgroundUploadFailed"));
+    reader.onerror = () => {
+      if (request === backgroundUploadRequest.current) onError(t(language, "backgroundUploadFailed"));
+    };
     reader.onload = () => {
+      if (request !== backgroundUploadRequest.current) return;
       const result = typeof reader.result === "string" ? reader.result : null;
       if (!result) {
         onError(t(language, "backgroundUploadFailed"));
         return;
       }
 
-      onSetCustomBackgroundImage(result);
-      updateBackground({ preset: "custom" });
+      void onSetCustomBackgroundImage(result).catch(() => onError(t(language, "backgroundUploadFailed")));
     };
     reader.readAsDataURL(file);
   }
@@ -291,7 +300,10 @@ export function SettingsDialog({
                 />
               </label>
               {customBackgroundImage ? (
-                <button className="btn btn-secondary" type="button" onClick={() => onSetCustomBackgroundImage(null)}>
+                <button className="btn btn-secondary" type="button" onClick={() => {
+                  backgroundUploadRequest.current += 1;
+                  void onSetCustomBackgroundImage(null).catch(() => onError(t(language, "backgroundUploadFailed")));
+                }}>
                   <X size={17} />
                   {t(language, "removeBackground")}
                 </button>
@@ -304,7 +316,8 @@ export function SettingsDialog({
               {[
                 ["clock", t(language, "widgetClock"), t(language, "widgetClockDescription")],
                 ["notes", t(language, "widgetNotes"), t(language, "widgetNotesDescription")],
-                ["pomodoro", t(language, "widgetPomodoro"), t(language, "widgetPomodoroDescription")]
+                ["pomodoro", t(language, "widgetPomodoro"), t(language, "widgetPomodoroDescription")],
+                ["timer", t(language, "widgetTimer"), t(language, "widgetTimerDescription")]
               ].map(([key, label, description]) => (
                 <label className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] p-3" key={key}>
                   <span>
@@ -343,6 +356,12 @@ export function SettingsDialog({
                 />
               </label>
             </div>
+            {open && settings.widgets.timer ? <TimerSoundSettings
+              language={language}
+              settings={settings.timer}
+              onSetSound={onSetCustomTimerSound}
+              onVolumeChange={(volume) => update({ timer: { volume } })}
+            /> : null}
           </div>
         </section>
         <section className="space-y-3">
@@ -452,7 +471,7 @@ export function SettingsDialog({
             onDisconnect={onDisconnectGoogleDrive}
             onDeleteBackupAndDisconnect={onDeleteGoogleDriveBackupAndDisconnect}
             onError={onError}
-            onUpdateSyncSettings={(syncPatch) => update({ sync: { ...settings.sync, ...syncPatch } })}
+            onUpdateSyncSettings={(syncPatch) => update({ sync: syncPatch })}
             onResolveConflict={onResolveSyncConflict}
           />
         </section>

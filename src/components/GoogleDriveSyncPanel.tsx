@@ -1,5 +1,5 @@
 import { AlertTriangle, Cloud, LogOut, RefreshCw, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import type {
   AuraStartData,
@@ -9,7 +9,7 @@ import type {
   AuraSyncStatus
 } from "../types";
 import { formatDateTime } from "../utils/dates";
-import { exportJsonBackup } from "../utils/exportJson";
+import { exportCurrentZipBackup } from "../utils/exportCurrentBackup";
 import { GoogleDriveSyncError } from "../services/googleDriveSync";
 
 type GoogleDriveSyncPanelProps = {
@@ -25,7 +25,8 @@ type GoogleDriveSyncPanelProps = {
   onError: (message: string) => void;
 };
 
-type PendingConfirm = "disconnect" | "delete_backup_and_disconnect" | null;
+type ConfirmAction = "disconnect" | "delete_backup_and_disconnect";
+type PendingConfirm = { action: ConfirmAction; connection: string } | null;
 
 function isBusy(status: AuraSyncStatus): boolean {
   return status === "connecting" || status === "syncing";
@@ -44,8 +45,13 @@ export function GoogleDriveSyncPanel({
   onError
 }: GoogleDriveSyncPanelProps) {
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm>(null);
+  const confirming = useRef(false);
   const language = data.settings.language;
   const sync = data.settings.sync;
+  const connection = JSON.stringify([sync.deviceId, sync.connectionId, sync.connected, sync.accountEmail]);
+  const pendingAction = pendingConfirm?.connection === connection ? pendingConfirm.action : null;
+  useEffect(() => { setPendingConfirm(null); }, [connection]);
+  const openConfirm = (action: ConfirmAction) => setPendingConfirm({ action, connection });
   const busy = isBusy(syncStatus);
   const reconnectRequired = syncStatus === "reconnect_required";
   const hasGoogleConnection = Boolean(sync.connected);
@@ -65,17 +71,21 @@ export function GoogleDriveSyncPanel({
   }
 
   async function runConfirmed(action: () => Promise<void>) {
+    if (confirming.current) return;
+    confirming.current = true;
     try {
       await action();
     } catch (error) {
       if (error instanceof GoogleDriveSyncError) return;
       onError(error instanceof Error ? error.message : t(language, "googleDriveSyncFailed"));
+    } finally {
+      confirming.current = false;
     }
   }
 
-  function handleExportLocal() {
+  async function handleExportLocal() {
     try {
-      exportJsonBackup(data);
+      await exportCurrentZipBackup(data);
     } catch (error) {
       onError(error instanceof Error ? error.message : t(language, "couldNotExportBackup"));
     }
@@ -115,6 +125,21 @@ export function GoogleDriveSyncPanel({
         ) : null}
       </div>
 
+      {sync.lastDeletionLegacyUnchecked ? (
+        <aside className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-3 text-sm">
+          <div className="font-semibold">{t(language, "googleDriveLegacyBackupNoticeTitle")}</div>
+          <p className="muted mt-2 leading-6">{t(language, "googleDriveLegacyBackupCleanupHelp")}</p>
+          <a
+            className="mt-2 inline-block text-[var(--accent)] underline underline-offset-4"
+            href="https://drive.google.com/drive/u/0/settings"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {t(language, "googleDriveOpenSettings")}
+          </a>
+        </aside>
+      ) : null}
+
       <label className="mt-4 flex items-start justify-between gap-4 rounded-lg border border-[var(--border)] p-3">
         <span>
           <span className="block text-sm font-semibold">{t(language, "googleDriveDeleteFileOnDisconnect")}</span>
@@ -128,7 +153,7 @@ export function GoogleDriveSyncPanel({
         />
       </label>
 
-      {pendingConfirm === "disconnect" ? (
+      {pendingAction === "disconnect" ? (
         <div className="mt-4 rounded-xl border border-[var(--border)] p-4 text-sm">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--panel)] text-[var(--accent)]">
@@ -167,7 +192,7 @@ export function GoogleDriveSyncPanel({
         </div>
       ) : null}
 
-      {pendingConfirm === "delete_backup_and_disconnect" ? (
+      {pendingAction === "delete_backup_and_disconnect" ? (
         <div className="mt-4 rounded-xl border border-[var(--danger)] bg-[var(--danger-soft)] p-4 text-sm">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--danger-soft)] text-[var(--danger)]">
@@ -212,7 +237,7 @@ export function GoogleDriveSyncPanel({
             <Cloud className="shrink-0" size={17} />
             <span className="truncate">{t(language, "googleDriveConnect")}</span>
           </button>
-        ) : reconnectRequired ? (
+        ) : reconnectRequired || sync.mode === "off" ? (
           <div className="grid gap-2 sm:grid-cols-2">
             <button
               className="btn btn-primary h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm"
@@ -227,7 +252,7 @@ export function GoogleDriveSyncPanel({
               className={`${sync.deleteCloudFileOnDisconnect ? "btn-danger" : "btn-secondary"} btn h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm`}
               disabled={!canManageConnection}
               type="button"
-              onClick={() => setPendingConfirm(sync.deleteCloudFileOnDisconnect ? "delete_backup_and_disconnect" : "disconnect")}
+              onClick={() => openConfirm(sync.deleteCloudFileOnDisconnect ? "delete_backup_and_disconnect" : "disconnect")}
             >
               {sync.deleteCloudFileOnDisconnect ? <Trash2 className="shrink-0" size={17} /> : <LogOut className="shrink-0" size={17} />}
               <span className="truncate">{t(language, sync.deleteCloudFileOnDisconnect ? "googleDriveDeleteBackupAndDisconnect" : "googleDriveDisconnectAccount")}</span>
@@ -238,7 +263,7 @@ export function GoogleDriveSyncPanel({
             className={`${sync.deleteCloudFileOnDisconnect ? "btn-danger" : "btn-secondary"} btn h-11 min-w-0 w-full justify-center whitespace-nowrap px-3 text-sm`}
             disabled={!canManageConnection}
             type="button"
-            onClick={() => setPendingConfirm(sync.deleteCloudFileOnDisconnect ? "delete_backup_and_disconnect" : "disconnect")}
+            onClick={() => openConfirm(sync.deleteCloudFileOnDisconnect ? "delete_backup_and_disconnect" : "disconnect")}
           >
             {sync.deleteCloudFileOnDisconnect ? <Trash2 className="shrink-0" size={17} /> : <LogOut className="shrink-0" size={17} />}
             <span className="truncate">{t(language, sync.deleteCloudFileOnDisconnect ? "googleDriveDeleteBackupAndDisconnect" : "googleDriveDisconnectAccount")}</span>

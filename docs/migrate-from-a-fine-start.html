@@ -31,11 +31,11 @@
 <li>No required account</li>
 <li>Local-first storage by default</li>
 <li>No analytics or tracking</li>
-<li>Full JSON backups</li>
+<li>Full ZIP backups with settings, links, notes, history, and media</li>
 <li>Multiple export formats</li>
-<li>Optional Google Drive backup through Chrome <code>appDataFolder</code> or Firefox/compatible Chromium Device OAuth fallback</li>
+<li>Optional Google Drive sync using one shared, visible <code>aura-start-sync.json</code> across Chrome, Firefox, and compatible Chromium browsers</li>
 <li>Restore Timeline before destructive changes</li>
-<li>Nested groups, fuzzy search, backgrounds, widgets, Command Palette, keyboard shortcuts, and Duplicate Finder</li>
+<li>Nested groups, fuzzy search, backgrounds, clock/Markdown notes/Pomodoro/Countdown widgets, Command Palette, keyboard shortcuts, and Duplicate Finder</li>
 </ul>
 <h2>2. What is preserved?</h2>
 <p>Group names and links should migrate if the A Fine Start export code is valid and contains supported URL values.</p>
@@ -51,7 +51,7 @@
 <li>Use Export bookmarks.</li>
 <li>Copy the generated export code.</li>
 </ol>
-<p>Check the official A Fine Start UI or listing if these labels change in a future version.</p>
+<p>These steps were checked against the <a href="https://afinestart.me/help/" rel="noopener noreferrer">official A Fine Start help</a> on 2026-10-04. Check the current UI if labels change.</p>
 <h2>5. Import into Aura Start</h2>
 <ol>
 <li>Open Aura Start.</li>
@@ -64,9 +64,9 @@
 </ol>
 <h2>6. Merge vs Replace</h2>
 <p>Merge adds imported groups to your current Aura Start data and avoids ID conflicts.</p>
-<p>Replace replaces current groups and settings with the imported data. Export a Full Backup JSON first if you want an extra copy before replacing data.</p>
+<p>Replace replaces current groups and shared settings with the imported data; A Fine Start link exports do not contain Aura preferences, so their defaults apply. The current local Drive connection is preserved. Export a Full Backup ZIP first if you want an extra copy before replacing data. If Drive is connected, the imported changes also synchronize to other installations.</p>
 <h2>7. Restore Timeline</h2>
-<p>Aura Start creates a restore point before import operations. Restore Timeline shows local snapshots grouped by day with search and action filters. Restore points are capped to avoid unbounded storage growth.</p>
+<p>Aura Start creates a restore point before import operations. Restore Timeline shows local snapshots grouped by day with search and action filters. Restore points are local, capped at 20, and included in manual Aura backups; they are not synchronized through Google Drive.</p>
 <p>Users should still create or export a backup before destructive operations such as replace imports, resets, restore timeline deletion, or deleting Google Drive backup data.</p>
 <h2>8. Export back to A Fine Start-compatible code</h2>
 <p>Aura Start can export an A Fine Start-compatible export code from the Export menu.</p>
@@ -77,7 +77,7 @@
 <li>If no bookmarks are imported, check that the export code includes groups and bookmarks.</li>
 <li>If a link is skipped, its URL may use an unsupported or unsafe scheme. Aura Start allows only <code>http</code> and <code>https</code> links.</li>
 <li>If you chose Replace by mistake, open Restore Timeline and restore the point created before import.</li>
-<li>If you are unsure, export a Full Backup JSON from Aura Start before trying again.</li>
+<li>If you are unsure, export a Full Backup ZIP from Aura Start before trying again.</li>
 </ul>
 <h2>10. FAQ</h2>
 <p><strong>Is Aura Start affiliated with A Fine Start?</strong></p>
@@ -85,14 +85,14 @@
 <p><strong>Does Aura Start import every possible A Fine Start setting?</strong></p>
 <p>No. Aura Start imports grouped links from supported export-code shapes. It does not promise to import fields that are not present in the export code.</p>
 <p><strong>Can I use Aura Start without Google Drive?</strong></p>
-<p>Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default. After you connect Google Drive, local Aura Start changes are backed up automatically to Aura Start's own sync file.</p>
+<p>Yes. Aura Start is local-first, and Google Drive sync is optional and off by default. After connection, installations share one visible Drive file and merge changes automatically. Visible, online pages normally check about every five seconds; background checks run about once a minute while the browser is running.</p>
 <p><strong>Can I keep a normal backup file?</strong></p>
-<p>Yes. Use Full Backup JSON export from Aura Start to keep an independent backup file.</p>
+<p>Yes. In 2.1.0, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive.</p>
 <p><strong>Can I export back to A Fine Start-compatible format?</strong></p>
 <p>Yes. Aura Start can export an A Fine Start-compatible code, but that compatibility format contains only group names and bookmark names/URLs.</p>
       </main>
       <footer class="site-footer">
-        <p>Aura Start is independent and open-source under the MIT License.</p>
+        <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="index.html">Home</a>
           <a href="documentation.html">Documentation</a>

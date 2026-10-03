@@ -1,6 +1,43 @@
 # Aura Start Competitive Audit
 
-> Current status note: this audit is retained as launch context. Since it was written, Aura Start has addressed several noted blockers, including nested groups, fuzzy search, Restore Timeline, Save open tabs, backgrounds/widgets, Firefox packaging, regenerated store materials/screenshots, installed-extension checklist coverage, OAuth flow selection, shortcut/layout handling, Google Drive reconnect/token persistence behavior, and public documentation cleanup.
+## Current status — Aura Start 2.1.0, 2026-10-04
+
+This document keeps the original 2026-05-18 audit as historical evidence below. Its scores, package warnings, missing-feature findings, permission inventory, and recommendations describe that earlier review, not the current release. The current product comparison is [Aura Start vs A Fine Start](AURA_START_VS_A_FINE_START.md).
+
+### Current functionality and policy
+
+- All supported browser builds synchronize through one visible `aura-start-sync.json` in ordinary Google Drive. Links, groups, saved preferences, notes, the custom background, and selected Countdown audio merge across devices; restore history, running timers, credentials, connection mode, and browser grants stay local.
+- Concurrent writes use conditional revision checks and merge/retry; deletions are tracked. Separate fields can both survive, while simultaneous values of the same field resolve deterministically. Accessible legacy copies are merged and verified before conditional cleanup. Simultaneous first connections can briefly create more than one file before consolidation.
+- Visible online pages normally poll about every five seconds, with checks coordinated across pages. Hidden/closed pages rely on approximately one-minute background checks while the browser runs. No-change polls do not upload unchanged data. These are polling intervals, not delivery guarantees.
+- Native Chrome authorization retains `drive.appdata` only for accessible hidden legacy copies, alongside `drive.file` for shared sync. Aura Start's current Device configuration in Firefox/Helium requests only `drive.file`; that grant cannot read hidden legacy backups. This is a statement about the configured Aura flow, not a universal claim about Google's Device OAuth protocol.
+- Authentication recovery preserves the account through recoverable failures. Deliberate disconnect remains local to this installation, keeps ordinary cloud data, and is not undone by delayed callbacks. Google may still revoke a grant or require consent again.
+- Confirmed cloud deletion pauses sync, removes and verifies accessible Aura copies, then disconnects locally. Failures retain a paused account for retry; inaccessible hidden legacy data is explicitly reported. Local data remains intact.
+- Full Backup ZIP v2 contains JSON settings, groups, links, notes, restore history, referenced custom backgrounds, and only the selected original Countdown sound. Built-in/obsolete sounds and the generated playback clip are excluded. Settings and links only JSON retains notes/history without media bytes. Older JSON backups remain importable; data never included in old backups cannot be reconstructed from them.
+- Countdown adds pause/resume/reset, volume, a completion alarm, and locally decoded custom audio. The file limit is 20 MiB, the playback clip is at most 60 seconds, and codec support is broad rather than universal. Keep an Aura Start page open for its alarm.
+- New settings are merged with existing preferences through schema migration. Locally stored notes/backgrounds from 2.0.5 migrate on an in-place update. Import, restore, and Undo preserve local connection state.
+- Chrome permissions are `storage`, `identity`, `alarms`, optional `tabs`, and Google API/OAuth hosts. Firefox omits `identity` and declares optional data-collection categories for user-enabled Drive transfer. No content scripts, full Drive access, broad website access, analytics, or remote runtime code are introduced. Audio decoding uses packaged WebAssembly.
+
+### Earlier findings and their current treatment
+
+| Earlier finding | Current treatment / remaining check |
+| --- | --- |
+| Missing automated import/export/restore/sync coverage | Focused unit/integration suites now exist, including migration, ZIP/media, concurrency, authentication, and lifecycle regression tests. Test outcomes belong to their dated runs, not this documentation edit. |
+| Settings may be unused or inconsistent | Current settings UI exposes link-opening behavior and mutations consult automatic-restore preferences. New settings preserve existing values through the settings schema. |
+| Chrome-only/older sync transport | Shared Drive transport now covers Chrome, compatible Chromium, and Firefox; current Device grants do not provide hidden legacy access. |
+| No complete media backup | Full ZIP v2 now carries background assets and the selected original custom sound; media-free JSON remains separately named. |
+| Native browser/OAuth behavior unverified | See the dated [installed-extension test matrix](INSTALLED_EXTENSION_TEST_MATRIX.md). Controlled tests use real browsers with simulated Google HTTP; they do not prove live-service behavior or equal reliability to a competitor. The maintainer also reported working sync in Firefox, Helium, and Chrome on 2026-10-04. |
+| Stale 2.0.0 ZIP warning | Historical artifact finding; validate newly generated 2.1.0 submission packages against the exact release source, configuration, and screenshots. This documentation update does not rebuild, sign, or publish them. |
+| Public comparison needs evidence | Current comparison uses official A Fine Start homepage/help/changelog checked on 2026-10-04. It avoids assertions about private internals, measured reliability parity, or absent features that were not verified. |
+
+### Current release and evidence boundaries
+
+Before any store submission, validate the exact package, OAuth client/extension identity, screenshots, privacy disclosures, and installed-browser behavior. Keep real-account tests separate from controlled network simulations. Long-running reliability and competitor parity are not established by unit tests or a single successful user report.
+
+A Fine Start's [homepage](https://afinestart.me/) lists its supported platforms, and its [help](https://afinestart.me/help/) documents free local use and Premium synchronization. Its [changelog](https://afinestart.me/changelog/) describes user-facing fixes, including sessions. These public sources do not disclose its conflict algorithm or comparable failure rates. Aura Start is independent and not affiliated with A Fine Start.
+
+## Historical audit — 2026-05-18 (not current release guidance)
+
+The original review follows. Read references to “current”, old permission lists, missing tests/features, scores, package status, and next actions in the context of this historical audit. The 2.1.0 status above supersedes those statements for current documentation.
 
 Audit date: 2026-05-18  
 Repository audited: local working copy of `communism420/Aura-Start` at Aura Start 2.0.0

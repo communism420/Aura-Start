@@ -28,29 +28,32 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">User guide</span>
+        <span class="kicker">Aura Start 2.1.0 user guide</span>
         <h1>Getting Started</h1>
         <p>
           Aura Start replaces your browser new tab page with clean nested groups of links.
           It works locally by default and does not require an account.
         </p>
 
-        <h2>Install from source</h2>
+        <h2>Install Aura Start</h2>
         <p>
-          Until the Chrome Web Store listing is available, Aura Start can be installed
-          manually from the project repository.
+          Install from the <a href="https://chromewebstore.google.com/detail/aura-start/pdhhhnmcampmmklkbbfbmniijmgjiabi" rel="noopener noreferrer">Chrome Web Store</a>
+          for Google Chrome or a compatible Chromium browser, or use
+          <a href="https://addons.mozilla.org/firefox/addon/aura-start/" rel="noopener noreferrer">Firefox Add-ons</a>
+          for Firefox. This guide describes version 2.1.0; store availability may differ.
+          For a local source build, follow these steps:
         </p>
         <ol>
           <li>Open the Aura Start repository on GitHub.</li>
           <li>Follow the build instructions in the README.</li>
           <li>For Chrome or Chromium testing, open <code>chrome://extensions</code>, enable Developer mode, and load the generated Chrome build folder.</li>
-          <li>For Firefox testing, use <code>about:debugging</code> and load the generated Firefox build manifest.</li>
+          <li>For Firefox testing, use <code>about:debugging</code> and load the generated Firefox build manifest. This is a temporary installation; use the signed store package for normal persistent use.</li>
         </ol>
 
         <h2>Choose how to start</h2>
         <p>
-          On first run, Aura Start can start fresh, restore an existing hidden
-          Google Drive sync file, import from A Fine Start, or import a backup
+          On first run, Aura Start can start fresh, restore an accessible existing
+          Google Drive sync file, import from A Fine Start, or import a ZIP or JSON backup
           file. If you choose Google Drive restore and no sync file exists, Aura
           Start shows a clear error and leaves local data unchanged.
         </p>
@@ -93,14 +96,64 @@
         <h2>Personalize the page</h2>
         <p>
           Settings include built-in background images, custom local background upload,
-          blur, dim, and positioning controls. Optional widgets can show a header
-          clock, local Markdown notes, and a lightweight Pomodoro timer.
+          blur, dim, and positioning controls. Your saved custom image also syncs to
+          connected devices when Google Drive sync is enabled. Optional widgets can
+          show a header clock, Markdown notes with optional Google Drive sync, a Pomodoro timer, and Countdown
+          with a customizable completion sound.
+        </p>
+
+        <h2>Use Countdown</h2>
+        <p>
+          Enable Countdown in Settings, choose a duration from 1 second to 24 hours,
+          then start, pause, resume, or reset it. The built-in completion signal has
+          volume control and can be replaced with your own audio file. Files up to
+          20 MiB are prepared locally; Aura Start keeps the original and uses a portable
+          WAV copy of its first 60 seconds for playback. WAV, MP3, Ogg, FLAC, AAC/M4A,
+          AIFF, WMA, and many other formats are supported by browser audio or a packaged
+          fallback decoder. Unsupported, protected, or damaged files leave your previous
+          sound intact.
+        </p>
+        <p>
+          Keep the widget enabled and an Aura Start page open for its signal; a background
+          tab works subject to browser scheduling. Sleep or suspension can delay playback,
+          and the timer does not sound while every Aura Start page is closed. Reloading
+          retains the local countdown, shared between this profile's Aura Start tabs.
+          Browser audio restrictions may require pressing Play signal after reopening.
+          When Google Drive sync is enabled, timer preferences and the selected audio
+          sync to other devices even while the widget is hidden; the active countdown
+          remains local. Full Backup ZIP v2 includes only the currently selected original
+          sound file; playback is rebuilt on import, and other historical sounds are omitted.
         </p>
 
         <h2>Keep backups</h2>
         <p>
           Use Export / Backup regularly if your start page contains important links.
-          Full Backup JSON is the best format for restoring Aura Start data later.
+          Full Backup ZIP contains links, settings, notes, Restore Points, background files,
+          and the selected original custom alarm sound. Settings and links only (JSON)
+          keeps links, settings, notes, and history without image or audio files.
+          Older 2.0.5 JSON backups remain importable, but did not contain notes text or
+          the actual background image. See <a href="export-backup.html">Export / Backup</a>.
+        </p>
+
+        <h2>Connect other devices</h2>
+        <p>
+          Google Drive sync is off by default and needs your explicit connection.
+          Update every installation to 2.1.0, then connect the same Google account in Settings.
+          Groups, links, settings, notes, the saved background image, and the selected
+          Countdown sound share one <code>aura-start-sync.json</code> in normal Google Drive.
+          Connected pages that are visible and online check for changes about every five seconds;
+          background checks continue about once a minute while the browser runs.
+          Network and browser scheduling can delay delivery. The running timer and
+          Restore Timeline stay local. See <a href="google-drive-sync.html">Google Drive Sync</a>
+          for migration, reconnecting, and cloud deletion.
+        </p>
+        <p>
+          Aura Start uses local storage and an alarm permission for connected background sync;
+          Chromium builds also use identity for Google sign-in. Save open tabs requests
+          optional tabs access only when used. Custom backgrounds, sound preparation, and
+          backups require no additional browser permission. The
+          <a href="privacy-policy.html">Privacy Policy</a> explains Google API host access
+          and the data transferred after connection.
         </p>
       </main>
 

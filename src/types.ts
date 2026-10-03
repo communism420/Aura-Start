@@ -16,6 +16,7 @@ export type AuraSyncStatus =
 export type AuraSyncSettings = {
   mode: AuraSyncMode;
   deviceId: string;
+  connectionId?: string;
   lastSyncedAt?: string;
   lastSyncedLocalUpdatedAt?: string;
   lastCloudUpdatedAt?: string;
@@ -25,6 +26,8 @@ export type AuraSyncSettings = {
   cloudFileId?: string;
   connected?: boolean;
   reconnectRequired?: boolean;
+  /** Local receipt: a previous deletion could not inspect older hidden Chrome backups. */
+  lastDeletionLegacyUnchecked?: boolean;
   deleteCloudFileOnDisconnect: boolean;
 };
 
@@ -33,17 +36,29 @@ export type AuraBackgroundSettings = {
   blur: number;
   dim: number;
   position: AuraBackgroundPosition;
+  customImageId?: string | null;
 };
 
 export type AuraWidgetSettings = {
   clock: boolean;
   notes: boolean;
   pomodoro: boolean;
+  timer: boolean;
 };
 
 export type AuraPomodoroSettings = {
   focusMinutes: number;
   breakMinutes: number;
+};
+
+export type AuraTimerSettings = {
+  durationSeconds: number;
+  volume: number;
+  customSoundId: string | null;
+};
+
+export type AuraNotesSettings = {
+  text: string;
 };
 
 export type AuraStartSettings = {
@@ -59,6 +74,8 @@ export type AuraStartSettings = {
   background: AuraBackgroundSettings;
   widgets: AuraWidgetSettings;
   pomodoro: AuraPomodoroSettings;
+  timer: AuraTimerSettings;
+  notes: AuraNotesSettings;
   autoRestorePoints: boolean;
   sync: AuraSyncSettings;
 };
@@ -81,6 +98,39 @@ export type AuraStartGroup = {
   collapsed: boolean;
   order: number;
   links: AuraStartLink[];
+};
+
+export type AuraSyncStamp = {
+  counter: number;
+  deviceId: string;
+};
+
+export type AuraSyncValue = string | number | boolean | null | AuraSyncValue[] | { [key: string]: AuraSyncValue };
+
+/** Compatibility information travels with settings, including Restore Points. */
+export type AuraSettingsCompatibility = {
+  version: 1;
+  defaulted: string[];
+  preserved: Record<string, AuraSyncValue>;
+};
+
+export type AuraSyncRegister = {
+  stamp: AuraSyncStamp;
+  value: AuraSyncValue;
+};
+
+export type AuraSyncEntity = {
+  // A false presence is a retained tombstone. Editing fields does not revive it.
+  presence: { stamp: AuraSyncStamp; value: boolean };
+  fields: Record<string, AuraSyncRegister>;
+};
+
+export type AuraSyncReplica = {
+  version: 1;
+  clock: number;
+  groups: Record<string, AuraSyncEntity>;
+  links: Record<string, AuraSyncEntity>;
+  settings: Record<string, AuraSyncRegister>;
 };
 
 export type GroupTreeNode = AuraStartGroup & {
@@ -129,7 +179,7 @@ export type AuraRestorePointContext = {
   description?: string;
 };
 
-export type AuraStartDataWithoutRestorePoints = Omit<AuraStartData, "restorePoints">;
+export type AuraStartDataWithoutRestorePoints = Omit<AuraStartData, "restorePoints" | "syncReplica">;
 
 export type AuraRestorePoint = {
   id: string;
@@ -155,8 +205,10 @@ export type AuraStartData = {
   version: 1;
   updatedAt: string;
   settings: AuraStartSettings;
+  settingsCompatibility?: AuraSettingsCompatibility;
   groups: AuraStartGroup[];
   restorePoints: AuraRestorePoint[];
+  syncReplica?: AuraSyncReplica;
 };
 
 export type ImportMode = "replace" | "merge";

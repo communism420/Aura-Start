@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start is a private, local-first browser new tab extension for nested link groups, fuzzy search, backgrounds, widgets, exportable backups, A Fine Start migration, and optional Google Drive sync."
+      content="Aura Start 2.1.0: a private, local-first new tab with nested links, notes, Countdown, custom backgrounds and sounds, full ZIP backups, and shared Google Drive sync."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -32,7 +32,7 @@
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-grid">
             <div class="hero-copy">
-              <span class="eyebrow">Open-source browser new tab extension</span>
+              <span class="eyebrow">Aura Start 2.1.0 · Open-source browser new tab extension</span>
               <h1 id="hero-title">A private, local-first start page for your links.</h1>
               <p class="lead">
                 Aura Start replaces your new tab with nested groups of links,
@@ -44,7 +44,7 @@
                 <a class="button secondary" href="screenshot-gallery.html">View screenshots</a>
                 <a class="button secondary" href="privacy-policy.html">Read privacy policy</a>
               </div>
-              <p class="status">Source code, manual installation notes, and release materials are available on GitHub.</p>
+              <p class="status">Documentation updated October 4, 2026. Source code and installation notes are on GitHub; extension stores may offer a different version.</p>
             </div>
 
             <div class="hero-preview" aria-label="Aura Start new tab preview">
@@ -56,7 +56,7 @@
               </div>
               <img
                 class="preview-image"
-                src="assets/screenshots/01-new-tab-overview-20260630.png"
+                src="assets/screenshots/01-new-tab-overview-20261004.png"
                 alt="Aura Start new tab with nested groups, background image, and widgets"
                 width="1280"
                 height="800"
@@ -70,7 +70,7 @@
             <div class="trust-item"><span class="trust-dot"></span>No account required</div>
             <div class="trust-item"><span class="trust-dot"></span>No analytics or tracking</div>
             <div class="trust-item"><span class="trust-dot"></span>Export anytime</div>
-            <div class="trust-item"><span class="trust-dot"></span>Open-source under MIT</div>
+            <div class="trust-item"><span class="trust-dot"></span>MIT application code</div>
           </div>
         </section>
 
@@ -124,7 +124,7 @@
             <article class="feature-card">
               <span class="feature-icon">03</span>
               <h3>Backgrounds and widgets</h3>
-              <p>Choose built-in or local background images, adjust blur and dimming, and enable clock, notes, or Pomodoro widgets.</p>
+              <p>Choose built-in or local background images, adjust blur and dimming, and enable clock, notes, Pomodoro, or Countdown with your own completion sound.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">04</span>
@@ -143,8 +143,8 @@
             </article>
             <article class="feature-card">
               <span class="feature-icon">07</span>
-              <h3>Optional Drive backup</h3>
-              <p>Google Drive sync is optional. Chrome uses appDataFolder; Firefox and compatible Chromium fallback builds use an Aura Start-owned Drive file.</p>
+              <h3>Optional Drive sync</h3>
+              <p>Connected devices share links, groups, settings, notes, a saved background image, and the selected Countdown sound in one Drive file. Visible pages check for changes about every five seconds.</p>
             </article>
             <article class="feature-card">
               <span class="feature-icon">08</span>
@@ -159,9 +159,10 @@
             <span class="kicker">Data ownership</span>
             <h2>Your links belong to you.</h2>
             <p>
-              Aura Start stores your groups, links, settings, and restore points locally by
-              default. Exports are created locally in your browser, so you can keep your own
-              backups and move your data when you need to.
+              Aura Start stores your links, settings, notes, media, and restore points locally by
+              default. Full Backup ZIP keeps settings, links, notes, history, background files,
+              and your selected original alarm sound together. JSON export keeps settings,
+              links, notes, and history without media. Both are created locally in your browser.
             </p>
           </div>
           <div class="subtle-callout">
@@ -183,6 +184,8 @@
               Aura Start has no backend and does not request browser history, bookmarks,
               cookies, webRequest, scripting, or full Google Drive access. Tabs access is
               optional and requested only when you preview current-window tabs.
+              Storage saves your data, alarms support connected background sync, and
+              Chromium builds use identity for Google sign-in. Custom media is prepared locally.
             </p>
             <div class="actions">
               <a class="button secondary" href="privacy-policy.html">Read the policy</a>
@@ -192,11 +195,15 @@
             <span class="kicker">Optional backup</span>
             <h2>Google Drive sync only when you choose it.</h2>
             <p>
-              When enabled, Google Chrome uses extension identity APIs and the
-              <code>drive.appdata</code> scope for Aura Start's hidden sync file.
-              Firefox and compatible Chromium fallback builds use <code>drive.file</code>
-              only for Aura Start's own sync file. Aura Start does not request full Drive
-              access or unrelated Drive files.
+              Sync is off until you connect. Connect the same Google account on devices running Aura Start 2.1.0.
+              Shared sync uses <code>drive.file</code> only for Aura Start's own
+              shared file in normal Drive and migration of older copies. Chrome retains
+              <code>drive.appdata</code> to migrate older hidden backups. Confirmed deletion verifies
+              removal from accessible storage before disconnecting
+              and preserves local data. Hidden backups are included only when already authorized;
+              otherwise a persistent notice explains how to check them in the account used for cleanup.
+              Aura Start does not request full Drive access or access
+              to unrelated Drive files.
             </p>
           </div>
         </section>
@@ -206,27 +213,27 @@
             <span class="kicker">Screenshots</span>
             <h2 id="screenshots-title">See the real extension UI.</h2>
             <p>
-              The gallery uses screenshots captured from the current Aura Start 2.0.0 UI
-              with non-personal demo data.
+              The gallery uses the real Aura Start interface with non-personal demo data.
+              Each gallery identifies the version shown.
             </p>
           </div>
           <div class="screenshot-preview-grid">
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/03-import-export-20260630.png" alt="Aura Start Import and Export screen" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/03-import-export-20261004.png" alt="Aura Start Import and Export screen" width="1280" height="800" loading="lazy">
               <div>
                 <h3>Export / Backup</h3>
                 <p>Local import, export formats, and migration-friendly backups.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/06-save-open-tabs-20260630.png" alt="Aura Start Save open tabs dialog" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/06-save-open-tabs-20261004.png" alt="Aura Start Save open tabs dialog" width="1280" height="800" loading="lazy">
               <div>
                 <h3>Save open tabs</h3>
                 <p>Preview current-window tabs before saving them.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/04-backgrounds-widgets-20260630.png" alt="Aura Start settings with backgrounds and widgets" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/04-backgrounds-widgets-20261004.png" alt="Aura Start settings with backgrounds and widgets" width="1280" height="800" loading="lazy">
               <div>
                 <h3>Backgrounds and widgets</h3>
                 <p>Personalize the page without changing the local-first model.</p>
@@ -256,7 +263,7 @@
       </main>
 
       <footer class="site-footer">
-        <p>Aura Start is an independent open-source project under the MIT License.</p>
+        <p>Aura Start application code is open-source under MIT. Bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="privacy-policy.html">Privacy Policy</a>
           <a href="documentation.html">Documentation</a>

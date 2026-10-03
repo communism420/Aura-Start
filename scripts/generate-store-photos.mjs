@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 const cwd = process.cwd();
@@ -10,9 +11,9 @@ const docsScreenshotDir = path.join(cwd, "docs", "assets", "screenshots");
 const previewDistDir = process.env.AURA_SCREENSHOT_DIST_DIR?.trim() || "dist-google";
 const previewPort = 4173;
 const debugPort = 9241;
-const profileDir = path.join(cwd, ".tmp-cws-screenshot-profile");
+const profileDir = await mkdtemp(path.join(tmpdir(), "aura-docs-shots-"));
 const baseUrl = `http://127.0.0.1:${previewPort}/newtab.html`;
-const siteScreenshotDate = "20260630";
+const siteScreenshotDate = "20261004";
 
 const chromeCandidates = [
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -27,7 +28,7 @@ if (!chromePath) {
   throw new Error("Chrome executable was not found.");
 }
 
-const now = "2026-05-10T10:00:00.000Z";
+const now = "2026-10-04T10:00:00.000Z";
 const settings = {
   theme: "dark",
   language: "en",
@@ -47,20 +48,20 @@ const settings = {
   widgets: {
     clock: true,
     notes: true,
-    pomodoro: true
+    pomodoro: true,
+    timer: false
   },
   pomodoro: {
     focusMinutes: 25,
     breakMinutes: 5
   },
+  timer: { durationSeconds: 300, volume: 80, customSoundId: null },
+  notes: { text: "# Launch notes\n- Review screenshots\n- Verify Chrome and Firefox packages\n- Test Google Drive sync" },
   autoRestorePoints: true,
   sync: {
-    mode: "auto",
+    mode: "off",
     deviceId: "screenshot-device",
-    connected: true,
-    accountName: "Google Drive",
-    lastSyncedAt: "2026-05-10T10:04:00.000Z",
-    lastCloudUpdatedAt: "2026-05-10T10:04:00.000Z",
+    connected: false,
     deleteCloudFileOnDisconnect: true
   }
 };
@@ -159,7 +160,7 @@ const sampleData = {
     {
       id: "restore-before-link-move",
       name: "Before moving GitHub",
-      createdAt: "2026-05-10T09:30:00.000Z",
+      createdAt: "2026-10-04T09:30:00.000Z",
       reason: "before_link_move",
       context: {
         entity: "link",
@@ -177,8 +178,7 @@ const uiState = {
   demoData: { groupIds: [], linkIds: [] },
   lastSearchQuery: "",
   searchFilter: "all",
-  customBackgroundImage: null,
-  widgetNotes: "# Launch notes\n- Review screenshots\n- Verify Chrome and Firefox packages\n- Test Google Drive sync"
+  customBackgroundImage: null
 };
 
 function delay(ms) {
@@ -186,6 +186,11 @@ function delay(ms) {
 }
 
 async function safeRemove(target) {
+  const resolved = path.resolve(target);
+  if (resolved !== path.resolve(profileDir) || path.dirname(resolved) !== path.resolve(tmpdir())
+    || !path.basename(resolved).startsWith("aura-docs-shots-")) {
+    throw new Error("Refusing to remove a path outside this run's temporary screenshot profile.");
+  }
   try {
     await rm(target, { recursive: true, force: true });
   } catch {
@@ -227,7 +232,7 @@ async function startPreview() {
   const preview = spawn(
     process.execPath,
     ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort), "--outDir", previewDistDir],
-    { cwd, stdio: ["ignore", "pipe", "pipe"] }
+    { cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
   );
 
   await waitForHttp(baseUrl, preview);
@@ -235,8 +240,6 @@ async function startPreview() {
 }
 
 async function startChrome() {
-  await safeRemove(profileDir);
-
   const chrome = spawn(
     chromePath,
     [
@@ -256,7 +259,7 @@ async function startChrome() {
       "--lang=en-US",
       "about:blank"
     ],
-    { stdio: "ignore" }
+    { windowsHide: true, stdio: "ignore" }
   );
 
   const started = Date.now();
@@ -361,6 +364,8 @@ async function createPage(browserWsUrl) {
   await page.open();
   await page.send("Page.enable");
   await page.send("Runtime.enable");
+  await page.send("Network.enable");
+  await page.send("Network.setBlockedURLs", { urls: ["https://*"] });
   await page.send("Emulation.setLocaleOverride", { locale: "en-US" });
   await page.send("Emulation.setDeviceMetricsOverride", {
     width: 1280,
@@ -381,6 +386,9 @@ function chromeStorageMockSource() {
       const STORE_KEY = "aura-start-data-v1";
       const UI_STATE_KEY = "aura-start-ui-state-v1";
       const initialData = ${JSON.stringify(sampleData)};
+      if (new URL(location.href).searchParams.get("view") === "countdown") {
+        initialData.settings.widgets = { clock: true, notes: false, pomodoro: false, timer: true };
+      }
       const initialUiState = ${JSON.stringify(uiState)};
       const store = { [STORE_KEY]: initialData, [UI_STATE_KEY]: initialUiState };
       const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
@@ -472,9 +480,9 @@ async function waitForExpression(page, expression, timeout = 10_000) {
   throw new Error(`Timed out waiting for expression: ${expression}\nVisible text: ${bodyText}`);
 }
 
-async function navigateFresh(page) {
+async function navigateFresh(page, view = "overview") {
   const load = page.waitFor("Page.loadEventFired", 15_000).catch(() => undefined);
-  await page.send("Page.navigate", { url: `${baseUrl}?shot=${Date.now()}` });
+  await page.send("Page.navigate", { url: `${baseUrl}?shot=${Date.now()}&view=${view}` });
   await load;
   await waitForExpression(
     page,
@@ -626,8 +634,9 @@ try {
   );
   await evaluate(page, `(() => {
     const scroller = document.querySelector('[role="presentation"]');
-    if (scroller instanceof HTMLElement) {
-      scroller.scrollTop = 180;
+    const heading = Array.from(document.querySelectorAll('h2, h3, h4')).find((element) => element.textContent?.trim() === 'Backgrounds');
+    if (scroller instanceof HTMLElement && heading instanceof HTMLElement) {
+      scroller.scrollTop += heading.getBoundingClientRect().top - 32;
     }
   })()`);
   await delay(250);
@@ -673,6 +682,10 @@ try {
   await screenshot(page, {
     docsName: `07-command-palette-${siteScreenshotDate}.png`
   });
+
+  await navigateFresh(page, "countdown");
+  await waitForExpression(page, `document.body.innerText.includes("Countdown")`);
+  await screenshot(page, { docsName: `08-countdown-${siteScreenshotDate}.png` });
 
   console.log("Store screenshots generated in Chrome Submit/Photo and Firefox Submit/Photo.");
   console.log("Site screenshots generated in docs/assets/screenshots.");

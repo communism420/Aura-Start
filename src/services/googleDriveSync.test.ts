@@ -32,7 +32,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE]
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE]
       })
     ).toBe("chrome_identity");
   });
@@ -43,7 +43,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("chrome_identity");
@@ -55,7 +55,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).not.toBe("web_oauth");
@@ -77,7 +77,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         chromeIdentityUnsupported: true,
         installSource: "chrome_web_store",
         deviceOAuthClientId: DEVICE_CLIENT_ID,
@@ -98,7 +98,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         chromeIdentityUnsupported: true,
         deviceOAuthClientId: DEVICE_CLIENT_ID,
         deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
@@ -113,7 +113,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         deviceOAuthClientId: DEVICE_CLIENT_ID,
         deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
         targetBrowser: "firefox"
@@ -127,7 +127,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         targetBrowser: "firefox"
       })
     ).toBe("unavailable");
@@ -139,7 +139,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         installSource: "chrome_web_store",
         webOAuthClientId: WEB_CLIENT_ID
       })
@@ -152,7 +152,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         chromeIdentityUnsupported: true,
         installSource: "chrome_web_store",
         deviceOAuthClientId: DEVICE_CLIENT_ID,
@@ -168,7 +168,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: false,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         installSource: "chrome_web_store",
         deviceOAuthClientId: DEVICE_CLIENT_ID,
         deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
@@ -183,7 +183,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         installSource: "unpacked",
         deviceOAuthClientId: DEVICE_CLIENT_ID,
         deviceOAuthClientSecret: DEVICE_CLIENT_SECRET,
@@ -198,7 +198,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         chromeIdentityUnsupported: true,
         installSource: "chrome_web_store",
         webOAuthClientId: WEB_CLIENT_ID
@@ -211,7 +211,7 @@ describe("Google Drive OAuth flow selection", () => {
       selectGoogleDriveAuthFlow({
         hasIdentityApi: true,
         hasGetAuthToken: false,
-        manifestScopes: [DRIVE_APPDATA_SCOPE]
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE]
       })
     ).toBe("unavailable");
   });
@@ -222,7 +222,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         installSource: "unpacked"
       })
     ).toBe("chrome_identity");
@@ -234,7 +234,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: false,
         hasGetAuthToken: false,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         installSource: "chrome_web_store",
         webOAuthClientId: WEB_CLIENT_ID
       })
@@ -247,7 +247,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         chromeIdentityUnsupported: true
       })
     ).toBe("unavailable");
@@ -259,7 +259,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: CHROME_EXTENSION_CLIENT_ID,
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("chrome_identity");
@@ -271,7 +271,7 @@ describe("Google Drive OAuth flow selection", () => {
         hasIdentityApi: true,
         hasGetAuthToken: true,
         manifestClientId: "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-        manifestScopes: [DRIVE_APPDATA_SCOPE],
+        manifestScopes: [DRIVE_APPDATA_SCOPE, DRIVE_FILE_SCOPE],
         webOAuthClientId: WEB_CLIENT_ID
       })
     ).toBe("unavailable");
@@ -343,7 +343,7 @@ describe("Google Drive Chrome identity error classification", () => {
   });
 
   it("still treats real browser identity support failures as unsupported", () => {
-    expect(isChromeIdentityUnsupportedError(new Error("The user did not respond"))).toBe(true);
+    expect(isChromeIdentityUnsupportedError(new Error("The user did not respond"))).toBe(false);
     expect(isChromeIdentityUnsupportedError(new Error("Custom URI scheme is not supported on Chrome apps."))).toBe(true);
     expect(isChromeIdentityUnsupportedError(new Error("Browser sign-in is disabled"))).toBe(true);
   });
@@ -356,7 +356,7 @@ describe("Google Drive install source detection", () => {
       configurable: true,
       value: {
         runtime: {
-          id: "pdhhnnmcampmmklkbbtfbmnijmgjliabi",
+          id: "pdhhhnmcampmmklkbbfbmniijmgjiabi",
           getManifest: () => ({})
         }
       }
@@ -625,13 +625,13 @@ describe("Google Drive Web OAuth redirect URI", () => {
       configurable: true,
       value: {
         runtime: {
-          id: "pdhhnnmcampmmklkbbtfbmnijmgjliabi"
+          id: "pdhhhnmcampmmklkbbfbmniijmgjiabi"
         }
       }
     });
 
     try {
-      expect(fallbackChromiumAppRedirectUrl("")).toBe("https://pdhhnnmcampmmklkbbtfbmnijmgjliabi.chromiumapp.org/");
+      expect(fallbackChromiumAppRedirectUrl("")).toBe("https://pdhhhnmcampmmklkbbfbmniijmgjiabi.chromiumapp.org/");
     } finally {
       Object.defineProperty(globalThis, "chrome", { configurable: true, value: originalChrome });
     }

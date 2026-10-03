@@ -1,12 +1,13 @@
 import { Eye, PencilLine, StickyNote } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { MAX_WIDGET_NOTES_CHARS } from "../../constants";
 import { t } from "../../i18n";
 import type { AuraLanguage } from "../../types";
 
 type NotesWidgetProps = {
   language: AuraLanguage;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string) => Promise<void>;
 };
 
 function renderInline(text: string) {
@@ -85,19 +86,7 @@ function MarkdownPreview({ language, value }: { language: AuraLanguage; value: s
 
 export function NotesWidget({ language, value, onChange }: NotesWidgetProps) {
   const [editing, setEditing] = useState(!value.trim());
-  const [draft, setDraft] = useState(value);
-  const dirty = draft !== value;
-  const preview = useMemo(() => <MarkdownPreview language={language} value={draft} />, [draft, language]);
-
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (!dirty) return;
-    const timer = window.setTimeout(() => onChange(draft), 450);
-    return () => window.clearTimeout(timer);
-  }, [dirty, draft, onChange]);
+  const preview = useMemo(() => <MarkdownPreview language={language} value={value} />, [value, language]);
 
   return (
     <section className="widget-card notes-widget">
@@ -119,10 +108,11 @@ export function NotesWidget({ language, value, onChange }: NotesWidgetProps) {
       {editing ? (
         <textarea
           className="field notes-widget-editor"
-          maxLength={12_000}
+          maxLength={MAX_WIDGET_NOTES_CHARS}
+          aria-label={t(language, "widgetNotes")}
           placeholder={t(language, "widgetNotesPlaceholder")}
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          value={value}
+          onChange={(event) => { void onChange(event.target.value); }}
         />
       ) : (
         preview

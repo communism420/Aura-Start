@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start Google Drive sync guide: optional Chrome appDataFolder backup, Firefox and Chromium device OAuth fallback, local-first storage, disconnect, and delete backup."
+      content="Aura Start 2.1.0 Google Drive sync guide: shared groups and links across devices, automatic merging, background updates, migration, and local-first storage."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -28,88 +28,289 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">User guide</span>
+        <span class="kicker">Aura Start 2.1.0 user guide</span>
         <h1>Google Drive Sync</h1>
         <p>
           Google Drive sync is optional and off by default. Aura Start remains usable
-          as a local-only extension without connecting a Google account.
+          as a local-only extension without connecting a Google account. No Google
+          authorization or Drive requests run until you choose to connect.
         </p>
 
         <h2>What sync stores</h2>
         <p>
-          In Google Chrome, Aura Start stores one hidden sync file named
-          <code>aura-start-sync.json</code> in Google Drive <code>appDataFolder</code>.
-          In Firefox and compatible Chromium fallback builds, Aura Start uses a
-          narrower per-file Google Drive flow and creates or updates only Aura Start's
-          own sync file marked with Aura Start app properties. The sync file can
-          include groups, nested group relationships, links, settings, restore points,
-          and sync metadata needed to keep the backup current.
+          Aura Start 2.1.0 shares groups, links, ordering, nesting, all saved user preferences, Markdown notes,
+          the saved custom background image, and the selected Countdown sound across installations connected to
+          the same Google account. All updated installations read and update one shared
+          <code>aura-start-sync.json</code> in normal Drive storage, marked with Aura Start
+          app properties. The JSON contains the synchronized settings and encoded media
+          bytes, rather than separate photo or sound files in Drive. It is visible in
+          My Drive; current sync does not store new snapshots in <code>appDataFolder</code>.
+          Existing accessible copies are consolidated into this shared file.
+        </p>
+        <p>
+          Save open tabs and delete-backup-on-disconnect preferences also sync. Actual browser permission grants,
+          Restore Timeline, account/connection and sync-mode information, running timers, search/filter,
+          and onboarding/demo state stay local. The shared file includes revision counters,
+          deletion records, and a generated device identifier to merge edits safely.
+          OAuth tokens are stored locally and are never embedded in the shared file.
+        </p>
+
+        <h2>Notes</h2>
+        <p>
+          Markdown notes retain their text, whitespace, and newlines up to 12,000 characters.
+          Edits and clearing sync even while the widget is hidden. Existing local notes move
+          into shared settings only after the main document and a local recovery point are
+          saved; an older snapshot without notes does not clear newer text. If a shared note
+          already exists, the older local copy remains available in Restore Timeline.
+        </p>
+        <p>
+          Simultaneous edits to the same note resolve to one consistent value without combining
+          text. Recovery points retain previous local notes before cloud replacement or a stale
+          editor write. Changes to different preferences merge independently. Receiving the
+          Save open tabs preference never grants the browser's optional <code>tabs</code> permission.
+        </p>
+
+        <h2>Custom background images</h2>
+        <p>
+          When sync is enabled, Aura Start includes your saved custom background image
+          in its Drive snapshot, even if you currently use a built-in background.
+          Replacing or removing that image also syncs to connected devices. Images are
+          stored locally for display and are not sent to Google Drive while sync is off.
+          This feature uses the existing Drive permissions.
+        </p>
+
+        <h2>Countdown sounds</h2>
+        <p>
+          Countdown is an optional widget with a built-in completion signal. You can
+          select your own audio file, preview it, set its volume, or restore the built-in
+          signal. Files up to 20 MiB are prepared on your device. Aura Start keeps the
+          original file and a portable WAV signal from its first 60 seconds, so audio
+          selected in one browser can play after syncing to another. A locally bundled
+          decoder supports many formats, including WAV, MP3, Ogg, FLAC, AAC, AIFF, and
+          WMA; damaged, protected, or unsupported audio is rejected without replacing
+          your previous sound.
+        </p>
+        <p>
+          When Google Drive sync is enabled, the original audio file, its filename,
+          and the portable playback copy are included in the snapshot even if Countdown
+          is disabled. Replacing or removing the selected sound also syncs. Downloads
+          verify and save the audio before applying its settings; an unavailable local
+          sound prevents an incomplete upload from replacing your backup. Full Backup
+          ZIP v2 includes only the currently selected original sound file and rebuilds playback
+          locally on import; it does not include a playback WAV or other historical sounds.
+          With sync off, audio stays local. No conversion service or new browser permission
+          is needed.
+        </p>
+        <p>
+          Timer preferences sync; the active countdown stays in the local browser profile
+          and is shared between its Aura Start tabs. For a timely signal, keep the widget
+          enabled and an Aura Start page open, including in the background. A sleeping
+          device or suspended page can delay playback. After reopening, the widget shows
+          the remaining or completed state, and browser audio restrictions may require
+          pressing Play signal. The timer does not sound while every Aura Start page is closed.
         </p>
 
         <h2>What Aura Start does not access</h2>
         <ul>
           <li>No full Google Drive access.</li>
-          <li>No reading or scanning normal visible Drive files.</li>
-          <li>No visible Drive backup folder.</li>
+          <li>No reading or scanning unrelated Drive files.</li>
           <li>No Google account use for analytics, tracking, advertising, or profiling.</li>
         </ul>
 
         <h2>Connection behavior</h2>
         <p>
-          If a hidden Aura Start sync file already exists, Aura Start restores it
-          after creating a local restore point. If no sync file exists, Aura Start
-          creates one from your current local data. New users can also choose Restore
-          from Google Drive during onboarding; when there is no hidden sync file,
-          Aura Start shows a clear error and does not replace local data.
+          Connect the same Google account on every device and update all connected
+          installations to the latest 2.1.0 build. Connection and reconnection merge existing local data
+          with accessible cloud snapshots; an empty installation receives the existing
+          cloud data. Aura Start protects local content with a restore point before
+          applying cloud changes. If no snapshot exists, connection creates one from
+          your local data. Onboarding's Restore from Google Drive action instead shows
+          a clear no-backup error without changing local data.
         </p>
 
         <h2>Automatic sync after connection</h2>
         <p>
-          After Google Drive is connected, local group and link changes are queued and
-          backed up automatically by the extension background context. Closing the Aura
-          Start page does not cancel an active upload, and a pending interrupted upload
-          is retried when the browser starts again. There is no separate Sync now button
-          in the current UI. Aura Start preserves the local Google Drive connection
-          metadata when you import a JSON backup, so changing bookmark data does not
-          disconnect sync by itself.
+          Actual shared edits trigger synchronization. While an Aura Start page is visible
+          and online, quiet checks look for remote changes about every five seconds; multiple
+          pages share the same background checks. Opening, closing, focusing, or making a page
+          visible does not itself start a sync or its animation. A background alarm continues
+          checking about once a minute while the browser runs, even with all Aura Start pages
+          closed. Unchanged verified revisions need only small Drive file metadata: no
+          data/media transfer, cloud write, animation, or change to the displayed last-sync time.
+          New or unverified remote revisions are read when needed.
+        </p>
+        <p>
+          Offline edits remain local and retry after background startup or an online event
+          when pending work exists. Failed quiet checks back off before retrying.
+          Explicit connection, restore, and check actions can
+          request sync. Search/filter, running timers, local recovery history, and unchanged
+          settings do not trigger new content synchronization. Browser scheduling and network
+          availability can delay updates; this is periodic synchronization, not instant push delivery.
+        </p>
+        <p>
+          Edits to different fields merge independently. Concurrent edits to the same
+          field resolve consistently using logical revision counters and a device
+          identifier as a tie-breaker. Deletion records keep older snapshots from
+          restoring deleted items. Normal automatic sync does not require choosing
+          between whole local and cloud copies. Importing JSON preserves the current
+          installation's Google Drive connection.
+        </p>
+        <p>
+          An update is conditional on the cloud revision that Aura Start read. If another
+          device changes the file first, Aura Start reads the new contents, merges the edits,
+          and retries. Interrupted or repeatedly conflicting transfers keep local edits
+          pending for another attempt; they are not reported as completed synchronization.
+        </p>
+        <p>
+          Two devices connecting for the first time simultaneously can briefly create
+          more than one file because Google Drive permits identical filenames. Updated
+          installations select the same surviving file, verify the combined data there,
+          and conditionally remove the extra copies. A duplicate changed during cleanup
+          is read and merged again before it can be removed.
         </p>
 
         <h2>Authorization</h2>
         <p>
-          Google Chrome uses the extension manifest OAuth configuration through
-          <code>chrome.identity.getAuthToken</code> and stores the sync file in the hidden
-          Drive <code>appDataFolder</code> with the <code>drive.appdata</code> scope.
-          Firefox builds and Chromium builds that reject the built-in identity token
-          flow use Aura Start's configured Google Device OAuth fallback. Device OAuth
-          uses the narrower per-file <code>drive.file</code> scope and creates or updates
-          only Aura Start's own <code>aura-start-sync.json</code> file marked with Aura
-          Start app properties. Users do not enter OAuth client IDs in Aura Start
+          Google Chrome installations with an extension ID supported by the native
+          OAuth configuration use
+          <code>chrome.identity.getAuthToken</code> with <code>drive.file</code> for
+          the shared file and <code>drive.appdata</code> for legacy hidden backups.
+          Firefox builds and Chromium builds without that native flow, including unpacked
+          Chrome builds, use Aura Start's configured Google Device OAuth fallback. Device OAuth
+          uses the narrower per-file <code>drive.file</code> scope for ordinary sync and creates or updates
+          only Aura Start's shared <code>aura-start-sync.json</code> and its own older copies
+          during migration, identified by Aura Start app properties. Users do not enter OAuth client IDs in Aura Start
           settings.
         </p>
         <p>
+          Device OAuth uses its existing <code>drive.file</code> access for backup deletion.
+          Aura Start does not request <code>drive.appdata</code> through Device OAuth:
+          This configuration requests only <code>drive.file</code> and cannot read hidden
+          legacy backups. Older hidden backups are included only when suitable access is
+          already available through another supported authorization flow. Full Drive
+          access is never requested.
+        </p>
+        <p>
           Aura Start automatically renews expired short-lived access tokens and retries
-          a failed Drive request once. Device OAuth refresh credentials are kept in
-          extension-local storage and are not removed for temporary network failures,
-          Google rate limits, server errors, or OAuth client-configuration errors. They
-          are removed automatically only when Google explicitly returns
-          <code>invalid_grant</code>. If that happens, Aura Start preserves the local
-          data, sync metadata, and Drive file reference and shows a Reconnect Google
-          Drive action in Settings.
+          a failed Drive request once. The selected sign-in flow and Device OAuth refresh
+          credentials persist in extension-local storage across restarts. Bounded retries
+          recover from temporary network failures, rate limits and server errors without
+          opening a sign-in window or discarding pending edits. A confirmed unusable grant,
+          such as <code>invalid_grant</code>, still requires Reconnect Google Drive in Settings;
+          local data, sync metadata and the Drive file reference are preserved. Delayed
+          authorization responses cannot undo a manual disconnect.
+        </p>
+        <p>
+          Google can require fresh consent or expire a grant. External OAuth projects in
+          Testing issue seven-day refresh tokens for Drive scopes; see
+          <a href="https://developers.google.com/identity/protocols/oauth2#expiration" target="_blank" rel="noopener noreferrer">Google's refresh-token limits</a>.
+          The actual project's publishing status has not been verified here. Extension
+          retries cannot change these Google Cloud rules.
+        </p>
+
+        <h2>Upgrading to 2.1.0</h2>
+        <p>
+          Update every connected device to the latest 2.1.0 build before using shared sync.
+          Earlier builds do not participate in the single-file protocol and can create
+          per-device copies again. Aura Start reads accessible older backups, including
+          Chrome's hidden <code>appDataFolder</code>, and creates a new shared file ID during
+          migration. It verifies the combined data and selected media in that file before
+          conditionally removing covered older copies. A changed copy is merged again;
+          unreadable or invalid copies are not discarded. Chrome upgrading from 2.0.5 may
+          require one explicit reconnection to approve
+          the new <code>drive.file</code> scope; unattended background checks do not open
+          a consent window. Release OAuth clients must belong to the same Google Cloud
+          project to access the same Aura Start files.
+        </p>
+        <p>
+          Current synchronization uses normal Drive in every supported browser; older
+          hidden backups can join migration only when access is available. To recover an
+          old Chrome hidden backup for use in Firefox or a Device OAuth Chromium build,
+          first connect an updated native Chrome installation with access to that backup
+          and let it migrate to the shared file. Alternatively, import an available local backup.
+        </p>
+
+        <p>
+          A custom background saved in 2.0.5 is migrated automatically before the first
+          2.1.0 sync, including a saved image that is not currently selected. Aura Start
+          keeps the original image until migration is durably saved. Older cloud
+          snapshots without image data are not treated as a request to remove it, so
+          you do not need to upload the image again. If migration cannot finish,
+          the local image is preserved and synchronization can retry.
+        </p>
+
+        <h2>Settings when Aura Start updates</h2>
+        <p>
+          New settings receive their defaults without resetting your existing choices,
+          including options inside background and widget settings. If an older Drive
+          snapshot has no value for a new setting, that absence does not erase a choice
+          already saved by a newer installation. Older local data, JSON backups, and
+          Restore Points use the same settings migration.
+        </p>
+        <p>
+          Repeating migration is safe and does not create another user edit. Compatible
+          future fields that this version does not display are retained when their names
+          and values pass validation. This does not make incompatible future formats
+          supported, so keep connected installations updated. Browser permissions and
+          your current Drive connection remain local; custom background migration
+          continues as described above.
         </p>
 
         <h2>Disconnect and delete backup</h2>
         <p>
-          Aura Start provides a confirmed action to delete the hidden Drive sync file
-          and disconnect the Google account. This does not delete local Aura Start
-          data and does not touch normal Drive files. If authorization has already
-          expired, Aura Start can still disconnect locally and will explain that the
-          hidden Drive file may remain until reconnection.
+          The Delete Drive backup when disconnecting setting is on by default. Turn it
+          off before disconnecting if you want to keep the cloud copy. With deletion on,
+          the confirmed action pauses sync, then permanently
+          removes matching Aura Start snapshots from normal Drive, including old 2.0.5 files,
+          renamed app-marked files and copies in Trash. Synced links, settings, notes,
+          background images and selected audio are removed with those snapshots. Hidden legacy
+          <code>appDataFolder</code> backups are included when access is already available.
+          Aura Start verifies removal in the accessible storage before clearing this
+          installation's credentials and disconnecting. Local data and unrelated Drive files remain.
+        </p>
+        <p>
+          Ordinary disconnect stops sync and clears the saved session in this browser only;
+          other installations remain connected and the cloud file is kept. It does not call
+          Google's project-wide revocation endpoint. A disconnected installation stays
+          disconnected until you explicitly connect it again. To revoke Aura Start's access
+          everywhere, use
+          <a href="https://myaccount.google.com/connections" target="_blank" rel="noopener noreferrer">Google Account connections</a>.
+        </p>
+        <p>
+          If Device OAuth cannot check hidden backups, Settings keeps an explicit notice,
+          including after reload, reconnection or later cleanup of another account. Verified
+          normal-Drive deletion is not reported as verified hidden-backup cleanup. In the Google
+          account used for that unverified cleanup, open
+          <a href="https://drive.google.com/drive/u/0/settings" target="_blank" rel="noopener noreferrer">Google Drive settings</a>
+          &rarr; Manage apps &rarr; Aura Start &rarr; Options &rarr; Delete hidden app data,
+          if available. The notice records a previous operation; it does not mean hidden data
+          still exists, and Aura Start cannot verify manual cleanup.
+        </p>
+        <p>
+          If authorization, file deletion or verification fails, sync stays paused and the
+          account and backup references remain available for retry. The action reports failure
+          without claiming the backup was deleted. Native Chrome/Web cleanup requires access
+          to both storage spaces; insufficient access requires an explicit reconnection.
+        </p>
+        <p>
+          Updated installations pause when a previously synced cloud copy disappears and
+          require explicit reconnection before creating another copy. Disconnect other devices
+          first if the cloud should stay empty: older versions, uploads already underway, or
+          a later explicit reconnect can upload retained local data again.
         </p>
 
         <h2>Use local backups too</h2>
         <p>
-          Google Drive sync is convenient, but Full Backup JSON is still the clearest
+          Google Drive sync is convenient, but Full Backup ZIP is still the clearest
           portable backup format. Keep local file backups for important data.
+        </p>
+        <p>
+          Sync uses the <code>storage</code> permission for local data and credentials,
+          <code>alarms</code> for scheduled checks, Google API host access for authorized
+          requests, and <code>identity</code> in Chromium builds for native Google sign-in.
+          The optional <code>tabs</code> permission belongs to Save open tabs, not to sync.
+          Built-in and custom media need no extra permission. See the
+          <a href="privacy-policy.html">Privacy Policy</a> for the complete browser-specific list.
         </p>
       </main>
 

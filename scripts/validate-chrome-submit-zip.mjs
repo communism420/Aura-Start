@@ -153,8 +153,8 @@ if (zipManifest) {
   }
 
   const scopes = zipManifest.oauth2?.scopes ?? [];
-  if (scopes.length !== 1 || scopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
-    fail("ZIP must request only the Google Drive appDataFolder OAuth scope.");
+  if (scopes.length !== 2 || !scopes.includes("https://www.googleapis.com/auth/drive.appdata") || !scopes.includes("https://www.googleapis.com/auth/drive.file")) {
+    fail("ZIP OAuth scopes must be exactly drive.appdata and drive.file.");
   }
 
   if (String(zipManifest.oauth2?.client_id ?? "").includes("YOUR_GOOGLE_OAUTH_CLIENT_ID")) {

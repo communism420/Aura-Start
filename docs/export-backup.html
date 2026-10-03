@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start export and backup guide for JSON, browser bookmarks HTML, Markdown, CSV, and A Fine Start-compatible codes."
+      content="Aura Start export and backup guide for complete ZIP archives, settings-and-links JSON, browser bookmarks HTML, Markdown, CSV, and A Fine Start-compatible codes."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">User guide</span>
+        <span class="kicker">Aura Start 2.1.0 user guide</span>
         <h1>Export / Backup</h1>
         <p>
           Aura Start is export-first. Exports are created locally in your browser and
@@ -37,18 +37,76 @@
 
         <h2>Available formats</h2>
         <ul>
-          <li><strong>Full Backup JSON:</strong> best for restoring Aura Start data later.</li>
+          <li><strong>Full Backup ZIP:</strong> settings, links, notes, Restore Points, their background files, and the currently selected original Countdown sound. It excludes stock and other historical sounds.</li>
+          <li><strong>Settings and links only (JSON):</strong> settings, notes, links, and Restore Points without embedded media.</li>
           <li><strong>Browser Bookmarks HTML:</strong> useful for importing into browser bookmark managers.</li>
           <li><strong>Markdown:</strong> readable grouped lists for notes or documentation.</li>
           <li><strong>CSV:</strong> spreadsheet-friendly archive format.</li>
           <li><strong>A Fine Start-compatible export code:</strong> useful if you want a basic grouped-link format again later.</li>
         </ul>
 
-        <h2>When to use Full Backup JSON</h2>
+        <h2>When to use Full Backup ZIP</h2>
         <p>
-          Use Full Backup JSON before major imports, resets, duplicate cleanup, or any
+          Use Full Backup ZIP before major imports, resets, duplicate cleanup, or any
           change where you want an independent file backup. It is the format designed
           for restoring Aura Start's own data.
+        </p>
+
+        <p>
+          The ZIP contains a JSON document with all settings, links, notes, and Restore
+          Points, plus actual current and historical custom background files. ZIP v2 includes
+          only the currently selected original Countdown audio; no generated playback WAV
+          or other historical audio is added. When the built-in signal is selected, there
+          is no audio file in the ZIP. References to different historical sounds are omitted
+          neutrally, so restoring those points keeps the receiver's current sound or default.
+          An individually exported Restore Point includes the original sound selected in it.
+        </p>
+        <p>
+          The archive includes <code>aura-start.json</code>, an asset manifest, and the referenced
+          media files. It contains no Google sign-in tokens and does not transfer an active
+          running timer. ZIP processing runs in a packaged local worker. The archive limit
+          is 256 MiB; reaching a limit or finding an unavailable required file reports an
+          error instead of silently dropping backup contents.
+        </p>
+        <p>
+          Select the ZIP directly in Aura Start's Import backup dialog; manual extraction
+          is unnecessary. Import validates the archive, rebuilds sound playback locally,
+          and saves the required assets before applying
+          settings or links, while preserving this installation's Google Drive connection.
+          A corrupt or unavailable asset required by a complete backup stops the import
+          before local data changes.
+        </p>
+        <p>
+          The import preview lets you merge with current data or replace it. Aura Start
+          makes a local restore point before applying the import. If connected automatic
+          sync is enabled, changes from the import are shared with the other connected devices.
+          Downloaded ZIP and JSON files are not encrypted by Aura Start; they contain
+          the exported links and notes as readable data.
+        </p>
+
+        <h2>Settings and links only (JSON)</h2>
+        <p>
+          Choose this smaller format when you do not need background images or audio files.
+          It preserves other preferences, links, notes, and Restore Points without embedding
+          media. Custom-file references and an active Custom background choice are omitted;
+          those omitted choices preserve receiving-device values or use built-in defaults on
+          a fresh profile. Explicit built-in choices and intentional image/sound removals still
+          apply as settings. Use Full Backup ZIP when you want custom files transferred too.
+        </p>
+        <p>
+          Older Aura Start JSON backups, including portable JSON with embedded images and
+          sounds, and older v1 ZIPs remain importable through the same dialog.
+        </p>
+
+        <h2>Backups from 2.0.5</h2>
+        <p>
+          Existing 2.0.5 JSON files import without manual conversion. Groups, links,
+          saved settings, and included Restore Points are migrated, and new settings
+          receive defaults without resetting existing choices. Those old exports did
+          not contain the Notes widget text or the actual custom background image.
+          Import cannot recreate missing contents. Updating an existing 2.0.5 installation
+          migrates its locally saved notes and image; removing the old installation first
+          may remove that local source. For future moves, use Full Backup ZIP.
         </p>
 
         <h2>A Fine Start-compatible export</h2>

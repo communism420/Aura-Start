@@ -205,6 +205,54 @@ export function addExtensionStorageChangeListener(listener: ExtensionStorageChan
   return true;
 }
 
+export function removeExtensionStorageChangeListener(listener: ExtensionStorageChangeListener): void {
+  getExtensionApi()?.storage?.onChanged?.removeListener(listener);
+}
+
+export async function getExtensionAlarm(name: string): Promise<chrome.alarms.Alarm | undefined> {
+  const alarms = getExtensionApi()?.alarms;
+  if (!alarms?.get) return undefined;
+
+  return await callPromiseOrCallback(
+    async () => await (alarms.get as (name: string) => Promise<chrome.alarms.Alarm | undefined>)(name),
+    (resolve, reject) => {
+      alarms.get(name, (alarm) => {
+        if (rejectLastError(reject)) return;
+        resolve(alarm);
+      });
+    }
+  );
+}
+
+export async function createExtensionAlarm(name: string, info: chrome.alarms.AlarmCreateInfo): Promise<void> {
+  const alarms = getExtensionApi()?.alarms;
+  if (!alarms?.create) return;
+  // Older Chromium releases return void here, while Firefox and current MV3 return a promise.
+  await alarms.create(name, info);
+}
+
+export async function clearExtensionAlarm(name: string): Promise<boolean> {
+  const alarms = getExtensionApi()?.alarms;
+  if (!alarms?.clear) return false;
+
+  return await callPromiseOrCallback(
+    async () => await (alarms.clear as (name: string) => Promise<boolean>)(name),
+    (resolve, reject) => {
+      alarms.clear(name, (cleared) => {
+        if (rejectLastError(reject)) return;
+        resolve(cleared);
+      });
+    }
+  );
+}
+
+export function addExtensionAlarmListener(listener: (alarm: chrome.alarms.Alarm) => void): boolean {
+  const onAlarm = getExtensionApi()?.alarms?.onAlarm;
+  if (!onAlarm) return false;
+  onAlarm.addListener(listener);
+  return true;
+}
+
 export async function openExtensionOptionsPage(): Promise<boolean> {
   const runtime = getExtensionApi()?.runtime;
   if (!runtime?.openOptionsPage) {

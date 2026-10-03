@@ -4,8 +4,7 @@ import { MAX_RESTORE_POINTS } from "../constants";
 import { t } from "../i18n";
 import type { AuraLanguage, AuraRestorePoint, AuraRestorePointReason, AuraStartData, RestoreTimelineDay } from "../types";
 import { dateForFile, formatDateTime } from "../utils/dates";
-import { downloadTextFile } from "../utils/download";
-import { createJsonBackup } from "../utils/exportJson";
+import { exportZipBackup } from "../utils/zipBackup";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { Modal } from "./Modal";
 
@@ -185,13 +184,10 @@ export function RestoreTimeline({
   );
   const filteredCount = filteredTimeline.reduce((count, day) => count + day.entries.length, 0);
 
-  function exportPoint(point: AuraRestorePoint) {
+  async function exportPoint(point: AuraRestorePoint) {
     try {
-      downloadTextFile(
-        `aura-start-restore-point-${dateForFile(new Date(point.createdAt))}.json`,
-        createJsonBackup(restorePointAsBackup(point)),
-        "application/json;charset=utf-8"
-      );
+      await exportZipBackup(restorePointAsBackup(point),
+        `aura-start-restore-point-${dateForFile(new Date(point.createdAt))}.zip`);
     } catch (error) {
       onError(error instanceof Error ? error.message : t(language, "couldNotExportBackup"));
     }

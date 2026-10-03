@@ -8,6 +8,7 @@ type ConfirmDialogProps = {
   confirmLabel: string;
   cancelLabel?: string;
   tone?: "danger" | "normal";
+  busy?: boolean;
   onConfirm: () => void | Promise<void>;
   onCancel: () => void;
 };
@@ -19,11 +20,12 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = "Cancel",
   tone = "danger",
+  busy = false,
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
   return (
-    <Modal open={open} title={title} closeLabel={cancelLabel} onClose={onCancel} size="sm">
+    <Modal open={open} title={title} closeLabel={cancelLabel} onClose={() => { if (!busy) onCancel(); }} size="sm">
       <div className="flex gap-3">
         <div
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
@@ -35,12 +37,13 @@ export function ConfirmDialog({
         <p className="muted text-sm leading-6">{message}</p>
       </div>
       <div className="mt-6 flex justify-end gap-2">
-        <button className="btn btn-secondary" type="button" onClick={onCancel}>
+        <button className="btn btn-secondary" type="button" disabled={busy} onClick={onCancel}>
           {cancelLabel}
         </button>
         <button
           className={tone === "danger" ? "btn btn-danger" : "btn btn-primary"}
           type="button"
+          disabled={busy}
           onClick={() => {
             void onConfirm();
           }}

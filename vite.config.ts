@@ -21,6 +21,69 @@ type AuraPackageJson = {
   };
 };
 
+/** Keep SDK defaults local even if a future caller omits explicit decoder URLs. */
+export function localizeAudioDecoderDefault(source: string, id: string): string | null {
+  if (!id.replaceAll("\\", "/").split("?")[0].endsWith("/node_modules/@ffmpeg/ffmpeg/dist/esm/const.js")) return null;
+  const upstream = 'export const CORE_URL = `https://unpkg.com/@ffmpeg/core@${CORE_VERSION}/dist/umd/ffmpeg-core.js`;';
+  if (source.split(upstream).length !== 2) throw new Error("Pinned FFmpeg SDK default changed; review the local decoder transform before building.");
+  return source.replace(upstream, 'export const CORE_URL = new URL("../vendor/ffmpeg/ffmpeg-core.js", self.location.href).href;');
+}
+
+/** Run after Rollup so its literal import stays a separate, pinned local file. */
+export function localizeAudioDecoderWorkerChunk(source: string): string {
+  const loader = /\btry\s*\{[\s\S]*?importScripts\(_coreURL\);[\s\S]*?\}\s*catch\s*\{[\s\S]*?\}\s*(?=const coreURL = _coreURL;)/g;
+  const matches = [...source.matchAll(loader)];
+  if (matches.length !== 1 || !matches[0][0].includes("self.createFFmpegCore") || !matches[0][0].includes("_coreURL)).default") && !/\bimport\([\s\S]*?_coreURL[\s\S]*?\)\)\.default/.test(matches[0][0])) {
+    throw new Error("Pinned FFmpeg worker loader changed; review its static local import before building.");
+  }
+  return source.replace(loader, '_coreURL = new URL("../vendor/ffmpeg/ffmpeg-core.js", self.location.href).href;\n  self.createFFmpegCore = (await import("../vendor/ffmpeg/ffmpeg-core.js")).default;\n  if (typeof self.createFFmpegCore !== "function") throw ERROR_IMPORT_FAILURE;\n  ');
+}
+
+export function localAudioDecoderSdkPlugin(): Plugin {
+  return {
+    name: "aura-local-audio-sdk",
+    enforce: "pre",
+    transform(source, id) {
+      const result = localizeAudioDecoderDefault(source, id);
+      return result === null ? null : { code: result, map: null };
+    },
+    renderChunk(source, chunk) {
+      // ?worker&url is a tiny URL-export proxy in the page bundle, not the
+      // worker implementation processed by the separate worker pipeline.
+      if (!chunk.moduleIds.some((id) => id.replaceAll("\\", "/").split("?")[0].endsWith("/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js")
+        && !/(?:[?&])(?:worker|sharedworker)(?:&|$)/.test(id))) return null;
+      return { code: localizeAudioDecoderWorkerChunk(source), map: null };
+    }
+  };
+}
+
+/** Ship the pinned single-thread decoder locally; imports never use a CDN. */
+function bundledAudioDecoderPlugin(): Plugin {
+  const assets = new Map([
+    ["vendor/ffmpeg/ffmpeg-core.js", { file: "ffmpeg-core.js", type: "text/javascript" }],
+    ["vendor/ffmpeg/ffmpeg-core.wasm", { file: "ffmpeg-core.wasm", type: "application/wasm" }]
+  ]);
+  const sourcePath = (file: string) => resolve(__dirname, "node_modules/@ffmpeg/core/dist/esm", file);
+  return {
+    name: "aura-local-audio-decoder",
+    async generateBundle() {
+      for (const [fileName, asset] of assets) {
+        this.emitFile({ type: "asset", fileName, source: await readFile(sourcePath(asset.file)) });
+      }
+    },
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const asset = assets.get((request.url ?? "").split("?")[0].replace(/^\//, ""));
+        if (!asset) { next(); return; }
+        void readFile(sourcePath(asset.file)).then((source) => {
+          response.setHeader("Content-Type", asset.type);
+          response.end(source);
+        }).catch(() => { response.statusCode = 500; response.end("Audio decoder unavailable."); });
+      });
+    }
+  };
+}
+
 function normalizeOAuthClientId(clientId: string): string {
   return clientId.trim();
 }
@@ -164,7 +227,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [react(), manifestBuildPlugin({
+    plugins: [react(), localAudioDecoderSdkPlugin(), bundledAudioDecoderPlugin(), manifestBuildPlugin({
       clientId: googleOAuthClientId,
       extensionVersion,
       targetBrowser: resolvedTargetBrowser
@@ -178,6 +241,7 @@ export default defineConfig(({ mode }) => {
       __AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET__: JSON.stringify(enableGoogleDeviceOAuthFallback ? googleDeviceOAuthClientSecret : ""),
       __AURA_TARGET_BROWSER__: JSON.stringify(resolvedTargetBrowser)
     },
+    worker: { format: "es", plugins: () => [localAudioDecoderSdkPlugin()] },
     build: {
       rollupOptions: {
         input: {

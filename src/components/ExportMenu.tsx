@@ -5,7 +5,7 @@ import type { AuraStartData } from "../types";
 import { exportAFineStartCode } from "../utils/exportAFineStart";
 import { exportCsv } from "../utils/exportCsv";
 import { exportHtmlBookmarks } from "../utils/exportHtmlBookmarks";
-import { exportJsonBackup } from "../utils/exportJson";
+import { exportCurrentSettingsLinksJson, exportCurrentZipBackup } from "../utils/exportCurrentBackup";
 import { exportMarkdown } from "../utils/exportMarkdown";
 
 type ExportMenuProps = {
@@ -15,14 +15,20 @@ type ExportMenuProps = {
 
 export function ExportMenu({ data, onError }: ExportMenuProps) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const language = data.settings.language;
-  const fullBackupJsonLabel = t(language, "fullBackupJson");
+  const fullBackupLabel = t(language, "fullBackupZip");
   const htmlBookmarksLabel = t(language, "htmlBookmarks");
   const markdownLabel = t(language, "markdown");
   const csvLabel = t(language, "csv");
   const aFineStartLabel = t(language, "aFineStartExportCode");
   const exportOptions = [
+    {
+      label: t(language, "fullBackupJson"),
+      description: t(language, "exportJsonDescription"),
+      action: exportCurrentSettingsLinksJson
+    },
     {
       label: htmlBookmarksLabel,
       description: t(language, "exportHtmlDescription"),
@@ -56,12 +62,16 @@ export function ExportMenu({ data, onError }: ExportMenuProps) {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, []);
 
-  const runExport = (label: string, action: (value: AuraStartData) => void) => {
+  const runExport = async (label: string, action: (value: AuraStartData) => void | Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
     try {
-      action(data);
+      await action(data);
       setOpen(false);
     } catch (error) {
       onError(error instanceof Error ? error.message : t(language, "exportFormatFailed", { label }));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -81,13 +91,14 @@ export function ExportMenu({ data, onError }: ExportMenuProps) {
           <button
             className="btn btn-primary mb-2 h-auto w-full items-start justify-start px-3 py-2 text-left"
             type="button"
-            onClick={() => runExport(fullBackupJsonLabel, exportJsonBackup)}
+            disabled={busy}
+            onClick={() => runExport(fullBackupLabel, exportCurrentZipBackup)}
           >
             <Download className="mt-0.5 shrink-0" size={16} />
             <span>
-              <span className="block text-sm font-semibold">{t(language, "exportAllData")}</span>
+              <span className="block text-sm font-semibold">{t(language, busy ? "preparingBackup" : "fullBackupZip")}</span>
               <span className="block text-xs font-normal leading-5 opacity-90">
-                {fullBackupJsonLabel}: {t(language, "exportJsonDescription")}
+                {t(language, "exportZipDescription")}
               </span>
             </span>
           </button>
@@ -97,6 +108,7 @@ export function ExportMenu({ data, onError }: ExportMenuProps) {
                 className="btn btn-ghost h-auto w-full flex-col items-start justify-start gap-1 px-3 py-2 text-left"
                 key={option.label}
                 type="button"
+                disabled={busy}
                 onClick={() => runExport(option.label, option.action)}
               >
                 <span className="text-sm font-semibold">{option.label}</span>

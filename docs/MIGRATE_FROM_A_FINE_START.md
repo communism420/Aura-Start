@@ -10,11 +10,11 @@ Aura Start may be a good fit if you want:
 - No required account
 - Local-first storage by default
 - No analytics or tracking
-- Full JSON backups
+- Full ZIP backups with settings, links, notes, history, and media
 - Multiple export formats
-- Optional Google Drive backup through Chrome `appDataFolder` or Firefox/compatible Chromium Device OAuth fallback
+- Optional Google Drive sync using one shared, visible `aura-start-sync.json` across Chrome, Firefox, and compatible Chromium browsers
 - Restore Timeline before destructive changes
-- Nested groups, fuzzy search, backgrounds, widgets, Command Palette, keyboard shortcuts, and Duplicate Finder
+- Nested groups, fuzzy search, backgrounds, clock/Markdown notes/Pomodoro/Countdown widgets, Command Palette, keyboard shortcuts, and Duplicate Finder
 
 ## 2. What is preserved?
 
@@ -37,7 +37,7 @@ Unsupported or unsafe URL schemes are rejected during import rather than saved.
 3. Use Export bookmarks.
 4. Copy the generated export code.
 
-Check the official A Fine Start UI or listing if these labels change in a future version.
+These steps were checked against the [official A Fine Start help](https://afinestart.me/help/) on 2026-10-04. Check the current UI if labels change.
 
 ## 5. Import into Aura Start
 
@@ -53,11 +53,11 @@ Check the official A Fine Start UI or listing if these labels change in a future
 
 Merge adds imported groups to your current Aura Start data and avoids ID conflicts.
 
-Replace replaces current groups and settings with the imported data. Export a Full Backup JSON first if you want an extra copy before replacing data.
+Replace replaces current groups and shared settings with the imported data; A Fine Start link exports do not contain Aura preferences, so their defaults apply. The current local Drive connection is preserved. Export a Full Backup ZIP first if you want an extra copy before replacing data. If Drive is connected, the imported changes also synchronize to other installations.
 
 ## 7. Restore Timeline
 
-Aura Start creates a restore point before import operations. Restore Timeline shows local snapshots grouped by day with search and action filters. Restore points are capped to avoid unbounded storage growth.
+Aura Start creates a restore point before import operations. Restore Timeline shows local snapshots grouped by day with search and action filters. Restore points are local, capped at 20, and included in manual Aura backups; they are not synchronized through Google Drive.
 
 Users should still create or export a backup before destructive operations such as replace imports, resets, restore timeline deletion, or deleting Google Drive backup data.
 
@@ -73,7 +73,7 @@ Use this if you change your mind or want to move a basic grouped-link list elsew
 - If no bookmarks are imported, check that the export code includes groups and bookmarks.
 - If a link is skipped, its URL may use an unsupported or unsafe scheme. Aura Start allows only `http` and `https` links.
 - If you chose Replace by mistake, open Restore Timeline and restore the point created before import.
-- If you are unsure, export a Full Backup JSON from Aura Start before trying again.
+- If you are unsure, export a Full Backup ZIP from Aura Start before trying again.
 
 ## 10. FAQ
 
@@ -87,11 +87,11 @@ No. Aura Start imports grouped links from supported export-code shapes. It does 
 
 **Can I use Aura Start without Google Drive?**
 
-Yes. Aura Start is local-first, and Google Drive backup/sync is optional and off by default. After you connect Google Drive, local Aura Start changes are backed up automatically to Aura Start's own sync file.
+Yes. Aura Start is local-first, and Google Drive sync is optional and off by default. After connection, installations share one visible Drive file and merge changes automatically. Visible, online pages normally check about every five seconds; background checks run about once a minute while the browser is running.
 
 **Can I keep a normal backup file?**
 
-Yes. Use Full Backup JSON export from Aura Start to keep an independent backup file.
+Yes. In 2.1.0, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive.
 
 **Can I export back to A Fine Start-compatible format?**
 

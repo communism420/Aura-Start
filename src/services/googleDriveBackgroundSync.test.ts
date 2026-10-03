@@ -59,6 +59,8 @@ describe("Google Drive background sync scheduling", () => {
 
   it("recognizes only the background sync protocol messages", () => {
     expect(isGoogleDriveBackgroundSyncRequest({ type: GOOGLE_DRIVE_BACKGROUND_SYNC_REQUEST, force: true })).toBe(true);
+    expect(isGoogleDriveBackgroundSyncRequest({ type: GOOGLE_DRIVE_BACKGROUND_SYNC_REQUEST, force: true, poll: true })).toBe(true);
+    expect(isGoogleDriveBackgroundSyncRequest({ type: GOOGLE_DRIVE_BACKGROUND_SYNC_REQUEST, poll: "yes" })).toBe(false);
     expect(isGoogleDriveBackgroundSyncRequest({ type: GOOGLE_DRIVE_BACKGROUND_SYNC_REQUEST, force: "yes" })).toBe(false);
     expect(isGoogleDriveBackgroundSyncRequest({ type: "other" })).toBe(false);
     expect(isGoogleDriveBackgroundSyncEvent({
@@ -70,5 +72,16 @@ describe("Google Drive background sync scheduling", () => {
       result: { status: "failed" }
     })).toBe(false);
     expect(isGoogleDriveBackgroundSyncEvent({ type: GOOGLE_DRIVE_BACKGROUND_SYNC_EVENT })).toBe(false);
+  });
+
+  it("accepts the existing-cloud replica outcome over runtime messaging and rejects unknown upload reasons", () => {
+    for (const reason of ["created", "replica_created", "updated"]) {
+      expect(isGoogleDriveBackgroundSyncEvent({
+        type: GOOGLE_DRIVE_BACKGROUND_SYNC_EVENT, result: { status: "uploaded", reason }
+      })).toBe(true);
+    }
+    expect(isGoogleDriveBackgroundSyncEvent({
+      type: GOOGLE_DRIVE_BACKGROUND_SYNC_EVENT, result: { status: "uploaded", reason: "unknown" }
+    })).toBe(false);
   });
 });

@@ -1,11 +1,11 @@
 import { Download, ExternalLink, Settings } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { DEFAULT_SETTINGS } from "./constants";
 import { t } from "./i18n";
-import { useAuraStore } from "./store/useAuraStore";
+import { installAuraStoreSyncLifecycle, useAuraStore } from "./store/useAuraStore";
 import { createExtensionTab, hasExtensionRuntime, openExtensionOptionsPage } from "./utils/browserApi";
-import { exportJsonBackup } from "./utils/exportJson";
+import { exportCurrentZipBackup } from "./utils/exportCurrentBackup";
 import "./styles.css";
 
 function PopupApp() {
@@ -13,12 +13,15 @@ function PopupApp() {
   const status = useAuraStore((state) => state.status);
   const error = useAuraStore((state) => state.error);
   const load = useAuraStore((state) => state.load);
-  const addToast = useAuraStore((state) => state.addToast);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const language = data?.settings.language ?? DEFAULT_SETTINGS.language;
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => installAuraStoreSyncLifecycle(), []);
 
   const openNewTab = () => {
     if (hasExtensionRuntime()) {
@@ -45,16 +48,16 @@ function PopupApp() {
     window.open("options.html", "_blank", "noopener");
   };
 
-  const exportBackup = () => {
-    if (!data) return;
+  const exportBackup = async () => {
+    if (!data || exporting) return;
+    setExporting(true);
+    setExportError(null);
     try {
-      exportJsonBackup(data);
+      await exportCurrentZipBackup(data);
     } catch (caught) {
-      addToast({
-        type: "error",
-        title: t(language, "exportFailed"),
-        message: caught instanceof Error ? caught.message : t(language, "couldNotExportBackup")
-      });
+      setExportError(caught instanceof Error ? caught.message : t(language, "couldNotExportBackup"));
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -80,15 +83,16 @@ function PopupApp() {
                 : t(language, "loadingLocalData")}
           </div>
           {error ? <div className="mt-2 text-xs text-[var(--danger)]">{error}</div> : null}
+          {exportError ? <div role="alert" className="mt-2 text-xs text-[var(--danger)]">{exportError}</div> : null}
         </div>
         <div className="space-y-2">
           <button className="btn btn-primary w-full justify-start" type="button" onClick={openNewTab}>
             <ExternalLink size={17} />
             {t(language, "openNewTab")}
           </button>
-          <button className="btn btn-secondary w-full justify-start" disabled={!data} type="button" onClick={exportBackup}>
+          <button className="btn btn-secondary w-full justify-start" disabled={!data || exporting} type="button" onClick={exportBackup}>
             <Download size={17} />
-            {t(language, "exportJsonBackup")}
+            {t(language, exporting ? "preparingBackup" : "fullBackupZip")}
           </button>
           <button className="btn btn-secondary w-full justify-start" type="button" onClick={openSettings}>
             <Settings size={17} />

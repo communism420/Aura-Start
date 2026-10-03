@@ -21,46 +21,54 @@
         </nav>
       </header>
       <main class="doc">
-        <div class="kicker">Aura Start Docs</div>
-        <h1>Store Asset Checklist</h1>
-        <section class="summary" aria-label="Maintainer-only note"><p><strong>Maintainer-only document.</strong> This page is for project release preparation and is not needed for normal Aura Start users.</p></section>
-        <p>This folder tracks the Chrome Web Store, Firefox Add-ons, and public site screenshot set. The final store PNG files are captured from the real Aura Start 2.0.0 UI and stored in <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code>, with public site copies in <code>docs/assets/screenshots/</code>.</p>
-        <p>The public site uses the <code>*-20260630.png</code> screenshot copies to avoid stale cached images after the nested groups, fuzzy search, backgrounds, widgets, Save tabs, and Restore Timeline refresh.</p>
-        <h2>Store filenames</h2>
-        <ol>
-          <li><code>01-new-tab-overview-1280x800.png</code></li>
-          <li><code>02-search-mode-1280x800.png</code></li>
-          <li><code>03-import-export-1280x800.png</code></li>
-          <li><code>04-settings-1280x800.png</code></li>
-          <li><code>05-restore-points-1280x800.png</code></li>
-        </ol>
-        <h2>Public site filenames</h2>
-        <ol>
-          <li><code>01-new-tab-overview-20260630.png</code></li>
-          <li><code>02-fuzzy-search-20260630.png</code></li>
-          <li><code>03-import-export-20260630.png</code></li>
-          <li><code>04-backgrounds-widgets-20260630.png</code></li>
-          <li><code>05-restore-timeline-20260630.png</code></li>
-          <li><code>06-save-open-tabs-20260630.png</code></li>
-          <li><code>07-command-palette-20260630.png</code></li>
-        </ol>
-        <h2>Source documents</h2>
-        <ul>
-          <li>Screenshot plan: <code>../../SCREENSHOTS.md</code></li>
-          <li>Demo data: <code>../../SCREENSHOT_DEMO_DATA.md</code></li>
-          <li>Screenshot gallery: <code>../../screenshot-gallery.html</code></li>
-        </ul>
-        <h2>Capture rules</h2>
-        <ul>
-          <li>Use current Aura Start 2.0.0 UI.</li>
-          <li>Do not use drawn mockups that differ from the real extension design.</li>
-          <li>Do not show personal data, OAuth tokens, email addresses, or browser profile details.</li>
-          <li>Do not use A Fine Start screenshots or logos.</li>
-          <li>Do not claim Chrome Web Store or Firefox Add-ons availability before the listing is live.</li>
-        </ul>
-      </main>
+<div class="kicker">Aura Start Docs · 2.1.0</div>
+<h1 id="store-asset-checklist">Store Asset Checklist</h1>
+<blockquote>
+<p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
+</blockquote>
+<p>This folder tracks the Chrome Web Store, Firefox Add-ons, and public site screenshot set. The final store PNG files are captured from the real Aura Start 2.1.0 UI and stored in <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code>, with public site copies in <code>docs/assets/screenshots/</code>.</p>
+<p>The public site uses the <code>*-20261004.png</code> screenshot copies to avoid stale cached images after the 2.1.0 documentation refresh.</p>
+<p>Store filenames:</p>
+<ol>
+<li><code>01-new-tab-overview-1280x800.png</code></li>
+<li><code>02-search-mode-1280x800.png</code></li>
+<li><code>03-import-export-1280x800.png</code></li>
+<li><code>04-settings-1280x800.png</code></li>
+<li><code>05-restore-points-1280x800.png</code></li>
+</ol>
+<p>Public site filenames:</p>
+<ol>
+<li><code>01-new-tab-overview-20261004.png</code></li>
+<li><code>02-fuzzy-search-20261004.png</code></li>
+<li><code>03-import-export-20261004.png</code></li>
+<li><code>04-backgrounds-widgets-20261004.png</code></li>
+<li><code>05-restore-timeline-20261004.png</code></li>
+<li><code>06-save-open-tabs-20261004.png</code></li>
+<li>
+<p><code>07-command-palette-20261004.png</code></p>
+</li>
+<li>
+<p><code>08-countdown-20261004.png</code></p>
+</li>
+</ol>
+<p>The capture script uses a local preview, synthetic storage/tabs, and an isolated temporary Chrome profile. Drive is disconnected; these images do not establish OAuth or native permission behavior. Promotional composites in <code>Chrome Submit/Promo/</code> are generated separately from the same refreshed screenshots.</p>
+<p>Source documents:</p>
+<ul>
+<li>Screenshot plan: <a href="screenshots.html">Screenshot plan</a></li>
+<li>Demo data: <a href="screenshot-demo-data.html">Demo data</a></li>
+<li>Screenshot gallery: <a href="screenshot-gallery.html">Gallery</a></li>
+</ul>
+<p>Capture rules:</p>
+<ul>
+<li>Use current Aura Start 2.1.0 UI.</li>
+<li>Do not use drawn mockups that differ from the real extension design.</li>
+<li>Do not show personal data, OAuth tokens, email addresses, or browser profile details.</li>
+<li>Do not use A Fine Start screenshots or logos.</li>
+<li>Do not claim Chrome Web Store or Firefox Add-ons availability before the listing is live.</li>
+</ul>
+</main>
       <footer class="site-footer">
-        <p>Aura Start is independent and open-source under the MIT License.</p>
+        <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="index.html">Home</a>
           <a href="documentation.html">Documentation</a>

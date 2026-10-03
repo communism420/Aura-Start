@@ -1,15 +1,26 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 const root = process.cwd();
 const photoDir = join(root, "Chrome Submit", "Photo");
 const outputDir = join(root, "Chrome Submit", "Promo");
 const runId = `${Date.now()}-${process.pid}`;
-const tempDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-assets-${runId}`);
-const profileDir = join(process.env.TEMP ?? process.env.TMP ?? root, `aura-start-promo-profile-${runId}`);
+const tempDir = join(tmpdir(), `aura-start-promo-assets-${runId}`);
+const profileDir = join(tmpdir(), `aura-start-promo-profile-${runId}`);
 const debugPort = 9251;
+
+async function removeOwnedTemporaryDirectory(target) {
+  const resolved = resolve(target);
+  if (![tempDir, profileDir].map((value) => resolve(value)).includes(resolved)
+      || dirname(resolved) !== resolve(tmpdir())
+      || !basename(resolved).startsWith("aura-start-promo-")) {
+    throw new Error("Refusing to remove an unowned temporary directory.");
+  }
+  await rm(resolved, { recursive: true, force: true });
+}
 
 const assets = {
   logo: join(root, "public", "logo.png"),
@@ -589,8 +600,6 @@ async function main() {
   }
 
   await mkdir(outputDir, { recursive: true });
-  await rm(tempDir, { recursive: true, force: true });
-  await rm(profileDir, { recursive: true, force: true });
   await mkdir(tempDir, { recursive: true });
 
   const images = {
@@ -608,7 +617,7 @@ async function main() {
     "--no-first-run",
     "--no-default-browser-check",
     "about:blank"
-  ], { stdio: "ignore" });
+  ], { stdio: "ignore", windowsHide: true });
 
   let browser;
   let page;
@@ -628,8 +637,8 @@ async function main() {
     page?.close();
     browser?.close();
     await stopChild(chrome);
-    await rm(tempDir, { recursive: true, force: true }).catch(() => undefined);
-    await rm(profileDir, { recursive: true, force: true }).catch(() => undefined);
+    await removeOwnedTemporaryDirectory(tempDir).catch(() => undefined);
+    await removeOwnedTemporaryDirectory(profileDir).catch(() => undefined);
   }
 }
 

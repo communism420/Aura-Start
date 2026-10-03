@@ -1,10 +1,5 @@
 import { DATA_VERSION, DEFAULT_SETTINGS, MAX_RESTORE_POINTS } from "../constants";
 import type {
-  AuraBackgroundPosition,
-  AuraBackgroundPreset,
-  AuraColumns,
-  AuraLanguage,
-  AuraPomodoroSettings,
   AuraRestorePointContext,
   AuraRestorePointEntity,
   AuraRestorePoint,
@@ -15,15 +10,16 @@ import type {
   AuraStartDataWithoutRestorePoints,
   AuraStartGroup,
   AuraStartLink,
-  AuraStartSettings,
-  AuraTheme,
-  AuraWidgetSettings
+  AuraStartSettings
 } from "../types";
-import { isAuraLanguage } from "../i18n";
 import { nowIso } from "./dates";
 import { groupsInTreeOrder, normalizeGroupOrders } from "./groupTree";
 import { createId } from "./ids";
 import { normalizeUrl } from "./validators";
+import { ensureSyncReplica, normalizeSyncReplica } from "./syncReplica";
+import { registerBackgroundImageBackup } from "./backgroundImageBackup";
+import { registerTimerSoundBackup } from "./timerSoundBackup";
+import { materializeSharedSettings, normalizeSharedSettings, projectSharedSettings } from "./settingsSchema";
 
 type RecordValue = Record<string, unknown>;
 
@@ -55,11 +51,6 @@ function asBoolean(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
 }
 
-function clampNumber(value: unknown, fallback: number, min: number, max: number): number {
-  const number = typeof value === "number" && Number.isFinite(value) ? value : fallback;
-  return Math.min(max, Math.max(min, number));
-}
-
 function normalizeIso(value: unknown, fallback = nowIso()): string {
   if (typeof value !== "string") {
     return fallback;
@@ -78,64 +69,9 @@ function normalizeOptionalIso(value: unknown): string | undefined {
   return Number.isFinite(time) ? new Date(time).toISOString() : undefined;
 }
 
-function normalizeTheme(value: unknown): AuraTheme {
-  return value === "light" || value === "dark" || value === "system" ? value : DEFAULT_SETTINGS.theme;
-}
-
-function normalizeLanguage(value: unknown): AuraLanguage {
-  return isAuraLanguage(value) ? value : DEFAULT_SETTINGS.language;
-}
-
-function normalizeColumns(value: unknown): AuraColumns {
-  if (value === "auto" || value === 1 || value === 2 || value === 3 || value === 4 || value === 5 || value === 6) {
-    return value;
-  }
-
-  return DEFAULT_SETTINGS.columns;
-}
-
 function normalizeSyncMode(value: unknown): AuraSyncMode {
   if (value === "manual") return "auto";
   return value === "auto" || value === "off" ? value : "off";
-}
-
-function normalizeBackgroundPreset(value: unknown): AuraBackgroundPreset {
-  return value === "none" || value === "aurora" || value === "dawn" || value === "forest" || value === "custom"
-    ? value
-    : DEFAULT_SETTINGS.background.preset;
-}
-
-function normalizeBackgroundPosition(value: unknown): AuraBackgroundPosition {
-  return value === "center" || value === "top" || value === "bottom" || value === "left" || value === "right"
-    ? value
-    : DEFAULT_SETTINGS.background.position;
-}
-
-function normalizeBackgroundSettings(value: unknown): AuraStartSettings["background"] {
-  const background = isRecord(value) ? value : {};
-  return {
-    preset: normalizeBackgroundPreset(background.preset),
-    blur: clampNumber(background.blur, DEFAULT_SETTINGS.background.blur, 0, 18),
-    dim: clampNumber(background.dim, DEFAULT_SETTINGS.background.dim, 0, 80),
-    position: normalizeBackgroundPosition(background.position)
-  };
-}
-
-function normalizeWidgetSettings(value: unknown): AuraWidgetSettings {
-  const widgets = isRecord(value) ? value : {};
-  return {
-    clock: asBoolean(widgets.clock, DEFAULT_SETTINGS.widgets.clock),
-    notes: asBoolean(widgets.notes, DEFAULT_SETTINGS.widgets.notes),
-    pomodoro: asBoolean(widgets.pomodoro, DEFAULT_SETTINGS.widgets.pomodoro)
-  };
-}
-
-function normalizePomodoroSettings(value: unknown): AuraPomodoroSettings {
-  const pomodoro = isRecord(value) ? value : {};
-  return {
-    focusMinutes: Math.round(clampNumber(pomodoro.focusMinutes, DEFAULT_SETTINGS.pomodoro.focusMinutes, 5, 90)),
-    breakMinutes: Math.round(clampNumber(pomodoro.breakMinutes, DEFAULT_SETTINGS.pomodoro.breakMinutes, 1, 30))
-  };
 }
 
 function optionalTrimmedString(value: unknown): string | undefined {
@@ -150,6 +86,7 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
   return {
     mode,
     deviceId,
+    connectionId: optionalTrimmedString(sync.connectionId),
     lastSyncedAt: normalizeOptionalIso(sync.lastSyncedAt),
     lastSyncedLocalUpdatedAt: normalizeOptionalIso(sync.lastSyncedLocalUpdatedAt),
     lastCloudUpdatedAt: normalizeOptionalIso(sync.lastCloudUpdatedAt),
@@ -157,35 +94,23 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     accountName: optionalTrimmedString(sync.accountName),
     accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
-    connected: mode !== "off" && asBoolean(sync.connected, false),
-    reconnectRequired: mode !== "off" && asBoolean(sync.connected, false) && asBoolean(sync.reconnectRequired, false),
+    // Pausing network activity is independent of retaining the account for a
+    // deletion retry or an explicit reconnect after a cloud copy was removed.
+    connected: asBoolean(sync.connected, false),
+    reconnectRequired: asBoolean(sync.connected, false) && asBoolean(sync.reconnectRequired, false),
+    ...(sync.lastDeletionLegacyUnchecked === true ? { lastDeletionLegacyUnchecked: true } : {}),
     deleteCloudFileOnDisconnect: asBoolean(sync.deleteCloudFileOnDisconnect, DEFAULT_SETTINGS.sync.deleteCloudFileOnDisconnect)
   };
 }
 
-function normalizeSettings(value: unknown): AuraStartSettings {
-  if (!isRecord(value)) {
-    return {
-      ...DEFAULT_SETTINGS,
-      sync: normalizeSyncSettings(undefined)
-    };
-  }
-
+function normalizeSettings(value: unknown, normalized: AuraStartSettings): AuraStartSettings {
+  const source = isRecord(value) ? value : {};
   return {
-    theme: normalizeTheme(value.theme),
-    language: normalizeLanguage(value.language),
-    columns: normalizeColumns(value.columns),
-    compactMode: asBoolean(value.compactMode, DEFAULT_SETTINGS.compactMode),
-    openLinksInNewTab: asBoolean(value.openLinksInNewTab, DEFAULT_SETTINGS.openLinksInNewTab),
-    showDescriptions: asBoolean(value.showDescriptions, DEFAULT_SETTINGS.showDescriptions),
-    showSearch: asBoolean(value.showSearch, DEFAULT_SETTINGS.showSearch),
-    showVersionInHeader: asBoolean(value.showVersionInHeader, DEFAULT_SETTINGS.showVersionInHeader),
-    captureOpenTabs: asBoolean(value.captureOpenTabs, DEFAULT_SETTINGS.captureOpenTabs),
-    background: normalizeBackgroundSettings(value.background),
-    widgets: normalizeWidgetSettings(value.widgets),
-    pomodoro: normalizePomodoroSettings(value.pomodoro),
-    autoRestorePoints: asBoolean(value.autoRestorePoints, DEFAULT_SETTINGS.autoRestorePoints),
-    sync: normalizeSyncSettings(value.sync)
+    ...normalized,
+    sync: {
+      ...normalizeSyncSettings(source.sync),
+      deleteCloudFileOnDisconnect: normalized.sync.deleteCloudFileOnDisconnect
+    }
   };
 }
 
@@ -305,11 +230,13 @@ function normalizeCoreData(value: unknown): AuraStartDataWithoutRestorePoints {
   const orderedGroups = normalizeGroupParentReferences(groups, rawGroupIdMap)
     .slice()
     .sort((a, b) => a.order - b.order);
+  const normalizedSettings = normalizeSharedSettings(value.settings, value.settingsCompatibility);
 
   return {
     version: DATA_VERSION,
     updatedAt: normalizeIso(value.updatedAt),
-    settings: normalizeSettings(value.settings),
+    settings: normalizeSettings(value.settings, normalizedSettings.settings),
+    settingsCompatibility: normalizedSettings.settingsCompatibility,
     groups: groupsInTreeOrder(normalizeGroupOrders(orderedGroups))
   };
 }
@@ -398,6 +325,43 @@ function normalizeRestorePoint(value: unknown): AuraRestorePoint | undefined {
 
 export function validateAuraData(value: unknown): AuraStartData {
   const core = normalizeCoreData(value);
+  const syncReplica = isRecord(value) ? normalizeSyncReplica(value.syncReplica, core) : undefined;
+  if (isRecord(value) && value.syncReplica !== undefined && !syncReplica) {
+    throw new Error("Sync replica metadata is invalid. Export the original data before resetting it.");
+  }
+  if (syncReplica) {
+    const projected = projectSharedSettings(core);
+    const defaulted = new Set(core.settingsCompatibility!.defaulted);
+    let hydratedMissing = false;
+    for (const [path, register] of Object.entries(syncReplica.settings)) {
+      const defaultRegister = register.stamp.counter === 0 && register.stamp.deviceId === "settings-default";
+      // History can know a preference which is absent from an older/partial
+      // settings document. Recover it before UI rendering, not on a later poll.
+      // Existing non-defaulted UI values remain local edit candidates.
+      if (!Object.hasOwn(projected, path) || (defaulted.has(path) && !defaultRegister)) {
+        projected[path] = register.value;
+        if (defaultRegister) defaulted.add(path);
+        else defaulted.delete(path);
+        hydratedMissing = true;
+      }
+    }
+    if (hydratedMissing) Object.assign(core, materializeSharedSettings(core, projected, [...defaulted]));
+  }
+  if (syncReplica && isRecord(value) && value.settingsCompatibility === undefined) {
+    // Older forward-compatible files may carry a future enum only in causal
+    // history. Hydrate its opaque value without applying stale history over a
+    // caller's ordinary UI edits. Explicit metadata can intentionally clear it.
+    const fromHistory = materializeSharedSettings(core,
+      Object.fromEntries(Object.entries(syncReplica.settings).map(([path, register]) => [path, register.value])),
+      Object.entries(syncReplica.settings).filter(([, register]) => register.stamp.counter === 0
+        && register.stamp.deviceId === "settings-default").map(([path]) => path));
+    const hydrated = normalizeSharedSettings(core.settings, {
+      version: 1,
+      defaulted: [...new Set([...core.settingsCompatibility!.defaulted, ...fromHistory.settingsCompatibility.defaulted])],
+      preserved: { ...fromHistory.settingsCompatibility.preserved, ...core.settingsCompatibility!.preserved }
+    });
+    core.settingsCompatibility = hydrated.settingsCompatibility;
+  }
   const restorePoints =
     isRecord(value) && Array.isArray(value.restorePoints)
       ? value.restorePoints
@@ -406,10 +370,14 @@ export function validateAuraData(value: unknown): AuraStartData {
           .slice(0, MAX_RESTORE_POINTS)
       : [];
 
-  return {
+  const data: AuraStartData = {
     ...core,
+    ...(syncReplica ? { syncReplica } : {}),
     restorePoints
   };
+  // Capture absence before normalized defaults are durably written. Future
+  // reads and cloud merges can then distinguish migration from user intent.
+  return { ...data, syncReplica: syncReplica ?? ensureSyncReplica(data) };
 }
 
 export function parseJsonBackup(text: string): AuraStartData {
@@ -420,7 +388,10 @@ export function parseJsonBackup(text: string): AuraStartData {
     throw new Error("The selected file is not valid JSON.");
   }
 
-  return validateAuraData(parsed);
+  const data = validateAuraData(parsed);
+  registerBackgroundImageBackup(data, isRecord(parsed) ? parsed.backgroundImages : undefined);
+  registerTimerSoundBackup(data, isRecord(parsed) ? parsed.timerSounds : undefined);
+  return data;
 }
 
 export function mergeImportedData(current: AuraStartData, imported: AuraStartData): AuraStartData {

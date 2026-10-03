@@ -28,17 +28,19 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">User guide</span>
+        <span class="kicker">Aura Start 2.1.0 user guide</span>
         <h1>Restore Timeline</h1>
         <p>
           Restore points are local safety snapshots. Restore Timeline turns them into
-          a searchable history of important changes.
+          a searchable history of important changes, including saved notes and settings.
+          They stay in this browser profile and are not part of the Google Drive shared file.
         </p>
 
         <h2>When restore points are useful</h2>
         <ul>
           <li>Before replacing data during import.</li>
-          <li>Before restoring from Google Drive during connection.</li>
+          <li>Before applying content changes received from Google Drive, including during connection.</li>
+          <li>Before deleting links or groups.</li>
           <li>Before moving or reordering groups and links where supported.</li>
           <li>Before saving open tabs into a new group.</li>
           <li>Before reset or destructive cleanup actions where supported.</li>
@@ -49,11 +51,19 @@
         <p>
           Restore Timeline groups snapshots by day, shows readable reasons and
           context, and includes search and action filters. You can restore a snapshot
-          after confirmation or export a restore point as a JSON backup.
+          after confirmation or export it as a ZIP backup with the media referenced by that snapshot.
+        </p>
+        <p>
+          An individually exported point includes its background files and selected original
+          Countdown sound. A Full Backup ZIP includes the timeline and referenced backgrounds,
+          but only the current main snapshot's original Countdown sound. Other historical
+          audio choices are omitted neutrally; restoring them keeps the receiving profile's
+          current sound or built-in default. Settings and links only (JSON) keeps history
+          without media bytes. See <a href="export-backup.html">Export / Backup</a>.
         </p>
         <p>
           Aura Start keeps up to 20 local restore points. The cap prevents unbounded
-          growth in extension storage; use Full Backup JSON exports for long-term
+          growth in extension storage; use Full Backup ZIP exports for long-term
           backup history outside the browser profile.
         </p>
 
@@ -62,12 +72,16 @@
           Restoring changes your current local Aura Start data. Aura Start creates a
           new restore point for the current state before restore where possible, so
           you have a way back if the restored snapshot is not the one you wanted.
+          Restoring retains this installation's current Google Drive connection. When
+          connected automatic sync is enabled, the resulting changes also reach other
+          connected devices. A Restore Point is not a backup of Google credentials or
+          the active running countdown.
         </p>
 
         <h2>Good habits</h2>
         <p>
           Restore points are helpful, but they are still local browser data. Keep a
-          Full Backup JSON file somewhere safe before very large changes.
+          Full Backup ZIP file somewhere safe before very large changes.
         </p>
       </main>
 

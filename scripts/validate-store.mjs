@@ -1,6 +1,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { resolveExtensionVersion } from "./extension-versions.mjs";
+import { validateAudioDecoderBuild } from "./validate-audio-decoder.mjs";
 
 const root = process.cwd();
 const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
@@ -22,7 +23,7 @@ const requiredFiles = [
   "_locales/pt_BR/messages.json"
 ];
 
-const allowedPermissions = new Set(["storage", "identity"]);
+const allowedPermissions = new Set(["storage", "identity", "alarms"]);
 const allowedOptionalPermissions = new Set(["tabs"]);
 const allowedHostPermissions = new Set([
   "https://www.googleapis.com/*",
@@ -229,11 +230,11 @@ if (await exists(manifestPath)) {
   } else if (!oauthClientIdPattern.test(oauthClientId)) {
     fail("oauth2.client_id must be a Google OAuth Client ID ending with .apps.googleusercontent.com.");
   }
-  if (oauthScopes.length !== 1 || oauthScopes[0] !== "https://www.googleapis.com/auth/drive.appdata") {
-    fail("Google Drive sync must request only the drive.appdata OAuth scope.");
+  if (oauthScopes.length !== 2 || !oauthScopes.includes("https://www.googleapis.com/auth/drive.appdata") || !oauthScopes.includes("https://www.googleapis.com/auth/drive.file")) {
+    fail("Google Drive sync must request exactly drive.appdata for legacy migration and drive.file for shared sync files.");
   }
-  if (oauthScopes.includes("https://www.googleapis.com/auth/drive") || oauthScopes.includes("https://www.googleapis.com/auth/drive.file")) {
-    fail("Do not request full Google Drive or drive.file OAuth scopes in manifest.oauth2.");
+  if (oauthScopes.includes("https://www.googleapis.com/auth/drive")) {
+    fail("Do not request full Google Drive access in manifest.oauth2.");
   }
 
   const csp = manifest.content_security_policy?.extension_pages ?? "";
@@ -243,6 +244,7 @@ if (await exists(manifestPath)) {
   if (!csp.includes("object-src 'none'")) {
     fail("content_security_policy.extension_pages must block object sources.");
   }
+  for (const message of await validateAudioDecoderBuild(dist, manifest)) fail(message);
 }
 
 const codeFiles = (await walk(dist)).filter((file) => /\.(html|js|css|json)$/i.test(file));
@@ -274,6 +276,7 @@ const benignUrlFragments = [
   "developer.chrome.com",
   "news.ycombinator.com",
   "developer.mozilla.org",
+  "https://emscripten.org/docs/compiling/Dynamic-Linking.html",
   "web.dev",
   "wikipedia.org"
 ];

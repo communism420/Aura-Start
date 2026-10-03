@@ -1,6 +1,10 @@
-import { UI_STATE_STORAGE_KEY } from "../constants";
+import { MAX_WIDGET_NOTES_CHARS, STORAGE_KEY, UI_STATE_STORAGE_KEY } from "../constants";
 import { getExtensionStorageArea } from "./browserApi";
+import { isBackgroundImageId, normalizeCustomBackgroundImage } from "./backgroundImageStorage";
 import { isSearchQuickFilter, type SearchQuickFilter } from "./search";
+import { withStorageLock } from "./storage";
+
+export { normalizeCustomBackgroundImage } from "./backgroundImageStorage";
 
 export type DemoDataMarker = {
   groupIds: string[];
@@ -29,9 +33,6 @@ const DEFAULT_UI_STATE: AuraUiState = {
   customBackgroundImage: null,
   widgetNotes: ""
 };
-
-const MAX_CUSTOM_BACKGROUND_IMAGE_CHARS = 2_500_000;
-const MAX_WIDGET_NOTES_CHARS = 12_000;
 
 function localGet(key: string): unknown {
   const value = localStorage.getItem(key);
@@ -65,18 +66,6 @@ function normalizeDemoData(value: unknown): DemoDataMarker {
   };
 }
 
-function normalizeCustomBackgroundImage(value: unknown): string | null {
-  if (typeof value !== "string" || !value.trim()) {
-    return null;
-  }
-
-  if (value.length > MAX_CUSTOM_BACKGROUND_IMAGE_CHARS) {
-    return null;
-  }
-
-  return /^data:image\/(?:png|jpe?g|webp|gif|svg\+xml);/i.test(value) ? value : null;
-}
-
 function normalizeUiState(value: unknown): AuraUiState {
   if (!isRecord(value)) {
     return DEFAULT_UI_STATE;
@@ -103,11 +92,23 @@ export async function loadAuraUiState(): Promise<AuraUiState> {
 }
 
 export async function saveAuraUiState(state: AuraUiState): Promise<void> {
-  const normalized = normalizeUiState(state);
-  const storage = getExtensionStorageArea("local");
-  if (storage) {
-    await storage.set({ [UI_STATE_STORAGE_KEY]: normalized });
-  } else {
-    localSet(UI_STATE_STORAGE_KEY, normalized);
-  }
+  await withStorageLock(async () => {
+    const normalized = normalizeUiState(state);
+    const storage = getExtensionStorageArea("local");
+    const main = storage ? (await storage.get(STORAGE_KEY))[STORAGE_KEY] : localGet(STORAGE_KEY);
+    const current = storage ? (await storage.get(UI_STATE_STORAGE_KEY))[UI_STATE_STORAGE_KEY] : localGet(UI_STATE_STORAGE_KEY);
+    const settings = isRecord(main) && isRecord(main.settings) ? main.settings : undefined;
+    const background = settings && isRecord(settings.background) ? settings.background : undefined;
+    normalized.customBackgroundImage = background?.customImageId === null || isBackgroundImageId(background?.customImageId)
+      ? null
+      : (isRecord(current) ? normalizeCustomBackgroundImage(current.customBackgroundImage) : null) ?? normalized.customBackgroundImage;
+    const currentNotes = isRecord(current) && typeof current.widgetNotes === "string" ? current.widgetNotes.slice(0, MAX_WIDGET_NOTES_CHARS) : "";
+    const notes = settings && isRecord(settings.notes) ? settings.notes : undefined;
+    // A legacy copy is cleared by migration only after its shared value and
+    // recovery snapshot are durable. Stale UI writes must neither erase that
+    // last copy before migration nor resurrect it once the shared field exists.
+    normalized.widgetNotes = currentNotes || (typeof notes?.text === "string" ? "" : normalized.widgetNotes);
+    if (storage) await storage.set({ [UI_STATE_STORAGE_KEY]: normalized });
+    else localSet(UI_STATE_STORAGE_KEY, normalized);
+  });
 }

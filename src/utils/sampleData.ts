@@ -3,6 +3,7 @@ import { isAuraLanguage } from "../i18n";
 import type { AuraLanguage, AuraStartData } from "../types";
 import { nowIso } from "./dates";
 import { createId } from "./ids";
+import { SHARED_SETTING_PATHS } from "./settingsSchema";
 
 function detectDefaultLanguage(): AuraLanguage {
   if (typeof navigator === "undefined") {
@@ -24,8 +25,9 @@ export function createEmptyData(): AuraStartData {
   return {
     version: DATA_VERSION,
     updatedAt: nowIso(),
+    settingsCompatibility: { version: 1, defaulted: [...SHARED_SETTING_PATHS], preserved: {} },
     settings: {
-      ...DEFAULT_SETTINGS,
+      ...structuredClone(DEFAULT_SETTINGS),
       language: detectDefaultLanguage(),
       sync: {
         ...DEFAULT_SETTINGS.sync,
