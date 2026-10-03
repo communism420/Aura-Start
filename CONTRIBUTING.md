@@ -2,6 +2,12 @@
 
 Aura Start's application source uses the MIT License. Bundled third-party components retain their own licenses and notices. Contributions, forks, audits, and local modifications are welcome.
 
+## Contributions And Store Releases
+
+Anyone with the skills to improve Aura Start is welcome to contribute changes through pull requests.
+
+Official Aura Start releases and updates in the Chrome Web Store and Firefox Add-ons are published exclusively by the project owner, [communism420](https://github.com/communism420).
+
 ## Project Principles
 
 - Keep Aura Start local-first.
