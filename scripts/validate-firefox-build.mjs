@@ -118,6 +118,18 @@ function validateManifest(manifest, sourceLabel) {
     fail(`${sourceLabel}: Firefox manifest must not contain Chrome-only oauth2.`);
   }
 
+  if (manifest.chrome_url_overrides?.newtab !== "newtab.html") {
+    fail(`${sourceLabel}: chrome_url_overrides.newtab must point to newtab.html.`);
+  }
+
+  if (manifest.chrome_settings_overrides?.homepage !== "newtab.html") {
+    fail(`${sourceLabel}: chrome_settings_overrides.homepage must point to newtab.html for Firefox home and new windows.`);
+  }
+
+  if (Object.keys(manifest.chrome_settings_overrides ?? {}).some((key) => key !== "homepage")) {
+    fail(`${sourceLabel}: Firefox settings overrides must only change the homepage.`);
+  }
+
   if ((manifest.permissions ?? []).includes("identity")) {
     fail(`${sourceLabel}: Firefox manifest must not request Chrome-only identity permission.`);
   }

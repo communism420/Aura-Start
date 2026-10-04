@@ -49,4 +49,4 @@ For manual captures, use an isolated test browser profile and equivalent public/
 
 Review every image before uploading. Check readability, scene framing, the visible release version where present, and the absence of account information, local paths, or browser profile data. If an application change breaks automated navigation, update the capture script to use the new real controls; do not draw substitute controls or edit product text into the image.
 
-New automated captures are stored as separate runs under the ignored Chrome and Firefox submission folders. The public website's October 4, 2026 gallery and older local `Photo` artwork are historical captures, maintained separately.
+New automated captures are stored as separate runs under the ignored Chrome and Firefox submission folders. The current website gallery uses reviewed copies from the October 4, 2026 Aura Start 2.1.1 run, with versioned filenames and a public capture record. Website copies are maintained separately; older 2.1.0 public images and local `Photo` artwork remain historical captures.

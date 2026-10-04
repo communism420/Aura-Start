@@ -28,11 +28,12 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.0 user guide</span>
+        <span class="kicker">Aura Start 2.1.1 user guide</span>
         <h1>Export / Backup</h1>
         <p>
           Aura Start is export-first. Exports are created locally in your browser and
-          are not uploaded to an Aura Start server.
+          are not uploaded to an Aura Start server. Open Export in the header for the
+          backup menu, or use the import and export section of Settings.
         </p>
 
         <h2>Available formats</h2>
@@ -64,8 +65,9 @@
         <p>
           The archive includes <code>aura-start.json</code>, an asset manifest, and the referenced
           media files. It contains no Google sign-in tokens and does not transfer an active
-          running timer. ZIP processing runs in a packaged local worker. The archive limit
-          is 256 MiB; reaching a limit or finding an unavailable required file reports an
+          running timer. ZIP processing runs in a packaged local worker. Archives and their
+          expanded contents are limited to 256 MiB, with at most 128 entries and a 64 MiB
+          settings document; reaching a limit or finding an unavailable required file reports an
           error instead of silently dropping backup contents.
         </p>
         <p>
@@ -77,8 +79,13 @@
           before local data changes.
         </p>
         <p>
-          The import preview lets you merge with current data or replace it. Aura Start
-          makes a local restore point before applying the import. If connected automatic
+          The import preview lets you merge with current data or replace it. Merge adds
+          groups and links, resolving ID collisions while retaining current preferences,
+          notes, and Restore Timeline. Duplicate URLs can remain; use Duplicate Finder
+          afterward if needed. Replace applies the backup's groups, settings, notes, and
+          included history, retaining a safety snapshot of your current state and this
+          installation's Drive connection. Choose Replace to restore a complete setup.
+          Aura Start makes a local restore point before either import mode. If connected automatic
           sync is enabled, changes from the import are shared with the other connected devices.
           Downloaded ZIP and JSON files are not encrypted by Aura Start; they contain
           the exported links and notes as readable data.
@@ -111,9 +118,10 @@
 
         <h2>A Fine Start-compatible export</h2>
         <p>
-          The compatibility format is intentionally basic. It can preserve grouped link
-          names and URLs, but Aura Start-specific fields such as descriptions and tags
-          may not be included if the compatibility format does not support them.
+          The compatibility format contains group names and bookmark names and URLs.
+          Nested groups become separate groups named with their parent path. It does
+          not include descriptions, tags, settings, notes, background images, or audio.
+          It is for moving a link collection, not restoring an Aura Start setup.
         </p>
 
         <h2>Empty or partial data</h2>

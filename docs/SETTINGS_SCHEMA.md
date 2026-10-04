@@ -1,12 +1,12 @@
 # Settings Schema And Upgrade Compatibility
 
-Reviewed against Aura Start 2.1.0 on October 4, 2026.
+Reviewed against Aura Start 2.1.1 on October 4, 2026.
 
-Aura Start 2.1.0 migrates settings when reading local data, Google Drive snapshots, Full Backup ZIP, JSON backups, and Restore Point data. A new option receives a default without replacing valid choices already saved for other options. The extension version is not the storage schema version: additive settings changes keep `DATA_VERSION = 1` and the `aura-start-data-v1` storage key.
+Aura Start 2.1.1 migrates settings when reading local data, Google Drive snapshots, Full Backup ZIP, JSON backups, and Restore Point data. A new option receives a default without replacing valid choices already saved for other options. The extension version is not the storage schema version: additive settings changes keep `DATA_VERSION = 1` and the `aura-start-data-v1` storage key.
 
 ## Current preference inventory
 
-These are the supported local UI values. Compatible future enum strings can also travel on the wire under the preservation rules below. The registry and types remain authoritative when changing this table.
+These are the supported application preference values; not every stored preference has a visible control. Compatible future enum strings can also travel on the wire under the preservation rules below. The registry and types remain authoritative when changing this table.
 
 | Shared path | Default | Supported values |
 | --- | --- | --- |
@@ -30,6 +30,14 @@ These are the supported local UI values. Compatible future enum strings can also
 | `sync.deleteCloudFileOnDisconnect` | `true` | Boolean |
 
 Google connection state and automatic synchronization default to disconnected and off. They are installation-local, even though the delete-on-disconnect preference is shared. Synchronizing a preference never authorizes Google access or grants a browser permission on another installation.
+
+`autoRestorePoints` is a stored compatibility preference, not a current Settings checkbox. It controls automatic snapshots for link/group moves and reorders. Required safety snapshots for destructive operations and manually created points have their own behavior; do not describe this field as an on/off switch for every Restore Point.
+
+## Browser-owned settings and permissions
+
+Firefox 2.1.1 packages declare the bundled `newtab.html` as both new-tab replacement and homepage. Firefox owns homepage approval, the Home button/new-window behavior, restoring the previous session, and the user's choice to change the homepage. These browser settings are not Aura Start shared preferences and are not exported, imported, or changed by Drive synchronization. Chromium packages declare only the new-tab replacement.
+
+Firefox's optional `browsingActivity` and `technicalAndInteraction` data-transmission choices, the optional `tabs` grant, and Google OAuth consent are separate local authorization decisions. No schema migration or incoming setting should be documented as transferring those grants. Firefox builds target version 142 or later. See [Privacy Policy](../PRIVACY.md) for the permission and data inventory.
 
 ## Shared settings registry
 

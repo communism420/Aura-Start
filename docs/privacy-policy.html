@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Privacy Policy for Aura Start, a local-first browser new tab extension with optional Google Drive sync."
+      content="Privacy Policy for Aura Start: local storage, optional Google Drive sync, media, backups, and browser permissions."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -42,7 +42,12 @@
             <p>
               Aura Start is a local-first browser extension. It replaces the new tab
               page with user-created groups of links and keeps those groups under the
-              user's control.
+              user's control. In Firefox, version 2.1.1 also provides the homepage
+              used by new windows and the Home button, subject to Firefox's user
+              controls. This uses a packaged local page and adds no browser permission
+              or data collection. It does not change the search engine or Firefox's
+              restore-previous-session preference; the homepage choice stays in this
+              browser and is not sent to Google Drive.
             </p>
             <p>
               Aura Start works without an account. Google Drive sync is optional, off by
@@ -52,10 +57,10 @@
 
           <h2>Scope</h2>
           <p>
-            This Privacy Policy applies to the Aura Start browser extension and the
-            data it handles while providing its new tab, settings, import, export,
-            Restore Timeline, Save open tabs, personalization, widgets including
-            Countdown, and optional Google Drive sync features.
+            This policy describes the Aura Start extension's start page, settings,
+            personalization, widgets, import/export, Restore Timeline, Save open tabs,
+            and optional Google Drive synchronization. Visiting the public documentation
+            website is separate from connecting the extension to Google Drive.
           </p>
 
           <h2>Data Aura Start Handles</h2>
@@ -111,7 +116,7 @@
           </p>
 
           <h2>Browser Permissions</h2>
-          <p>The current 2.1.0 packages declare these permissions:</p>
+          <p>The current 2.1.1 packages declare these permissions:</p>
           <div class="table-wrap">
             <table>
               <thead>
@@ -138,10 +143,12 @@
             <code>data_collection_permissions</code> declaration has required categories
             <code>["none"]</code> and optional categories
             <code>["browsingActivity", "technicalAndInteraction"]</code>.
-            These are Firefox's transmission categories for optional sync of saved links
-            and settings, not telemetry or browser-history access. Aura Start requests
+            These are Firefox's transmission categories for optional sync, not telemetry
+            or browser-history access. Shared content includes notes and selected
+            background/audio files as well as saved links and settings, as detailed below.
+            Aura Start requests
             the optional categories during interactive Drive connection, separately from
-            Google's account authorization.
+            Google's account authorization and optional tab access.
           </p>
 
           <h2>Local Storage</h2>
@@ -184,7 +191,7 @@
             for access to legacy hidden backups during migration and confirmed deletion.
           </p>
           <p>
-            The latest 2.1.0 builds use one shared <code>aura-start-sync.json</code> in
+            The latest 2.1.1 builds use one shared <code>aura-start-sync.json</code> in
             normal Drive storage, marked with Aura Start app properties and visible in
             Google Drive. All updated installations connected to the same account read
             and update it. Accessible older copies, including authorized hidden backups,
@@ -285,7 +292,9 @@
             extension profile.
           </p>
           <p>
-            The confirmed delete-backup-and-disconnect action pauses sync and permanently
+            The Delete Drive backup when disconnecting preference is on by default, but
+            deletion requires a separate confirmation. Turn it off to disconnect while
+            retaining cloud files. The confirmed delete-backup-and-disconnect action pauses sync and permanently
             removes matching Aura Start snapshots from normal Drive, including old 2.0.5 files,
             renamed app-marked files and copies in Trash. Hidden legacy <code>appDataFolder</code>
             backups are included only when access is already available. These snapshots contain
@@ -408,10 +417,12 @@
 
           <h2>Data Sharing and Sale</h2>
           <p>
-            Aura Start does not sell user data. Aura Start does not rent, trade, share,
-            disclose, or transfer user-created groups, links, settings, restore points,
-            imports, or exports to third parties, except for sending data to Google
-            Drive API when the user enables or uses Google Drive sync.
+            Aura Start does not sell, rent, or trade user data. It does not disclose
+            user-created content to the developer or send it to third parties, except
+            for the Google authorization and Drive requests described above when the
+            user enables or uses Google Drive sync. Opening a saved link or external
+            help page is a normal navigation to the chosen website, subject to that
+            website's practices.
           </p>
 
           <h2>Chrome Web Store Limited Use Statement</h2>
@@ -421,7 +432,7 @@
             Use requirements where applicable. Aura Start uses extension storage,
             optional runtime tabs access, and optional Google Drive sync scopes only to
             provide its single user-facing purpose: a private, exportable,
-            user-controlled new tab start page with optional backup/sync.
+            user-controlled start page with optional backup/sync.
           </p>
           <p>
             Aura Start does not sell user data and does not use user data for
@@ -475,7 +486,7 @@
       </main>
 
       <footer class="site-footer">
-        <p>Aura Start privacy policy for users of the extension and public website.</p>
+        <p>Aura Start privacy policy for the extension and its optional synchronization.</p>
         <div class="footer-links" aria-label="Footer links">
           <a href="index.html">Home</a>
           <a href="documentation.html">Documentation</a>

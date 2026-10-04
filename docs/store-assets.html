@@ -21,37 +21,31 @@
         </nav>
       </header>
       <main class="doc">
-<div class="kicker">Aura Start Docs · 2.1.0</div>
+<div class="kicker">Aura Start Docs · 2.1.1</div>
 <h1 id="store-asset-checklist">Store Asset Checklist</h1>
 <blockquote>
 <p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
 </blockquote>
-<p>This folder tracks the Chrome Web Store, Firefox Add-ons, and public site screenshot set. The final store PNG files are captured from the real Aura Start 2.1.0 UI and stored in <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code>, with public site copies in <code>docs/assets/screenshots/</code>.</p>
-<p>The public site uses the <code>*-20261004.png</code> screenshot copies to avoid stale cached images after the 2.1.0 documentation refresh.</p>
+<p>Current gallery: <strong>Aura Start 2.1.1</strong>, captured on October 4, 2026 in Chrome 154 from a fresh source build. The five 1280 x 800 RGB PNGs show the real application with non-personal demo data and Drive disconnected. This is a local UI preview, not an authenticated Drive or native Firefox test.</p>
+<p>Run <code>npm run screenshots</code> to prepare new store images. Each run writes a separate <code>Chrome Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/</code> and <code>Firefox Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/</code> folder. Both contain the five shared screenshots; Chrome also receives 440 x 280 and 1400 x 560 promotional PNGs made with that run's real overview screenshot. These local submission folders stay outside Git. See the <a href="screenshots.html">capture guide</a>.</p>
+<p>The current public images are byte-for-byte copies of capture run <code>20261004T030628Z-10391764</code>. They use versioned filenames under <code>docs/assets/screenshots/</code> so the website does not serve cached older artwork. Their public <a href="assets/screenshots/capture-2-1-1-20261004.json">capture record</a> records the browser, version, source build fingerprint, and PNG hashes without local paths or credentials.</p>
 <p>Store filenames:</p>
 <ol>
-<li><code>01-new-tab-overview-1280x800.png</code></li>
-<li><code>02-search-mode-1280x800.png</code></li>
-<li><code>03-import-export-1280x800.png</code></li>
-<li><code>04-settings-1280x800.png</code></li>
-<li><code>05-restore-points-1280x800.png</code></li>
+<li><code>01-links-and-groups-1280x800.png</code></li>
+<li><code>02-notes-and-countdown-1280x800.png</code></li>
+<li><code>03-full-backup-zip-1280x800.png</code></li>
+<li><code>04-custom-timer-sound-1280x800.png</code></li>
+<li><code>05-google-drive-sync-1280x800.png</code></li>
 </ol>
 <p>Public site filenames:</p>
 <ol>
-<li><code>01-new-tab-overview-20261004.png</code></li>
-<li><code>02-fuzzy-search-20261004.png</code></li>
-<li><code>03-import-export-20261004.png</code></li>
-<li><code>04-backgrounds-widgets-20261004.png</code></li>
-<li><code>05-restore-timeline-20261004.png</code></li>
-<li><code>06-save-open-tabs-20261004.png</code></li>
-<li>
-<p><code>07-command-palette-20261004.png</code></p>
-</li>
-<li>
-<p><code>08-countdown-20261004.png</code></p>
-</li>
+<li><code>01-links-and-groups-2-1-1-20261004.png</code></li>
+<li><code>02-notes-and-countdown-2-1-1-20261004.png</code></li>
+<li><code>03-full-backup-zip-2-1-1-20261004.png</code></li>
+<li><code>04-custom-timer-sound-2-1-1-20261004.png</code></li>
+<li><code>05-google-drive-sync-2-1-1-20261004.png</code></li>
 </ol>
-<p>The capture script uses a local preview, synthetic storage/tabs, and an isolated temporary Chrome profile. Drive is disconnected; these images do not establish OAuth or native permission behavior. Promotional composites in <code>Chrome Submit/Promo/</code> are generated separately from the same refreshed screenshots.</p>
+<p>The website gallery and home page use these current images. Older public PNGs and local <code>Photo/</code>, <code>Screenshots 2.1.0/</code>, and <code>Promo/</code> folders are retained as historical artwork, not the current upload source. The screenshot command does not update website copies automatically; copy a reviewed run and update the gallery, captions, and capture record together.</p>
 <p>Source documents:</p>
 <ul>
 <li>Screenshot plan: <a href="screenshots.html">Screenshot plan</a></li>
@@ -60,7 +54,7 @@
 </ul>
 <p>Capture rules:</p>
 <ul>
-<li>Use current Aura Start 2.1.0 UI.</li>
+<li>Capture the current Aura Start version; older 2.1.0 images remain dated reference material.</li>
 <li>Do not use drawn mockups that differ from the real extension design.</li>
 <li>Do not show personal data, OAuth tokens, email addresses, or browser profile details.</li>
 <li>Do not use A Fine Start screenshots or logos.</li>

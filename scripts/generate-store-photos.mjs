@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { findBrowserPath, launchCaptureBrowser } from "./lib/screenshot-browser.mjs";
 import { createDemoChime, screenshotFixtureSource } from "./lib/screenshot-fixture.mjs";
+import { renderPromotionalImages } from "./lib/screenshot-promos.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -23,14 +24,16 @@ if (values.help) {
   npm run screenshots -- --headed
   npm run screenshots -- --dist dist-firefox
 
-Default: build current source into a temporary directory, then capture five PNGs.
+Default: build current source, capture five screenshots and two Chrome promotional images.
 --dist: explicitly reuse a built directory (its version must match package.json).
 --headed: show the otherwise headless browser, using an isolated temporary profile.
 Environment alternatives: AURA_SCREENSHOT_BROWSER, AURA_SCREENSHOT_DIST_DIR.
 Requires Node.js 22+ and npm dependencies; Chrome, Edge, or Chromium must be installed.
 Results: Chrome Submit/Screenshots/<version>/<run-id>/ and Firefox Submit/Screenshots/<version>/<run-id>/.
 Each run contains five 1280x800 RGB PNGs, a ZIP, README.md and capture-report.json.
-No upload, personal profile, Google login, UI recreation, or replacement styles.`);
+Chrome additionally gets Promo/ (440x280 and 1400x560 RGB PNG) and a ZIP of all seven images.
+Promotional layouts embed a real screenshot from this run and the current app logo.
+No upload, personal profile, Google login, or recreated application interface.`);
 } else {
   await main().catch((error) => { console.error(`Screenshot capture failed: ${error.message}`); process.exitCode = 1; });
 }
@@ -237,6 +240,16 @@ async function main() {
       Array.from(document.querySelectorAll('button')).find(e => e.textContent.trim() === 'Connect Google Drive')
     ]`);
 
+    const promoDir = path.join(staging, "Promo");
+    await mkdir(promoDir);
+    const promotionalImages = await renderPromotionalImages({
+      page, session, outputDir: promoDir, logoPath: path.join(dist, "logo.png"),
+      screenshotPath: path.join(staging, shots[0].name)
+    });
+    if (promotionalImages.length !== 2 || promotionalImages.some((image) => image.sourceScreenshot.sha256 !== shots[0].sha256)) {
+      throw new Error("Promotional images must use the overview screenshot from this run.");
+    }
+
     const { zipSync, unzipSync } = await import("fflate");
     const zipEntries = Object.fromEntries(await Promise.all(shots.map(async (shot) => [shot.name, new Uint8Array(await readFile(path.join(staging, shot.name)))])));
     const zip = zipSync(zipEntries, { level: 6 });
@@ -244,30 +257,52 @@ async function main() {
     if (Object.keys(unpacked).length !== 5 || shots.some((shot) => hash(unpacked[shot.name]) !== shot.sha256)) throw new Error("Screenshot ZIP integrity check failed.");
     const archiveName = `aura-start-${version}-store-screenshots.zip`;
     await writeFile(path.join(staging, archiveName), zip);
+    const chromeEntries = Object.fromEntries(Object.entries(zipEntries).map(([name, bytes]) => [`screenshots/${name}`, bytes]));
+    for (const image of promotionalImages) chromeEntries[`Promo/${image.name}`] = new Uint8Array(await readFile(path.join(promoDir, image.name)));
+    const chromeZip = zipSync(chromeEntries, { level: 6 });
+    const chromeUnpacked = unzipSync(chromeZip);
+    if (Object.keys(chromeUnpacked).length !== 7 || Object.entries(chromeEntries).some(([name, bytes]) => hash(chromeUnpacked[name]) !== hash(bytes))) {
+      throw new Error("Chrome store image ZIP integrity check failed.");
+    }
+    const chromeArchiveName = `aura-start-${version}-chrome-web-store-images.zip`;
+    await writeFile(path.join(staging, chromeArchiveName), chromeZip);
     const createdAt = new Date().toISOString();
     const runId = createdAt.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z") + "-" + randomUUID().slice(0, 8);
     const report = {
       version, createdAt, runId, browserVersion: session.browserVersion,
       source: requestedDist ? "explicit existing build (--dist); source freshness not asserted" : "fresh build of current source",
       buildFingerprint: hash(JSON.stringify(buildFiles)), buildFiles,
-      capture: "real Chromium browser, actual Aura Start UI, synthetic storage data only; no CSS/DOM design replacement or image postprocessing",
+      capture: "UI screenshots: real Chromium browser, actual Aura Start UI, synthetic storage data only; no CSS/DOM design replacement or image postprocessing",
       scenes: shots, browserErrors: session.errors, blockedRequests: session.blockedRequests,
       drive: "disabled and disconnected", customSound: { name: "Gentle chime.wav", sha256: hash(await readFile(wavPath)) },
       archive: { name: archiveName, sha256: hash(zip), files: shots.length }
     };
-    await writeFile(path.join(staging, "capture-report.json"), JSON.stringify(report, null, 2) + "\n");
     await writeFile(path.join(staging, "README.md"), `# Aura Start ${version} store screenshots\n\nCaptured ${createdAt} in a real browser from the actual app.\n\nUpload the five PNGs in filename order to Chrome Web Store or Firefox Add-ons. Each is 1280 x 800 RGB PNG without transparency. The ZIP contains only these five PNGs; it is not an extension package.\n\n1. Links, nested groups and Markdown notes\n2. Notes and Countdown\n3. Full ZIP backup\n4. Custom Countdown sound, imported through the real file picker\n5. Optional Google Drive sync, disconnected\n\nInspect every image before publishing. This is a UI illustration, not a real-account or native-extension integration test. No personal data or Google account was used. The same shared UI images are copied to both store directories.\n\nReproduce from the repository: npm run screenshots\n\nBrowser/build identity and image hashes: capture-report.json.\n\nStore image guidance:\n- https://developer.chrome.com/docs/webstore/images\n- https://extensionworkshop.com/documentation/develop/create-an-appealing-listing/\n`);
     const names = [...shots.map((shot) => shot.name), archiveName, "README.md", "capture-report.json"];
     for (const store of ["Chrome Submit", "Firefox Submit"]) {
+      const isChrome = store === "Chrome Submit";
+      const storeReport = isChrome ? {
+        ...report,
+        promotionalCapture: "real-browser rendering of brand layout with current logo and the unmodified overview PNG from the same capture run",
+        promotionalImages,
+        promotionalArchive: { name: chromeArchiveName, sha256: hash(chromeZip), files: 7 }
+      } : report;
+      await writeFile(path.join(staging, "capture-report.json"), JSON.stringify(storeReport, null, 2) + "\n");
       const parent = path.join(root, store, "Screenshots", version);
       await mkdir(parent, { recursive: true });
       const destination = path.join(parent, runId);
       await mkdir(destination); // Unique per run; never replace earlier screenshots.
-      for (const name of names) await copyFile(path.join(staging, name), path.join(destination, name));
-      for (const name of names) if (hash(await readFile(path.join(destination, name))) !== hash(await readFile(path.join(staging, name)))) throw new Error(`Output copy verification failed: ${store}/${name}`);
+      const storeNames = isChrome ? [...names, chromeArchiveName, ...promotionalImages.map((image) => `Promo/${image.name}`)] : names;
+      if (isChrome) await mkdir(path.join(destination, "Promo"));
+      for (const name of storeNames) await copyFile(path.join(staging, name), path.join(destination, name));
+      for (const name of storeNames) if (hash(await readFile(path.join(destination, name))) !== hash(await readFile(path.join(staging, name)))) throw new Error(`Output copy verification failed: ${store}/${name}`);
+      if (isChrome) {
+        const readmePath = path.join(destination, "README.md");
+        await writeFile(readmePath, await readFile(readmePath, "utf8") + `\n## Chrome Web Store promotional images\n\n- Promo/small-promo-440x280.png: Small promotional image field (440 x 280).\n- Promo/marquee-promo-1400x560.png: Marquee promotional image field (1400 x 560).\n\nBoth are 24-bit RGB PNGs without transparency. They are branded promotional compositions rendered in the real browser, using this run's actual overview screenshot and current app logo. The application UI is embedded as a complete, unchanged image, not redrawn.\n\n${chromeArchiveName} bundles all seven images: screenshots/ contains the five UI screenshots, and Promo/ contains the two promotional images. Upload them to their corresponding image fields; this ZIP is not an extension package.\n`);
+      }
       console.log(`Saved: ${destination}`);
     }
-    console.log("Done: five real-browser screenshots and a verified ZIP in each store directory. Review images before uploading.");
+    console.log("Done: five screenshots for both stores; Chrome also has 440x280 and 1400x560 promotional PNGs and a seven-image ZIP. Review images before uploading.");
   } finally {
     // A stuck browser must not leave the HTTP server keeping Node alive. If it
     // cannot be stopped, keep its profile instead of deleting files still in use.

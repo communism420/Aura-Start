@@ -1,10 +1,16 @@
-# Aura Start 2.1.0 — Shared Google Drive Sync, Countdown, and Full ZIP Backups
+# Aura Start 2.1.1 — Firefox Homepage and New Windows
 
-> Maintainer-only draft. These notes compare 2.1.0 with 2.0.5. Verify final packages and publication status before publishing; this page does not announce a completed store release.
+> Maintainer-only draft. Version 2.1.1 adds Firefox homepage support; the 2.1.0 changes since 2.0.5 are retained below. Verify final packages and publication status before publishing; this page does not announce a completed store release.
 
 Reviewed October 4, 2026.
 
-## What's new in 2.1.0
+## What's new in 2.1.1
+
+- Added Firefox homepage support so new windows and the Home button can open the same Aura Start page as new tabs.
+- Preserved Firefox's confirmation, homepage controls, and previous-session restoration preference without adding browser permissions.
+- Refreshed the documentation, privacy and permission explanations, both store listing drafts, and website screenshots for 2.1.1.
+
+## Previously added in 2.1.0
 
 - Reworked Google Drive synchronization so updated installations share one visible `aura-start-sync.json`, with verified consolidation of accessible older copies.
 - Added automatic merging of concurrent and offline changes, conditional writes, retry after write conflicts, and deletion records that prevent stale edits from restoring deleted links.
@@ -32,7 +38,7 @@ Old JSON backups remain importable, but 2.0.5 did not include the notes widget's
 
 Native Chrome authorization requests `drive.file` for the shared visible file and retains `drive.appdata` for accessible hidden legacy backups. An old app-data-only connection may need explicit reconnection to approve the shared-file scope. The current Device flow in Firefox, Helium, other compatible Chromium browsers, and some unpacked Chrome installations uses `drive.file` only. It cannot read a hidden legacy copy through that authorization. Accessible legacy copies are merged before verified conditional cleanup.
 
-Update every connected installation to the current 2.1.0 build. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.
+Update every connected installation to the current build. The shared sync protocol introduced in 2.1.0 is unchanged in 2.1.1. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.
 
 ## Local data, privacy, and permissions
 
@@ -57,7 +63,7 @@ Import keeps this installation's Google connection. Imported shared content sync
 These are build instructions, not completed verification results:
 
 ```bash
-npm install
+npm ci
 npm run test
 npm run typecheck
 npm run build

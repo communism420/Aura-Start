@@ -1,6 +1,7 @@
 import { IDBFactory } from "fake-indexeddb";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import packageJson from "../../package.json";
 import { STORAGE_KEY } from "../constants";
 import type { AuraStartData } from "../types";
 import { importBackgroundImageBackup } from "./backgroundImageBackup";
@@ -139,7 +140,7 @@ beforeEach(() => {
   vi.stubGlobal("navigator", { language: "en", languages: ["en"] });
   vi.stubGlobal("chrome", undefined);
   stored = { [STORAGE_KEY]: createEmptyData() };
-  vi.stubGlobal("browser", { runtime: { getManifest: () => ({ version: "2.1.0" }) }, storage: { local: {
+  vi.stubGlobal("browser", { runtime: { getManifest: () => ({ version: packageJson.extensionVersions.firefox }) }, storage: { local: {
     get: async (key: string) => ({ [key]: structuredClone(stored[key]) }),
     set: async (items: Record<string, unknown>) => { Object.assign(stored, structuredClone(items)); },
     remove: async (key: string) => { delete stored[key]; }
@@ -154,7 +155,7 @@ describe("full ZIP backup with independent archive decoding", () => {
     const before = structuredClone(data);
     const files = unzipSync(await createZipBackup(data));
     const manifest = readManifest(files);
-    expect(manifest).toMatchObject({ format: "aura-start-full-backup", version: 2, appVersion: "2.1.0", dataFile: "aura-start.json" });
+    expect(manifest).toMatchObject({ format: "aura-start-full-backup", version: 2, appVersion: packageJson.extensionVersions.chromium, dataFile: "aura-start.json" });
     const document = JSON.parse(strFromU8(files[manifest.dataFile]));
     expect(document.settings.notes.text).toBe(data.settings.notes.text);
     expect(document.groups).toEqual(data.groups);

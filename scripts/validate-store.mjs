@@ -184,6 +184,10 @@ if (await exists(manifestPath)) {
     fail("chrome_url_overrides.newtab must point to newtab.html.");
   }
 
+  if (manifest.chrome_settings_overrides) {
+    fail("Chromium builds must not contain the Firefox-only homepage settings override.");
+  }
+
   if (manifest.background?.scripts) {
     fail("Chromium MV3 builds must not contain background.scripts. Use background.service_worker instead.");
   }

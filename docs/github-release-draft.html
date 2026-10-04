@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Draft Aura Start 2.1.0 release notes compared with 2.0.5: shared Drive sync, Countdown, and full ZIP backups.">
+    <meta name="description" content="Draft Aura Start 2.1.1 release notes: Firefox homepage and new windows, with earlier 2.1.0 changes.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start 2.1.0 — Shared Google Drive Sync, Countdown, and Full ZIP Backups — Aura Start</title>
+    <title>Aura Start 2.1.1 — Firefox Homepage and New Windows — Aura Start</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -21,13 +21,19 @@
         </nav>
       </header>
       <main class="doc">
-        <div class="kicker">Aura Start Docs</div>
-<h1>Aura Start 2.1.0 — Shared Google Drive Sync, Countdown, and Full ZIP Backups</h1>
+<div class="kicker">Aura Start Docs · 2.1.1</div>
+<h1 id="aura-start-211-firefox-homepage-and-new-windows">Aura Start 2.1.1 — Firefox Homepage and New Windows</h1>
 <blockquote>
-<p>Maintainer-only draft. These notes compare 2.1.0 with 2.0.5. Verify final packages and publication status before publishing; this page does not announce a completed store release.</p>
+<p>Maintainer-only draft. Version 2.1.1 adds Firefox homepage support; the 2.1.0 changes since 2.0.5 are retained below. Verify final packages and publication status before publishing; this page does not announce a completed store release.</p>
 </blockquote>
 <p>Reviewed October 4, 2026.</p>
-<h2>What's new in 2.1.0</h2>
+<h2 id="whats-new-in-211">What's new in 2.1.1</h2>
+<ul>
+<li>Added Firefox homepage support so new windows and the Home button can open the same Aura Start page as new tabs.</li>
+<li>Preserved Firefox's confirmation, homepage controls, and previous-session restoration preference without adding browser permissions.</li>
+<li>Refreshed the documentation, privacy and permission explanations, both store listing drafts, and website screenshots for 2.1.1.</li>
+</ul>
+<h2 id="previously-added-in-210">Previously added in 2.1.0</h2>
 <ul>
 <li>Reworked Google Drive synchronization so updated installations share one visible <code>aura-start-sync.json</code>, with verified consolidation of accessible older copies.</li>
 <li>Added automatic merging of concurrent and offline changes, conditional writes, retry after write conflicts, and deletion records that prevent stale edits from restoring deleted links.</li>
@@ -47,26 +53,26 @@
 <li>Corrected misleading messages when a clean installation receives an existing cloud backup.</li>
 <li>Improved import, restore, and Undo handling so the current Drive connection and unrelated synchronized changes are preserved.</li>
 </ul>
-<h2>Upgrading from 2.0.5</h2>
+<h2 id="upgrading-from-205">Upgrading from 2.0.5</h2>
 <p>Update the existing installation when possible. Aura Start migrates local settings, notes, and the custom background before synchronizing; failed migration retains the previous local copy for retry. New settings are added without resetting known choices.</p>
 <p>Old JSON backups remain importable, but 2.0.5 did not include the notes widget's text or custom background image bytes in JSON. Import cannot recover content the file never contained. Updating an existing profile can migrate those local values. Older portable JSON and ZIP v1 backups also remain supported.</p>
 <p>Native Chrome authorization requests <code>drive.file</code> for the shared visible file and retains <code>drive.appdata</code> for accessible hidden legacy backups. An old app-data-only connection may need explicit reconnection to approve the shared-file scope. The current Device flow in Firefox, Helium, other compatible Chromium browsers, and some unpacked Chrome installations uses <code>drive.file</code> only. It cannot read a hidden legacy copy through that authorization. Accessible legacy copies are merged before verified conditional cleanup.</p>
-<p>Update every connected installation to the current 2.1.0 build. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.</p>
-<h2>Local data, privacy, and permissions</h2>
+<p>Update every connected installation to the current build. The shared sync protocol introduced in 2.1.0 is unchanged in 2.1.1. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.</p>
+<h2 id="local-data-privacy-and-permissions">Local data, privacy, and permissions</h2>
 <p>Aura Start remains local-first, with no required account, analytics, tracking, ads, or Aura Start backend. Drive sync is optional and off by default. The shared file contains preferences, links, groups, notes, the saved background, the selected sound, and merge metadata. Credentials, connection state, actual browser permission grants, running countdowns, search/filter state, and Restore Timeline stay local. Deleted link/group fields can remain in causal deletion records to prevent resurrection.</p>
 <p>Chromium packages declare <code>storage</code>, <code>identity</code>, and <code>alarms</code>; Firefox packages declare <code>storage</code> and <code>alarms</code>. <code>tabs</code> remains optional for Save open tabs. Host permissions are limited to <code>https://www.googleapis.com/*</code> and <code>https://oauth2.googleapis.com/*</code>. No browser history/bookmarks permission or full Google Drive scope is requested.</p>
 <p>Firefox builds require version 142 or later, remove Chromium's <code>oauth2</code> entry and <code>identity</code>, and declare <code>data_collection_permissions</code> as required <code>none</code>, with optional <code>browsingActivity</code> and <code>technicalAndInteraction</code> for Google Drive synchronization. The packaged WebAssembly decoder uses the CSP's <code>wasm-unsafe-eval</code> allowance and adds no timer permission. Conversion stays on the device.</p>
 <p>The Countdown completion sound requires an Aura Start page to remain open. It is not a system alarm that can play after the browser closes. Polling intervals are not guaranteed cloud-delivery times. Aura Start does not add password protection or end-to-end encryption to its visible Drive JSON or exported backups. See the <a href="privacy-policy.html">privacy policy</a>.</p>
-<h2>Export and backup</h2>
+<h2 id="export-and-backup">Export and backup</h2>
 <ul>
 <li><strong>Full Backup ZIP:</strong> settings, links, notes, Restore Points, current/historical background files, and the selected original Countdown audio only. Playback is prepared locally on import.</li>
 <li><strong>Settings and links only (JSON):</strong> preferences, links, notes, and recovery history without custom media. Omitted custom choices retain receiving-device values or use defaults on a fresh profile; explicit built-in selections and intentional media removals can still apply.</li>
 <li><strong>Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible code:</strong> portable link exports with the limitations described in the <a href="documentation.html">documentation</a>.</li>
 </ul>
 <p>Import keeps this installation's Google connection. Imported shared content synchronizes normally when sync is enabled. Aura Start also continues to import A Fine Start export codes; it is independent and not affiliated with A Fine Start.</p>
-<h2>Build and packaging notes</h2>
+<h2 id="build-and-packaging-notes">Build and packaging notes</h2>
 <p>These are build instructions, not completed verification results:</p>
-<pre><code class="language-bash">npm install
+<pre><code class="language-bash">npm ci
 npm run test
 npm run typecheck
 npm run build
@@ -75,10 +81,10 @@ npm run build
 <p>For Firefox, configure the intended <code>AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID</code>, <code>AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET</code>, and add-on ID, then run <code>npm run build:firefox</code>. This produces <code>dist-firefox</code> and runs sanitization, manifest finalization, and validation. Unpacked Chromium loads from its selected folder through the browser's extension manager; Firefox temporary testing uses <code>about:debugging</code> and the generated manifest.</p>
 <p>The project workflow refreshes <code>dist-google</code>, <code>dist-google-local</code>, <code>dist-firefox</code>, and <code>dist-firefox-local</code> after changes. Creating those exact paths requires the intended Vite <code>--outDir</code>, browser/mode and credential role, plus validation of each actual folder. See the <a href="release-checklist.html">release checklist</a> for the validation environment variables and package requirements.</p>
 <p>Create store ZIPs separately from validated release outputs, with <code>manifest.json</code> at archive root and all referenced background, worker, decoder, locale, icon, and license files included. Rebuilding a folder does not refresh an old ZIP. Upload and publish manually only after verifying the actual archives. Do not describe a prepared directory as a published or reviewed store release.</p>
-<h2>Verification record</h2>
-<p>Record final build commands, package hashes, store URLs, and actual publication status before releasing these notes. Use the <a href="INSTALLED_EXTENSION_TEST_MATRIX.md">installed-extension matrix</a> for dated evidence and outstanding manual checks. Its controlled tests include concurrent editing, browser interruption/recovery, and visible-page propagation in real browser processes with simulated Google HTTP; these are not live-account Google guarantees. Prior results and user reports do not automatically validate a newly prepared archive.</p>
+<h2 id="verification-record">Verification record</h2>
+<p>Record final build commands, package hashes, store URLs, and actual publication status before releasing these notes. Use the <a href="https://github.com/communism420/Aura-Start/blob/main/docs/INSTALLED_EXTENSION_TEST_MATRIX.md">installed-extension matrix</a> for dated evidence and outstanding manual checks. Its controlled tests include concurrent editing, browser interruption/recovery, and visible-page propagation in real browser processes with simulated Google HTTP; these are not live-account Google guarantees. Prior results and user reports do not automatically validate a newly prepared archive.</p>
 <p>The application source is MIT-licensed; bundled third-party components retain their own licenses and notices.</p>
-      </main>
+</main>
       <footer class="site-footer">
         <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">

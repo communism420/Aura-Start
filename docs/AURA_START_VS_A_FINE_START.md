@@ -1,6 +1,6 @@
 # Aura Start vs A Fine Start
 
-Current Aura Start version: **2.1.0**. Public A Fine Start references checked on **2026-10-04**.
+Current Aura Start version: **2.1.1**. Public A Fine Start references checked on **2026-10-04**.
 
 Aura Start is an independent, open-source, local-first start page focused on grouped links, data ownership, and optional Google Drive synchronization. It is not affiliated with A Fine Start.
 
@@ -17,11 +17,12 @@ Aura Start is an independent, open-source, local-first start page focused on gro
 
 The A Fine Start column describes public features only. An unverified feature is not a claim that it is absent.
 
-| Area | Aura Start 2.1.0 | A Fine Start |
+| Area | Aura Start 2.1.1 | A Fine Start |
 | --- | --- | --- |
 | Local use | No account required; data is stored in the browser | Free local use; no account required |
 | Source | MIT-licensed source in this repository | Source availability not assessed here |
 | Platforms | Chrome/Chromium and Firefox extension builds | Official site links Chrome, Firefox, Edge, and Web |
+| Start-page integration | New tabs in supported builds; Firefox 142+ also declares the homepage for new windows and the Home button, under Firefox's user controls | New-tab and web start-page use are described publicly; exact homepage integration is not assessed here |
 | Organization | Groups nested up to two levels; descriptions, tags, drag-and-drop ordering | Grouped links with sorting and drag-and-drop |
 | Search | Fuzzy search, supported query modifiers, and keyboard navigation | Search pane and keyboard navigation |
 | Capturing tabs | Optional current-window preview and save flow with runtime tabs permission | Quick-add from the current page |
@@ -49,9 +50,9 @@ Full Backup ZIP contains JSON data and referenced custom background images, plus
 
 Drive synchronization includes saved preferences, notes, the custom background, and the selected audio together with its portable playback clip. Restore history, running timers, account credentials, connection mode, and browser permission grants remain local. New settings are added without resetting existing preferences. Aura Start has no application backend, analytics, tracking, ads, or required account; optional sync sends the selected data to Google.
 
-Chrome builds use `storage`, `identity`, and `alarms`; Firefox builds omit `identity`. Both declare only Google API/OAuth hosts and optional runtime `tabs` for Save open tabs. Firefox also asks for its optional data-collection permissions when enabling Drive sync. No full Drive access, browser history, cookies, content scripts, or remote runtime code is requested. See [Privacy Policy](https://aurastart.pages.dev/privacy-policy.html) for the complete disclosure.
+Chrome builds use `storage`, `identity`, and `alarms`; Firefox builds omit `identity`. Both declare only Google API/OAuth hosts and optional runtime `tabs` for Save open tabs. Firefox declares optional data-transmission categories and requests consent during interactive Drive connection; Firefox may show a separate prompt. No full Drive access, browser history, cookies, content scripts, or remote runtime code is requested. See [Privacy Policy](https://aurastart.pages.dev/privacy-policy.html) for the complete disclosure.
 
-Ordinary disconnect affects this installation and keeps the cloud file. Confirmed cloud deletion pauses synchronization, deletes and verifies accessible Aura Start copies, and then disconnects locally. Failures retain a paused account for retry; inaccessible hidden legacy data is reported rather than claimed as deleted. Local data remains intact. Disconnect other installations before cloud deletion to avoid older installations recreating a copy.
+Disconnect without cloud deletion affects this installation and keeps the cloud file. The delete-on-disconnect preference is on by default and requires a separate confirmation. Confirmed cloud deletion pauses synchronization, deletes and verifies accessible Aura Start copies, and then disconnects locally. Failures retain a paused account for retry; inaccessible hidden legacy data is reported rather than claimed as deleted. Local data remains intact. Disconnect other installations before cloud deletion to avoid older installations recreating a copy.
 
 ## Migration
 

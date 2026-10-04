@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start 2.1.0: a private, local-first new tab with nested links, notes, Countdown, custom backgrounds and sounds, full ZIP backups, and shared Google Drive sync."
+      content="Aura Start 2.1.1: a private, local-first start page with grouped links, notes, Countdown, full backups, and optional Google Drive sync. Also your Firefox homepage."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -32,12 +32,14 @@
         <section class="hero" aria-labelledby="hero-title">
           <div class="hero-grid">
             <div class="hero-copy">
-              <span class="eyebrow">Aura Start 2.1.0 · Open-source browser new tab extension</span>
+              <span class="eyebrow">Aura Start 2.1.1 · Open-source browser start page</span>
               <h1 id="hero-title">A private, local-first start page for your links.</h1>
               <p class="lead">
                 Aura Start replaces your new tab with nested groups of links,
                 fuzzy search, optional backgrounds and widgets, exportable backups,
                 A Fine Start migration, and optional Google Drive sync.
+                In Firefox, it also provides your homepage and new-window start page,
+                with Firefox's confirmation and homepage controls.
               </p>
               <div class="actions" aria-label="Aura Start calls to action">
                 <a class="button primary" href="https://github.com/communism420/Aura-Start" rel="noopener noreferrer">View source on GitHub</a>
@@ -56,8 +58,8 @@
               </div>
               <img
                 class="preview-image"
-                src="assets/screenshots/01-new-tab-overview-20261004.png"
-                alt="Aura Start new tab with nested groups, background image, and widgets"
+                src="assets/screenshots/01-links-and-groups-2-1-1-20261004.png"
+                alt="Aura Start 2.1.1 with demo link groups and search in the real extension interface"
                 width="1280"
                 height="800"
               >
@@ -93,7 +95,7 @@
             </article>
             <article class="card">
               <h3>Firefox</h3>
-              <p>Install the Firefox package from Mozilla Add-ons.</p>
+              <p>Install the Firefox package from Mozilla Add-ons. Requires Firefox 142 or newer; Firefox controls the homepage change and keeps your session-restore preference.</p>
               <div class="actions">
                 <a class="button primary" href="https://addons.mozilla.org/firefox/addon/aura-start/" rel="noopener noreferrer">Open Firefox Add-ons</a>
               </div>
@@ -195,10 +197,10 @@
             <span class="kicker">Optional backup</span>
             <h2>Google Drive sync only when you choose it.</h2>
             <p>
-              Sync is off until you connect. Connect the same Google account on devices running Aura Start 2.1.0.
+              Sync is off until you connect. Connect the same Google account on devices running Aura Start 2.1.1.
               Shared sync uses <code>drive.file</code> only for Aura Start's own
-              shared file in normal Drive and migration of older copies. Chrome retains
-              <code>drive.appdata</code> to migrate older hidden backups. Confirmed deletion verifies
+              shared file in normal Drive and migration of older copies. Supported native Chrome
+              sign-in also requests <code>drive.appdata</code> to migrate older hidden backups. Confirmed deletion verifies
               removal from accessible storage before disconnecting
               and preserves local data. Hidden backups are included only when already authorized;
               otherwise a persistent notice explains how to check them in the account used for cleanup.
@@ -213,30 +215,31 @@
             <span class="kicker">Screenshots</span>
             <h2 id="screenshots-title">See the real extension UI.</h2>
             <p>
-              The gallery uses the real Aura Start interface with non-personal demo data.
-              Each gallery identifies the version shown.
+              These 2.1.1 screenshots were captured from the real Aura Start interface
+              in a browser with non-personal demo data. Google Drive remains disconnected
+              in the screenshots; the gallery explains what was captured.
             </p>
           </div>
           <div class="screenshot-preview-grid">
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/03-import-export-20261004.png" alt="Aura Start Import and Export screen" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/03-full-backup-zip-2-1-1-20261004.png" alt="Aura Start 2.1.1 Export / Backup menu with Full Backup ZIP" width="1280" height="800" loading="lazy">
               <div>
                 <h3>Export / Backup</h3>
                 <p>Local import, export formats, and migration-friendly backups.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/06-save-open-tabs-20261004.png" alt="Aura Start Save open tabs dialog" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/02-notes-and-countdown-2-1-1-20261004.png" alt="Aura Start 2.1.1 Notes and Countdown widgets" width="1280" height="800" loading="lazy">
               <div>
-                <h3>Save open tabs</h3>
-                <p>Preview current-window tabs before saving them.</p>
+                <h3>Notes and Countdown</h3>
+                <p>Keep notes beside your links and set a timer with a completion signal.</p>
               </div>
             </a>
             <a class="card screenshot-preview" href="screenshot-gallery.html">
-              <img src="assets/screenshots/04-backgrounds-widgets-20261004.png" alt="Aura Start settings with backgrounds and widgets" width="1280" height="800" loading="lazy">
+              <img src="assets/screenshots/04-custom-timer-sound-2-1-1-20261004.png" alt="Aura Start 2.1.1 settings for a custom Countdown sound" width="1280" height="800" loading="lazy">
               <div>
-                <h3>Backgrounds and widgets</h3>
-                <p>Personalize the page without changing the local-first model.</p>
+                <h3>Your own alarm sound</h3>
+                <p>Choose and preview a sound prepared locally on your device.</p>
               </div>
             </a>
           </div>

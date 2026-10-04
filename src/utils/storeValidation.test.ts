@@ -91,6 +91,12 @@ async function runValidateStore(manifest: unknown, js?: string, env?: NodeJS.Pro
 }
 
 describe("Chrome Web Store validation OAuth guards", () => {
+  it("rejects an accidental Firefox homepage override in a Chromium package", async () => {
+    const result = await runValidateStore({ ...VALID_MANIFEST, chrome_settings_overrides: { homepage: "newtab.html" } });
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Firefox-only homepage settings override");
+  });
+
   it("passes a valid least-privilege OAuth manifest", async () => {
     const result = await runValidateStore(VALID_MANIFEST);
 

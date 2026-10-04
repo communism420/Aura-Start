@@ -2,6 +2,8 @@
 
 Aura Start is an independent, open-source project and is not affiliated with A Fine Start. Migration support exists so users can move their own grouped links using A Fine Start export codes.
 
+This guide describes Aura Start 2.1.1. For installation, Firefox homepage controls, and the current interface, see [Getting Started](getting-started.html).
+
 ## 1. Why migrate?
 
 Aura Start may be a good fit if you want:
@@ -10,7 +12,7 @@ Aura Start may be a good fit if you want:
 - No required account
 - Local-first storage by default
 - No analytics or tracking
-- Full ZIP backups with settings, links, notes, history, and media
+- Full ZIP backups with settings, links, notes, history, referenced backgrounds, and the selected original Countdown sound
 - Multiple export formats
 - Optional Google Drive sync using one shared, visible `aura-start-sync.json` across Chrome, Firefox, and compatible Chromium browsers
 - Restore Timeline before destructive changes
@@ -20,13 +22,13 @@ Aura Start may be a good fit if you want:
 
 Group names and links should migrate if the A Fine Start export code is valid and contains supported URL values.
 
-Aura Start also keeps the order provided by the parsed export structure as far as the export code makes that order available.
+Aura Start reads groups in column order and keeps the links in each group in their exported order. Groups arrive at the top level; you can organize them into nested groups afterward. The original column layout is not an imported preference.
 
 ## 3. What may not be preserved?
 
 Some data may not exist in the A Fine Start-compatible export format. Aura Start can only import what the export code contains.
 
-When exporting back from Aura Start to an A Fine Start-compatible export code, Aura Start writes group names and bookmark `name`/`url` values. Aura Start-specific fields such as descriptions and tags may not be preserved when exporting back to that format if the format does not support them.
+When exporting back from Aura Start to an A Fine Start-compatible export code, Aura Start writes group names and bookmark `name`/`url` values. Nested groups become separate groups named with their parent path. Descriptions, tags, notes, settings, and media are not included. Use [Full Backup ZIP](export-backup.html) to preserve an Aura Start setup.
 
 Unsupported or unsafe URL schemes are rejected during import rather than saved.
 
@@ -51,9 +53,9 @@ These steps were checked against the [official A Fine Start help](https://afines
 
 ## 6. Merge vs Replace
 
-Merge adds imported groups to your current Aura Start data and avoids ID conflicts.
+Merge adds imported groups and links to your current Aura Start data, avoids ID conflicts, and keeps your existing preferences and notes. It does not automatically remove repeated URLs; review the preview's duplicate counts and use Duplicate Finder afterward if needed.
 
-Replace replaces current groups and shared settings with the imported data; A Fine Start link exports do not contain Aura preferences, so their defaults apply. The current local Drive connection is preserved. Export a Full Backup ZIP first if you want an extra copy before replacing data. If Drive is connected, the imported changes also synchronize to other installations.
+Replace replaces current groups and shared settings with the imported data; A Fine Start link exports do not contain Aura preferences or notes, so their defaults apply. The current interface language and local Drive connection are preserved. Export a Full Backup ZIP first if you want an extra copy before replacing data. If connected automatic Drive sync is enabled, the imported changes also synchronize to other installations.
 
 ## 7. Restore Timeline
 
@@ -65,7 +67,7 @@ Users should still create or export a backup before destructive operations such 
 
 Aura Start can export an A Fine Start-compatible export code from the Export menu.
 
-Use this if you change your mind or want to move a basic grouped-link list elsewhere. The compatibility export contains group names and link names/URLs. Aura Start descriptions and tags are not included when the target format does not support them.
+Use this if you change your mind or want to move a basic grouped-link list elsewhere. The compatibility export contains group names and link names/URLs, with nested groups represented by their parent path in the name. Aura Start descriptions and tags are not included.
 
 ## 9. Troubleshooting
 
@@ -91,7 +93,7 @@ Yes. Aura Start is local-first, and Google Drive sync is optional and off by def
 
 **Can I keep a normal backup file?**
 
-Yes. In 2.1.0, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive.
+Yes. In 2.1.1, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive. See [Export / Backup](export-backup.html) for import modes and compatibility with older backups.
 
 **Can I export back to A Fine Start-compatible format?**
 

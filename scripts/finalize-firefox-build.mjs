@@ -28,6 +28,10 @@ manifest.background = {
   type: "module"
 };
 
+// Firefox treats new tabs and the homepage/new-window page as separate settings.
+// Use its declarative override so its own confirmation and restore controls apply.
+manifest.chrome_settings_overrides = { homepage: "newtab.html" };
+
 delete manifest.oauth2;
 
 manifest.permissions = Array.from(new Set([...(manifest.permissions ?? [])].filter((permission) => permission !== "identity")));

@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+## Aura Start 2.1.1 — Firefox Home And New Windows
+
+- Added Aura Start as the Firefox homepage and new-window page, alongside the existing new-tab replacement. Firefox manages confirmation and the user's choice of homepage; restoring a previous browser session remains controlled by Firefox.
+- Kept this homepage override specific to Firefox and added build validation for both browser targets. No additional extension permissions are required.
+- Updated both browser extension versions to 2.1.1.
+- Refreshed the user and contributor documentation, privacy and permission disclosures, separate Chrome/Firefox listing drafts, and website gallery with real-browser captures of 2.1.1.
+
 ## Aura Start 2.1.0 — Shared Google Drive Sync
 
-Changes compared with 2.0.5. This describes the current 2.1.0 source/builds; it is not a claim that an extension store has published them.
+Changes compared with 2.0.5. Historical 2.1.0 release notes; inclusion here is not a claim that an extension store has published that version.
 
 - Added the optional Countdown widget with a 1-second to 24-hour duration, pause/resume/reset, a completion signal, and volume control. Timer progress is shared between this profile's Aura Start pages and survives reload; an Aura Start page must remain open for timely playback.
 - Added custom timer sounds with local decoding of common and less common audio formats. Files up to 20 MiB retain their original bytes and a portable PCM WAV copy of the first 60 seconds for consistent playback across browsers; unsupported, protected, or damaged files leave the previous sound intact.

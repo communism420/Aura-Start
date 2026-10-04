@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Manual release checks for Aura Start 2.1.0 packages, permissions, Google Drive synchronization, and backups.">
+    <meta name="description" content="Manual release checks for Aura Start 2.1.1 packages, permissions, Google Drive synchronization, and backups.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start 2.1.0 Release Checklist — Aura Start</title>
+    <title>Aura Start 2.1.1 Release Checklist — Aura Start</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -21,16 +21,16 @@
         </nav>
       </header>
       <main class="doc">
-        <div class="kicker">Aura Start Docs</div>
-<h1>Aura Start Release Checklist</h1>
+<div class="kicker">Aura Start Docs · 2.1.1</div>
+<h1 id="aura-start-release-checklist">Aura Start Release Checklist</h1>
 <blockquote>
 <p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
 </blockquote>
-<p>Use this checklist before preparing a Chrome Web Store or Firefox package. Do not publish from automation; upload manually through the relevant store dashboard.</p>
-<p>Current target: Aura Start 2.1.0. Reviewed October 4, 2026. Checklist items describe required verification, not completed checks. Preserve dated evidence in the installed-extension matrix and record the exact build, browser, account setup, commands, results, and remaining limitations for a release.</p>
-<h2>Pre-Build</h2>
+<p>Use this checklist before preparing a Chrome Web Store or Firefox package. Official releases in both stores are published only by the project owner, <a href="https://github.com/communism420">communism420</a>, as set out in <a href="https://github.com/communism420/Aura-Start/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>. Upload through the relevant store dashboard only as part of an authorized release.</p>
+<p>Current target: Aura Start 2.1.1. Reviewed October 4, 2026. Checklist items describe required verification, not completed checks. Preserve dated evidence in the installed-extension matrix and record the exact build, browser, account setup, commands, results, and remaining limitations for a release.</p>
+<h2 id="pre-build">Pre-Build</h2>
 <ul>
-<li>Run <code>npm install</code>.</li>
+<li>Run <code>npm ci</code> for a reproducible installation from the committed lockfile.</li>
 <li>Run <code>npm run test</code>.</li>
 <li>Run <code>npm run typecheck</code>.</li>
 <li>Set a real <code>AURA_GOOGLE_OAUTH_CLIENT_ID</code> for release builds.</li>
@@ -55,11 +55,12 @@
 <li>Confirm Firefox <code>background.scripts</code> references <code>background.js</code> with <code>type: module</code>, so Vite's generated imports execute correctly.</li>
 <li>Confirm Firefox <code>browser_specific_settings.gecko.id</code> is the intended add-on ID.</li>
 <li>Confirm Firefox build removes Chrome-only <code>manifest.oauth2</code> and <code>identity</code>.</li>
+<li>Confirm Firefox declares <code>chrome_settings_overrides.homepage: "newtab.html"</code> alongside <code>chrome_url_overrides.newtab: "newtab.html"</code>. Chromium must keep only its new-tab override, and neither target should gain <code>browserSettings</code> or required <code>tabs</code> access.</li>
 <li>Confirm Firefox minimum version is <code>142.0</code> and <code>data_collection_permissions</code> has <code>required: ["none"]</code> and <code>optional: ["browsingActivity", "technicalAndInteraction"]</code>. Check interactive Drive data-transmission consent independently of Google's OAuth consent.</li>
 <li>Confirm <code>build:firefox</code> completed TypeScript, Vite, <code>sanitize-firefox-js.mjs</code>, <code>finalize-firefox-build.mjs</code>, and <code>validate-firefox-build.mjs</code>. Apply those post-build steps to each manually targeted Firefox folder too.</li>
-<li>Keep <code>package.json</code>, both extension version targets, all four built manifests, release notes, public policy, and store descriptions at 2.1.0. Do not overwrite the Google site-verification HTML.</li>
+<li>Keep <code>package.json</code>, both extension version targets, all four built manifests, release notes, public policy, and store descriptions at 2.1.1. Do not overwrite the Google site-verification HTML.</li>
 </ul>
-<h2>Fresh Chrome Web Store ZIP</h2>
+<h2 id="fresh-chrome-web-store-zip">Fresh Chrome Web Store ZIP</h2>
 <ul>
 <li>Run <code>npm run build:store</code>.</li>
 <li>Confirm <code>dist/manifest.json</code>.</li>
@@ -71,12 +72,14 @@
 <li>Verify no source files, local configuration files, personal credentials, access/refresh tokens, or confidential backend secrets are included. The configured Device OAuth client secret is intentionally bundled for a distributed public client; it must match the release role and must not be described as confidential.</li>
 <li>Verify real OAuth client ID for release build.</li>
 <li>Verify ZIP does not include <code>node_modules</code>, <code>docs</code>, <code>.git</code>, source files, <code>.env</code>, screenshots, or development artifacts.</li>
-<li>Run <code>npm run validate:zip</code> against the separately prepared <code>Chrome Submit/aura-start-2.1.0-chrome-web-store.zip</code>, with <code>AURA_CHROME_DIST_DIR</code> pointing to its actual source output when it is not <code>dist</code>.</li>
+<li>Verify ZIP integrity, the complete entry list, and every file's SHA-256 against the validated build. Manifest validation alone does not prove that all assets are present or unchanged. Record the archive hash and source revision, including whether the working tree has uncommitted changes.</li>
+<li>Run <code>npm run validate:zip</code> against the separately prepared <code>Chrome Submit/aura-start-2.1.1-chrome-web-store.zip</code>, with <code>AURA_CHROME_DIST_DIR</code> pointing to its actual source output when it is not <code>dist</code>.</li>
 <li>Prepare a Firefox archive separately when publishing Firefox. Validate the actual folder with <code>npm run validate:firefox</code>, then the intended archive with <code>npm run validate:firefox:submit</code> or <code>AURA_FIREFOX_ZIP_PATH</code>. Record the archive hash/date; do not infer freshness from a successful older validation.</li>
 <li>Upload ZIP manually in Chrome Web Store Developer Dashboard.</li>
 </ul>
-<h2>Installed Extension Test Matrix</h2>
-<p>Run the exact installed-extension matrix in <a href="./INSTALLED_EXTENSION_TEST_MATRIX.md"><code>INSTALLED_EXTENSION_TEST_MATRIX.md</code></a> against the same <code>dist-google</code> / <code>dist-firefox</code> folder or ZIP build that will be uploaded. Build checks are not enough; nested groups, fuzzy search, Save open tabs permission flow, backgrounds/widgets, import, replace, Restore Timeline, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.</p>
+<h2 id="installed-extension-test-matrix">Installed Extension Test Matrix</h2>
+<p>For Firefox 2.1.1, test homepage approval on fresh install and upgrade, the Home button, new windows, and new tabs. Verify Firefox's decline/change controls and disabling/removing Aura Start; the previous-session restoration preference must remain unchanged. Record signed-package startup/update results separately from temporary add-on loading.</p>
+<p>Run the exact installed-extension matrix in <a href="https://github.com/communism420/Aura-Start/blob/main/docs/INSTALLED_EXTENSION_TEST_MATRIX.md"><code>INSTALLED_EXTENSION_TEST_MATRIX.md</code></a> against the same <code>dist-google</code> / <code>dist-firefox</code> folder or ZIP build that will be uploaded. Build checks are not enough; nested groups, fuzzy search, Save open tabs permission flow, backgrounds/widgets, import, replace, Restore Timeline, Duplicate Finder deletion, Command Palette shortcut assignment, Cyrillic keyboard layout behavior, Google Drive first-run restore, automatic Drive backup after local edits, and Google Drive connect/disconnect need browser verification.</p>
 <ul>
 <li>Test Countdown start/pause/resume/reset, 1-second and 24-hour bounds, built-in/custom completion sound, volume 0, Stop sound, and an autoplay-blocked page with Play signal.</li>
 <li>Test multiple Aura Start tabs and reload: one shared local run, one automatic completion sound, and stopping sound from another tab. Verify background-tab timing and explicitly check the closed-page/sleep limitations.</li>
@@ -87,7 +90,7 @@
 <li>Verify the main complete-backup actions and individual Restore Point exports use ZIP. Settings and links only (JSON) must contain no media bytes and preserve other preferences/notes/links/history. Omitted custom choices retain receiver values or use built-in defaults on a fresh profile; explicit built-in choices and media removals must still apply. Older portable JSON with embedded media must still import.</li>
 <li>Test truncated/corrupt ZIPs, missing required files, mismatched hashes, unsafe entry paths, and expansion limits. A failed import must leave local data and the Drive connection unchanged; a valid ZIP import must preserve the connection as well.</li>
 </ul>
-<h2>Google Drive OAuth Release Verification</h2>
+<h2 id="google-drive-oauth-release-verification">Google Drive OAuth Release Verification</h2>
 <ul>
 <li>Create a Chrome Extension OAuth client for the final published extension ID.</li>
 <li>Create or verify Device OAuth credentials for Firefox and Chromium browsers that reject Chrome's built-in identity token flow.</li>
@@ -104,8 +107,8 @@
 <li>Confirm the Firefox build has no full Drive scope and uses Device OAuth only.</li>
 <li>Install the final build as unpacked, then test connect, automatic backup after local edits, first-run restore from an existing Drive sync file, accurate restore/create/no-file messaging, disconnect, and delete-backup flows. A clean installation receiving cloud content must not claim that a nonexistent file was replaced with local content.</li>
 <li>Start an automatic upload, immediately close every Aura Start page, then verify from a newly opened page that the background upload completed and the latest local revision is recorded as synced.</li>
-<li>Run the 2.1.0 two-device matrix, including a clean receiver, closed-page background reception, concurrent field edits/deletes/moves, overlapping uploads, offline/restart recovery, and local edits made while a remote response is pending.</li>
-<li>Confirm all installations in shared-sync trials run the latest 2.1.0 build and converge in both directions without a conflict-choice dialog. All must record the same shared file ID, and the final listing must contain one shared file. Overlapping uploads must use conditional writes and re-merge after conflicts.</li>
+<li>Run the 2.1.1 two-device matrix, including a clean receiver, closed-page background reception, concurrent field edits/deletes/moves, overlapping uploads, offline/restart recovery, and local edits made while a remote response is pending.</li>
+<li>Confirm all installations in shared-sync trials run the latest 2.1.1 build and converge in both directions without a conflict-choice dialog. All must record the same shared file ID, and the final listing must contain one shared file. Overlapping uploads must use conditional writes and re-merge after conflicts.</li>
 <li>After a completed sync, open/close new tabs, popup and Settings pages and change focus/visibility. Those events must not force an immediate transfer or show its animation. After the delayed interval, visible online pages should poll approximately every five seconds. Local search/filter, runtime timers, recovery-history changes, and unchanged explicit settings must not create shared edits.</li>
 <li>Compare one visible page with several visible pages in the same installation. The background must share the polling cooldown, join an in-flight pass without queuing another poll, retain real edits during that pass, and follow the remaining deadline after a skipped poll. Failures must back off to approximately 10, 20, 40 and at most 60 seconds. Replacing or disabling the connection must reset or stop the appropriate scheduling state.</li>
 <li>Verify that hidden/offline pages skip visible-page polling and closed/hidden pages still receive the roughly one-minute background alarm while the browser runs. With verified unchanged cloud revisions, both polling routes should read only metadata: no payload/media transfers, main-data writes, or changed displayed last-sync time. New/unverified revisions may be read. Real local/remote edits must converge. Explicit connect/reconnect/restore actions can request synchronization; offline pending work retries on startup/online recovery. Record measured delivery times without turning the configured cadence into a guaranteed deadline.</li>
@@ -114,7 +117,7 @@
 <li>Verify the selected timer sound includes its original audio, filename, and portable WAV copy, even when Countdown is disabled. Test Chrome-to-Firefox playback after a WMA import, replacement/removal, simultaneous sound choices, volume 0, offline recovery, and missing/corrupt asset rejection.</li>
 <li>Throttle a large audio snapshot transfer so it lasts more than 25 seconds. Verify resumable upload chunks, recovery from a lost chunk response, bounded failure on a stalled session, and retry after browser/worker restart without replacing the shared file with partial JSON.</li>
 <li>Verify the running countdown and pause/deadline state stay local even while timer preferences sync. Distinguish successful mocked transport tests from the real two-device OAuth/playback checks; record manual evidence before claiming those checks passed.</li>
-<li>Follow <a href="./SETTINGS_SCHEMA.md"><code>SETTINGS_SCHEMA.md</code></a> for stored-settings changes. Verify older local/cloud/backup/Restore Point fixtures, missing nested defaults, preservation of explicit values and compatible unknown fields, and repeat migration without new edit revisions.</li>
+<li>Follow <a href="https://github.com/communism420/Aura-Start/blob/main/docs/SETTINGS_SCHEMA.md"><code>SETTINGS_SCHEMA.md</code></a> for stored-settings changes. Verify older local/cloud/backup/Restore Point fixtures, missing nested defaults, preservation of explicit values and compatible unknown fields, and repeat migration without new edit revisions.</li>
 <li>Import an actual 2.0.5 JSON backup separately from updating a 2.0.5 browser profile. The old JSON never contained widget-note text or custom image bytes; missing data must not be reported as recovered. Profile migration should retain those local values, while current ZIP exports transfer them explicitly.</li>
 <li>Verify all saved preferences are included, especially <code>notes.text</code>, <code>captureOpenTabs</code>, and <code>sync.deleteCloudFileOnDisconnect</code>. Test notes edits, clearing, hidden widgets, Unicode/newlines, the 12,000-character boundary, and unchanged repeated sync cycles.</li>
 <li>Upgrade two profiles with different legacy widget notes. Verify durable migration and local recovery points, preservation of existing explicit shared text, no erasure from older snapshots without notes, cleanup retry, and safe recovery from failed main storage writes. Exercise concurrent note edits and a stale editor write; both devices must converge while prior local text remains recoverable.</li>
@@ -138,11 +141,12 @@
 <li>Re-check any reviewer notes accompanying the chosen archive against <code>STORE_SUBMISSION.md</code>, the public privacy policy, and the store privacy form. Do not assume an existing submission folder or ZIP reflects the current source.</li>
 <li>If Drive OAuth causes review friction, consider a local-only first submission or make reviewer notes extremely explicit; do not broaden permissions.</li>
 </ul>
-<h2>Chrome Web Store Manual Steps</h2>
+<h2 id="chrome-web-store-manual-steps">Chrome Web Store Manual Steps</h2>
 <ul>
 <li>Upload ZIP manually.</li>
-<li>Fill short description from <code>docs/STORE_LISTING.md</code>.</li>
-<li>Fill detailed description from <code>docs/STORE_LISTING.md</code>.</li>
+<li>Fill the Short Description from the Chrome Web Store section of <code>docs/STORE_LISTING.md</code>.</li>
+<li>Copy only that section's Detailed Description into the matching listing language. Keep reviewer notes and privacy disclosures in their own fields; do not append duplicate feature lists or a changelog to the description.</li>
+<li>Review public listing copy for long audio/export format enumerations and repeated keywords. Describe user benefits in ordinary sentences; keep technical compatibility details in documentation. Check each listing language before submission against <a href="https://developer.chrome.com/docs/webstore/program-policies/listing-requirements">Google's listing requirements</a>.</li>
 <li>Upload screenshots using <code>docs/SCREENSHOTS.md</code>.</li>
 <li>Set category.</li>
 <li>Set privacy practices.</li>
@@ -152,16 +156,26 @@
 <li>Add reviewer notes from <code>docs/STORE_LISTING.md</code> or <code>STORE_SUBMISSION.md</code>.</li>
 <li>Submit for review manually.</li>
 </ul>
-<h2>Post-Launch</h2>
+<h2 id="firefox-add-ons-manual-steps">Firefox Add-ons Manual Steps</h2>
+<ul>
+<li>Prepare the Firefox release ZIP from a validated Firefox build, with <code>manifest.json</code> at the archive root. Prepare a matching source ZIP and reproducible build instructions when required for review. Keep local environment files, tokens, personal data, and unrelated secrets out of both archives.</li>
+<li>Run the current Mozilla add-on linter against the actual release ZIP. Record its version and result; a successful lint is not store approval.</li>
+<li>Rebuild from the source archive in a clean directory using the documented dependency and OAuth configuration, then compare the complete output with the release ZIP. Supply required build credentials privately to the reviewer, not in public source notes.</li>
+<li>Use only the Firefox Add-ons Summary and Description from <code>docs/STORE_LISTING.md</code> for those English listing fields. Keep the homepage/new-window explanation and Firefox 142 minimum. Do not paste the Chrome description over Firefox-specific information.</li>
+<li>Upload the reviewed current-version screenshot PNGs; the Chrome promotional tiles do not belong in Firefox screenshot fields.</li>
+<li>Check the privacy-policy, support and source links, optional data-transmission declarations, permission explanations, reviewer instructions, and version notes against the exact package.</li>
+<li>The project owner uploads and submits through Firefox Add-ons. Record signing/publication and signed-package update testing separately from local temporary installation.</li>
+</ul>
+<h2 id="post-launch">Post-Launch</h2>
 <ul>
 <li>Verify the public listing text and screenshots.</li>
-<li>Test install from the Chrome Web Store listing.</li>
+<li>Test installation and update from each published store listing, including Firefox homepage approval and existing user data.</li>
 <li>Confirm Google Drive OAuth works for the published extension ID.</li>
 <li>Collect feedback through GitHub Issues or the chosen support URL.</li>
 <li>Triage bugs, especially nested groups, search, open-tabs capture, import/export, restore, duplicate deletion, widgets, backgrounds, and Drive sync.</li>
 <li>Prepare a follow-up patch release if launch feedback identifies release-blocking issues; choose its version explicitly rather than reusing an old draft number.</li>
 </ul>
-<h2>Release Blockers</h2>
+<h2 id="release-blockers">Release Blockers</h2>
 <ul>
 <li>TypeScript or production build failure.</li>
 <li>Store validation failure.</li>
@@ -173,7 +187,7 @@
 <li>Lost edits, resurrection of deleted links, persistent duplicate sync files, or deletion reported as complete without checking accessible copies.</li>
 <li>Claims of real Google authorization, quota behavior, or delivery guarantees supported only by a local HTTP simulator. Keep previous controlled evidence and manual live-account evidence distinct.</li>
 </ul>
-      </main>
+</main>
       <footer class="site-footer">
         <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>
         <div class="footer-links" aria-label="Footer links">

@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.0 user guide</span>
+        <span class="kicker">Aura Start 2.1.1 user guide</span>
         <h1>Restore Timeline</h1>
         <p>
           Restore points are local safety snapshots. Restore Timeline turns them into
@@ -41,16 +41,25 @@
           <li>Before replacing data during import.</li>
           <li>Before applying content changes received from Google Drive, including during connection.</li>
           <li>Before deleting links or groups.</li>
-          <li>Before moving or reordering groups and links where supported.</li>
+          <li>Before group moves, group reorders, and moving links when automatic movement snapshots are enabled in the saved settings.</li>
           <li>Before saving open tabs into a new group.</li>
-          <li>Before reset or destructive cleanup actions where supported.</li>
+          <li>Before reset, demo-data removal, and restoring another snapshot.</li>
           <li>Before duplicate deletion when you confirm selected items.</li>
+          <li>Before replacing or removing the saved background image or Countdown sound.</li>
+          <li>When a stale notes editor would replace another saved version.</li>
         </ul>
+        <p>
+          The automatic movement-snapshot preference defaults to on. It does not turn
+          off the safety points made for imports, deletion, reset, media changes, or
+          cloud replacement. Restore Timeline is not a complete edit log: ordinary
+          typing and every settings change do not each create a snapshot.
+        </p>
 
         <h2>Restore Timeline</h2>
         <p>
           Restore Timeline groups snapshots by day, shows readable reasons and
-          context, and includes search and action filters. You can restore a snapshot
+          context, and includes search and action filters. Create a named manual point
+          before a change you want to preserve. You can restore a snapshot
           after confirmation or export it as a ZIP backup with the media referenced by that snapshot.
         </p>
         <p>
@@ -70,12 +79,18 @@
         <h2>Before restoring</h2>
         <p>
           Restoring changes your current local Aura Start data. Aura Start creates a
-          new restore point for the current state before restore where possible, so
+          new restore point for the current state before applying the snapshot, so
           you have a way back if the restored snapshot is not the one you wanted.
           Restoring retains this installation's current Google Drive connection. When
           connected automatic sync is enabled, the resulting changes also reach other
           connected devices. A Restore Point is not a backup of Google credentials or
           the active running countdown.
+        </p>
+        <p>
+          Deleting one point or clearing the timeline removes local recovery history;
+          it does not delete current links or Google Drive contents. Those history
+          deletions cannot be undone from a point that has also been removed. Export
+          any snapshots you want to keep before clearing them.
         </p>
 
         <h2>Good habits</h2>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start 2.1.0 Google Drive sync guide: shared groups and links across devices, automatic merging, background updates, migration, and local-first storage."
+      content="Aura Start 2.1.1 Google Drive sync guide: shared groups and links across devices, automatic merging, background updates, migration, and local-first storage."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.0 user guide</span>
+        <span class="kicker">Aura Start 2.1.1 user guide</span>
         <h1>Google Drive Sync</h1>
         <p>
           Google Drive sync is optional and off by default. Aura Start remains usable
@@ -38,7 +38,7 @@
 
         <h2>What sync stores</h2>
         <p>
-          Aura Start 2.1.0 shares groups, links, ordering, nesting, all saved user preferences, Markdown notes,
+          Aura Start 2.1.1 shares groups, links, ordering, nesting, shared user preferences, Markdown notes,
           the saved custom background image, and the selected Countdown sound across installations connected to
           the same Google account. All updated installations read and update one shared
           <code>aura-start-sync.json</code> in normal Drive storage, marked with Aura Start
@@ -53,6 +53,13 @@
           and onboarding/demo state stay local. The shared file includes revision counters,
           deletion records, and a generated device identifier to merge edits safely.
           OAuth tokens are stored locally and are never embedded in the shared file.
+        </p>
+        <p>
+          Shared preferences include language, theme, layout, link-opening behavior,
+          widget visibility and durations, audio volume, and background appearance.
+          Choosing a different look on one connected installation therefore changes
+          the other connected installations too. Disabling a widget does not remove
+          its saved notes or selected media.
         </p>
 
         <h2>Notes</h2>
@@ -120,7 +127,7 @@
         <h2>Connection behavior</h2>
         <p>
           Connect the same Google account on every device and update all connected
-          installations to the latest 2.1.0 build. Connection and reconnection merge existing local data
+          installations to the latest 2.1.1 build. Connection and reconnection merge existing local data
           with accessible cloud snapshots; an empty installation receives the existing
           cloud data. Aura Start protects local content with a restore point before
           applying cloud changes. If no snapshot exists, connection creates one from
@@ -152,7 +159,7 @@
           field resolve consistently using logical revision counters and a device
           identifier as a tie-breaker. Deletion records keep older snapshots from
           restoring deleted items. Normal automatic sync does not require choosing
-          between whole local and cloud copies. Importing JSON preserves the current
+          between whole local and cloud copies. Importing a ZIP or JSON backup preserves the current
           installation's Google Drive connection.
         </p>
         <p>
@@ -170,6 +177,15 @@
         </p>
 
         <h2>Authorization</h2>
+        <p>
+          Firefox packages require Firefox 142 or newer. Before an interactive Drive
+          connection, Firefox may also show its optional data-collection consent prompt.
+          Aura Start declares no required data collection and requests the optional
+          <code>browsingActivity</code> and <code>technicalAndInteraction</code> categories
+          for saved links and synchronization metadata sent to Google. These declarations
+          are separate from Google's OAuth scopes and from the optional <code>tabs</code>
+          permission. They do not grant access to browser history or enable analytics.
+        </p>
         <p>
           Google Chrome installations with an extension ID supported by the native
           OAuth configuration use
@@ -208,9 +224,9 @@
           retries cannot change these Google Cloud rules.
         </p>
 
-        <h2>Upgrading to 2.1.0</h2>
+        <h2>Upgrading to 2.1.1</h2>
         <p>
-          Update every connected device to the latest 2.1.0 build before using shared sync.
+          Update every connected device to the latest 2.1.1 build before using shared sync.
           Earlier builds do not participate in the single-file protocol and can create
           per-device copies again. Aura Start reads accessible older backups, including
           Chrome's hidden <code>appDataFolder</code>, and creates a new shared file ID during
@@ -232,7 +248,7 @@
 
         <p>
           A custom background saved in 2.0.5 is migrated automatically before the first
-          2.1.0 sync, including a saved image that is not currently selected. Aura Start
+          2.1.1 sync, including a saved image that is not currently selected. Aura Start
           keeps the original image until migration is durably saved. Older cloud
           snapshots without image data are not treated as a request to remove it, so
           you do not need to upload the image again. If migration cannot finish,
@@ -302,7 +318,10 @@
         <h2>Use local backups too</h2>
         <p>
           Google Drive sync is convenient, but Full Backup ZIP is still the clearest
-          portable backup format. Keep local file backups for important data.
+          portable backup format. It includes local Restore Timeline and media that
+          are not all retained in the shared Drive file. Sync propagates intentional
+          deletions as well as additions; it does not provide an independent archive.
+          See <a href="export-backup.html">Export / Backup</a> to keep a local file copy.
         </p>
         <p>
           Sync uses the <code>storage</code> permission for local data and credentials,

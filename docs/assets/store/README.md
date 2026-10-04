@@ -2,31 +2,29 @@
 
 > Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
 
-This folder tracks the Chrome Web Store, Firefox Add-ons, and public site screenshot set. The final store PNG files are captured from the real Aura Start 2.1.0 UI and stored in `Chrome Submit/Photo/` and `Firefox Submit/Photo/`, with public site copies in `docs/assets/screenshots/`.
+Current gallery: **Aura Start 2.1.1**, captured on October 4, 2026 in Chrome 154 from a fresh source build. The five 1280 x 800 RGB PNGs show the real application with non-personal demo data and Drive disconnected. This is a local UI preview, not an authenticated Drive or native Firefox test.
 
-The public site uses the `*-20261004.png` screenshot copies to avoid stale cached images after the 2.1.0 documentation refresh.
+Run `npm run screenshots` to prepare new store images. Each run writes a separate `Chrome Submit/Screenshots/<version>/<run-id>/` and `Firefox Submit/Screenshots/<version>/<run-id>/` folder. Both contain the five shared screenshots; Chrome also receives 440 x 280 and 1400 x 560 promotional PNGs made with that run's real overview screenshot. These local submission folders stay outside Git. See the [capture guide](../../SCREENSHOTS.md).
+
+The current public images are byte-for-byte copies of capture run `20261004T030628Z-10391764`. They use versioned filenames under `docs/assets/screenshots/` so the website does not serve cached older artwork. Their public [capture record](../screenshots/capture-2-1-1-20261004.json) records the browser, version, source build fingerprint, and PNG hashes without local paths or credentials.
 
 Store filenames:
 
-1. `01-new-tab-overview-1280x800.png`
-2. `02-search-mode-1280x800.png`
-3. `03-import-export-1280x800.png`
-4. `04-settings-1280x800.png`
-5. `05-restore-points-1280x800.png`
+1. `01-links-and-groups-1280x800.png`
+2. `02-notes-and-countdown-1280x800.png`
+3. `03-full-backup-zip-1280x800.png`
+4. `04-custom-timer-sound-1280x800.png`
+5. `05-google-drive-sync-1280x800.png`
 
 Public site filenames:
 
-1. `01-new-tab-overview-20261004.png`
-2. `02-fuzzy-search-20261004.png`
-3. `03-import-export-20261004.png`
-4. `04-backgrounds-widgets-20261004.png`
-5. `05-restore-timeline-20261004.png`
-6. `06-save-open-tabs-20261004.png`
-7. `07-command-palette-20261004.png`
+1. `01-links-and-groups-2-1-1-20261004.png`
+2. `02-notes-and-countdown-2-1-1-20261004.png`
+3. `03-full-backup-zip-2-1-1-20261004.png`
+4. `04-custom-timer-sound-2-1-1-20261004.png`
+5. `05-google-drive-sync-2-1-1-20261004.png`
 
-8. `08-countdown-20261004.png`
-
-The capture script uses a local preview, synthetic storage/tabs, and an isolated temporary Chrome profile. Drive is disconnected; these images do not establish OAuth or native permission behavior. Promotional composites in `Chrome Submit/Promo/` are generated separately from the same refreshed screenshots.
+The website gallery and home page use these current images. Older public PNGs and local `Photo/`, `Screenshots 2.1.0/`, and `Promo/` folders are retained as historical artwork, not the current upload source. The screenshot command does not update website copies automatically; copy a reviewed run and update the gallery, captions, and capture record together.
 
 Source documents:
 
@@ -36,7 +34,7 @@ Source documents:
 
 Capture rules:
 
-- Use current Aura Start 2.1.0 UI.
+- Capture the current Aura Start version; older 2.1.0 images remain dated reference material.
 - Do not use drawn mockups that differ from the real extension design.
 - Do not show personal data, OAuth tokens, email addresses, or browser profile details.
 - Do not use A Fine Start screenshots or logos.

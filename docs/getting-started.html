@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.0 user guide</span>
+        <span class="kicker">Aura Start 2.1.1 user guide</span>
         <h1>Getting Started</h1>
         <p>
           Aura Start replaces your browser new tab page with clean nested groups of links.
@@ -40,7 +40,7 @@
           Install from the <a href="https://chromewebstore.google.com/detail/aura-start/pdhhhnmcampmmklkbbfbmniijmgjiabi" rel="noopener noreferrer">Chrome Web Store</a>
           for Google Chrome or a compatible Chromium browser, or use
           <a href="https://addons.mozilla.org/firefox/addon/aura-start/" rel="noopener noreferrer">Firefox Add-ons</a>
-          for Firefox. This guide describes version 2.1.0; store availability may differ.
+          for Firefox 142 or newer. This guide describes version 2.1.1; store availability may differ.
           For a local source build, follow these steps:
         </p>
         <ol>
@@ -49,6 +49,16 @@
           <li>For Chrome or Chromium testing, open <code>chrome://extensions</code>, enable Developer mode, and load the generated Chrome build folder.</li>
           <li>For Firefox testing, use <code>about:debugging</code> and load the generated Firefox build manifest. This is a temporary installation; use the signed store package for normal persistent use.</li>
         </ol>
+
+        <h2>Firefox homepage and new windows</h2>
+        <p>
+          Starting with 2.1.1, Aura Start also provides Firefox's homepage, used by new
+          windows and the Home button. Approve Firefox's change prompt if one appears.
+          You can review or change the homepage in Firefox Settings under Home
+          (or Home and startup). Choosing to reopen previous windows and tabs still
+          restores your previous session; Aura Start does not change that preference.
+          Chromium builds continue to replace only the new tab page.
+        </p>
 
         <h2>Choose how to start</h2>
         <p>
@@ -79,8 +89,10 @@
         </p>
         <p>
           Command Palette is available from the Aura Start UI. Ctrl+K or Cmd+K opens it
-          when Chromium assigns that extension shortcut to Aura Start; if the shortcut
-          does not work, check <code>chrome://extensions/shortcuts</code>. Letter
+          when the browser assigns that extension shortcut to Aura Start. Review shortcut
+          conflicts at <code>chrome://extensions/shortcuts</code> in Chromium or
+          <a href="https://support.mozilla.org/en-US/kb/manage-extension-shortcuts-firefox" rel="noopener noreferrer">Manage Extension Shortcuts</a>
+          in Firefox's Add-ons Manager. Letter
           shortcuts use physical key codes, so they continue to work on Latin and
           Cyrillic keyboard layouts when focus is inside the Aura Start page.
         </p>
@@ -95,11 +107,28 @@
 
         <h2>Personalize the page</h2>
         <p>
-          Settings include built-in background images, custom local background upload,
-          blur, dim, and positioning controls. Your saved custom image also syncs to
+          Choose a light, dark, or system theme and one of seven interface languages.
+          Set an automatic or one-to-six-column layout, compact mode, and whether links
+          open in a new tab. Settings also include built-in background images, custom
+          local background upload, blur, dim, and positioning controls. Your saved custom image also syncs to
           connected devices when Google Drive sync is enabled. Optional widgets can
           show a header clock, Markdown notes with optional Google Drive sync, a Pomodoro timer, and Countdown
-          with a customizable completion sound.
+          with a customizable completion sound. All widgets are off by default.
+        </p>
+
+        <h2>Notes, Clock, and Pomodoro</h2>
+        <p>
+          Clock appears in the header. Notes saves text as you edit, up to 12,000 characters;
+          switch to its preview for headings, bullet lists, bold, italics, and inline code.
+          This is a small Markdown subset. Hiding Notes keeps its saved text, and changes
+          still sync when Drive is connected. Concurrent edits to the same note resolve
+          to one value; text is not combined character by character. Check Restore Timeline
+          for a recovery point if a remote update or another open editor replaced your text.
+        </p>
+        <p>
+          Pomodoro alternates focus and break periods, with durations of 5–90 and 1–30
+          minutes. Its active session belongs to the open page and resets on reload.
+          Its settings can sync; use Countdown for an alarm and a timer that survives a reload.
         </p>
 
         <h2>Use Countdown</h2>
@@ -134,11 +163,18 @@
           Older 2.0.5 JSON backups remain importable, but did not contain notes text or
           the actual background image. See <a href="export-backup.html">Export / Backup</a>.
         </p>
+        <p>
+          Import preview offers Merge or Replace. Merge adds groups and links while
+          retaining current settings and notes; Replace restores the backup's setup.
+          Both protect the current state with a local restore point and keep this
+          installation's Drive connection. A synchronized import also reaches your
+          other connected devices.
+        </p>
 
         <h2>Connect other devices</h2>
         <p>
           Google Drive sync is off by default and needs your explicit connection.
-          Update every installation to 2.1.0, then connect the same Google account in Settings.
+          Update every installation to 2.1.1, then connect the same Google account in Settings.
           Groups, links, settings, notes, the saved background image, and the selected
           Countdown sound share one <code>aura-start-sync.json</code> in normal Google Drive.
           Connected pages that are visible and online check for changes about every five seconds;
@@ -154,6 +190,12 @@
           backups require no additional browser permission. The
           <a href="privacy-policy.html">Privacy Policy</a> explains Google API host access
           and the data transferred after connection.
+        </p>
+        <p>
+          Firefox may ask you to approve optional data collection when connecting Drive,
+          separately from Google's sign-in prompt. The declared categories cover saved
+          links and synchronization metadata sent to your Google Drive. Local use requires
+          no data collection; Aura Start does not read browsing history or add analytics.
         </p>
       </main>
 
