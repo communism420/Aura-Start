@@ -140,6 +140,18 @@ For a release build with Google Drive sync, provide real OAuth configuration thr
 - `AURA_FIREFOX_EXTENSION_ID`: Firefox add-on ID for `browser_specific_settings.gecko.id`; the finalizer defaults to `aura-start@example.com` whenever this variable is omitted, including release builds. Preserve and verify the existing AMO add-on ID when preparing a release.
 - Local development builds can use `.env.local` for local-only OAuth values; do not commit that file.
 
+### Store Screenshots
+
+With Node.js 22 or newer, `npm ci`, and an installed Chrome, Edge, or Chromium browser, run:
+
+```bash
+npm run screenshots
+```
+
+The command builds the current source in a temporary directory and captures five 1280 x 800 PNGs from the real application in an isolated browser profile. It prepares identical local-only sets for Chrome Web Store and Firefox Add-ons under `Chrome Submit/Screenshots/<version>/<run-id>/` and `Firefox Submit/Screenshots/<version>/<run-id>/`, with a screenshot ZIP and capture report. It uses non-personal sample data, leaves Google Drive disconnected, and preserves previous screenshots and release packages.
+
+Use `-- --browser-path "C:/path/to/chrome.exe"` to select the browser, `-- --headed` to show it, or `-- --dist dist-google` to capture an existing version-checked build. This is a capture of the shared interface in a real Chromium browser, not a native Firefox or Google OAuth integration test. Review the images before uploading. See the [screenshot capture guide](docs/SCREENSHOTS.md) for the full workflow and fixture boundaries.
+
 ## Import And Recovery
 
 Use Settings -> Import backup to select a Full Backup ZIP directly; no manual extraction is needed. Settings and links only JSON and older Aura Start JSON backups are also accepted. Aura Start validates the backup before applying it, preserves this installation's Google Drive connection, and lets you choose:

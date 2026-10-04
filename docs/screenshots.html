@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Aura Start screenshot plan for Chrome Web Store, Firefox Add-ons, and the public website.">
+    <meta name="description" content="Capture the current Aura Start interface in a real browser for Chrome Web Store and Firefox Add-ons.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start Screenshot Plan - Aura Start</title>
+    <title>Aura Start Screenshot Capture - Aura Start</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -22,65 +22,84 @@
       </header>
       <main class="doc">
 <div class="kicker">Aura Start Docs · 2.1.0</div>
-<h1 id="aura-start-screenshot-plan">Aura Start Screenshot Plan</h1>
+<h1 id="aura-start-screenshot-capture">Aura Start Screenshot Capture</h1>
 <blockquote>
-<p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
+<p>Maintainer-only document. This workflow prepares store images; it does not publish a release.</p>
 </blockquote>
-<p>This plan prepares Chrome Web Store, Firefox Add-ons, and public website screenshots from the current Aura Start 2.1.0 feature set. It avoids unsupported claims, fake statistics, competitor criticism, and visual use of third-party brands beyond plain text references needed for migration.</p>
-<p>Recommended base sizes:</p>
+<p>Run <code>npm run screenshots</code> to capture the current Aura Start interface in a real installed Chromium browser. The same five 1280 x 800 RGB PNG images are prepared for Chrome Web Store and Firefox Add-ons. This size follows the <a href="https://developer.chrome.com/docs/webstore/images">Chrome Web Store screenshot guidance</a> and <a href="https://extensionworkshop.com/documentation/develop/create-an-appealing-listing/">Mozilla listing guidance</a>. Review the current store dashboard requirements before uploading.</p>
+<h2 id="requirements-and-quick-start">Requirements And Quick Start</h2>
 <ul>
-<li>Chrome Web Store and Firefox Add-ons screenshots: 1280 x 800 PNG</li>
-<li>Public website screenshots: 1280 x 800 PNG</li>
-<li>Use real extension UI only. The final PNGs are captured from the current Aura Start UI with non-personal demo data.</li>
-<li>Store screenshots live in <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code>.</li>
-<li>Public site copies live in <code>docs/assets/screenshots/</code> and use <code>*-20261004.png</code> filenames for the October 4, 2026 refresh.</li>
-<li><code>docs/screenshot-gallery.html</code> displays the real captured screenshots. It is not a mockup renderer.</li>
+<li>Node.js 22 or newer.</li>
+<li>Project dependencies installed with <code>npm ci</code>.</li>
+<li>An installed Chrome, Edge, or Chromium browser.</li>
 </ul>
-<h2 id="general-capture-rules">General Capture Rules</h2>
-<ul>
-<li>Use non-personal demo data.</li>
-<li>Do not show personal bookmarks, email addresses, OAuth tokens, browser profiles, or real Drive files.</li>
-<li>Do not show a fake store listing URL.</li>
-<li>Mention A Fine Start only as an import/export compatibility path.</li>
-<li>Keep wording factual: no "best", "#1", "guaranteed", "forever", or aggressive comparisons.</li>
-<li>Verify the screen exists in the current local build before publishing a screenshot as product UI.</li>
-</ul>
-<h2 id="store-screenshot-set">Store Screenshot Set</h2>
-<p>The maintained store set contains five images. Use these files in filename order and confirm the current dashboard requirements before uploading:</p>
-<ol>
-<li><code>01-new-tab-overview-1280x800.png</code> - nested groups, background, and widgets, with Drive disconnected.</li>
-<li><code>02-search-mode-1280x800.png</code> - fuzzy search with typo-tolerant results and count.</li>
-<li><code>03-import-export-1280x800.png</code> - import/export and migration workflow.</li>
-<li><code>04-settings-1280x800.png</code> - background and widget settings.</li>
-<li><code>05-restore-points-1280x800.png</code> - Restore Timeline with grouped snapshots.</li>
-</ol>
-<h2 id="public-website-screenshot-set">Public Website Screenshot Set</h2>
-<p>The public website can show more than 5 screenshots. Use these files:</p>
-<ol>
-<li><code>01-new-tab-overview-20261004.png</code> - nested groups, background, and widgets, with Drive disconnected.</li>
-<li><code>02-fuzzy-search-20261004.png</code> - fuzzy search and quick filters.</li>
-<li><code>03-import-export-20261004.png</code> - import/export workflow.</li>
-<li><code>04-backgrounds-widgets-20261004.png</code> - personalization settings.</li>
-<li><code>05-restore-timeline-20261004.png</code> - Restore Timeline.</li>
-<li><code>06-save-open-tabs-20261004.png</code> - optional tabs preview and duplicate filtering.</li>
-<li>
-<p><code>07-command-palette-20261004.png</code> - fuzzy Command Palette search.</p>
-</li>
-<li>
-<p><code>08-countdown-20261004.png</code> - the optional Countdown widget and its controls.</p>
-</li>
-</ol>
-<p>Run <code>node scripts/generate-store-photos.mjs</code> after building <code>dist</code> to refresh these images. The script renders the actual built UI in a local Vite preview with synthetic storage/tab APIs, an isolated temporary Chrome profile, and external HTTPS requests blocked. These captures do not test native extension permissions or real Google OAuth. Run the installed-extension matrix separately.</p>
-<p>Promotional composites in <code>Chrome Submit/Promo/</code> can then be refreshed with <code>node scripts/generate-promo-assets.mjs</code>; these are marketing layouts using the real captures, not additional interface screenshots.</p>
-<h2 id="publishing-checklist">Publishing Checklist</h2>
-<ul>
-<li>Screenshots match the current local build.</li>
-<li>No private data appears.</li>
-<li>No competitor logo or UI appears.</li>
-<li>No unsupported claims appear.</li>
-<li>Privacy claims match <code>PRIVACY.md</code>, <code>docs/privacy-policy.html</code>, and manifest permissions.</li>
-<li>Store listing text uses the same terminology as <code>Chrome Submit/STORE_LISTING.md</code> and <code>Firefox Submit/ADDON_LISTING.md</code>.</li>
-</ul>
+<p>From the repository root:</p>
+<pre><code class="language-bash">npm ci
+npm run screenshots
+</code></pre>
+<p>The command runs <code>scripts/generate-store-photos.mjs</code>. By default it builds the current source with Vite into a unique temporary directory, serves those files on a loopback address, and launches a separate browser with a temporary profile. It reads the version from the project rather than assuming a particular release number. It does not reuse or overwrite a release build directory.</p>
+<p>The capture uses the application's actual HTML, JavaScript, styles, images, and controls. Browser automation supplies only non-personal fixture data and the extension API surface needed for a local preview. It does not recreate the interface, replace its CSS, generate a mock page, or use image generation. See <a href="screenshot-demo-data.html">Screenshot Demo Data</a> for the fixture boundaries.</p>
+<h2 id="browser-and-build-options">Browser And Build Options</h2>
+<p>Browser discovery is automatic. To select an executable explicitly:</p>
+<pre><code class="language-bash">npm run screenshots -- --browser-path &quot;C:/Program Files/Google/Chrome/Application/chrome.exe&quot;
+</code></pre>
+<p><code>AURA_SCREENSHOT_BROWSER</code> provides the same browser-path setting through the environment. Add <code>--headed</code> to see the isolated browser window while it works; the default is headless.</p>
+<pre><code class="language-bash">npm run screenshots -- --headed
+</code></pre>
+<p>To capture a particular existing build instead of rebuilding the current source:</p>
+<pre><code class="language-bash">npm run screenshots -- --dist dist-google
+</code></pre>
+<p><code>AURA_SCREENSHOT_DIST_DIR</code> also selects an existing build. The explicit build's manifest version must match the current package version, and the visible application version is checked during capture. Matching version numbers cannot prove that an existing build includes every source edit: use the default fresh build for current-source screenshots.</p>
+<p>The Chromium and Firefox target versions in <code>package.json</code> must match for a shared screenshot set. The command reports an error if they differ.</p>
+<p>The browser is controlled through the Chrome DevTools Protocol. Native Firefox is not automated by this command. These screenshots show Aura Start's shared interface in a format suitable for both stores; they do not verify native Firefox behavior, browser permissions, Google OAuth, or live synchronization.</p>
+<h2 id="output-and-scene-order">Output And Scene Order</h2>
+<p>Every successful run creates a new directory in each local-only submission folder:</p>
+<pre><code class="language-text">Chrome Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/
+Firefox Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/
+</code></pre>
+<p>The run ID combines a UTC timestamp and a random suffix. Both directories contain identical copies of the five images, a screenshot ZIP, <code>capture-report.json</code>, and a short <code>README.md</code>. Previous captures and release ZIPs remain unchanged. These submission folders are ignored by Git.</p>
+<p>Upload the PNG images in this order:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Actual interface shown</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>01-links-and-groups-1280x800.png</code></td>
+<td>The start page with sample links and groups.</td>
+</tr>
+<tr>
+<td><code>02-notes-and-countdown-1280x800.png</code></td>
+<td>Markdown notes and the optional Countdown widget.</td>
+</tr>
+<tr>
+<td><code>03-full-backup-zip-1280x800.png</code></td>
+<td>The export/backup interface and Full Backup ZIP option.</td>
+</tr>
+<tr>
+<td><code>04-custom-timer-sound-1280x800.png</code></td>
+<td>Countdown settings with a sample WAV imported through the real file input.</td>
+</tr>
+<tr>
+<td><code>05-google-drive-sync-1280x800.png</code></td>
+<td>The actual Google Drive settings while disconnected.</td>
+</tr>
+</tbody>
+</table>
+<p>The ZIP is a convenient bundle of screenshots, not an extension release package. Store screenshot fields expect the individual PNG files.</p>
+<h2 id="isolation-and-validation">Isolation And Validation</h2>
+<p>The tool creates its own browser profile, temporary build, and loopback server with dynamically allocated ports. It never uses a personal browser profile or reads personal bookmarks or tabs. Synthetic extension storage belongs only to that preview. Google Drive remains off, and external requests are blocked during capture. No real account, token, Drive file, completed synchronization, or sync timestamp is fabricated.</p>
+<p>The custom-sound scene uses a generated sample WAV. The script imports that file through Aura Start's real audio file input and waits for the application to process it. The sound does not come from a user's files.</p>
+<p>Before accepting the output, the command checks the current version, expected headings and visible controls, browser JavaScript errors, PNG dimensions and RGB format, and the screenshot ZIP hashes. If the interface changes so the expected controls cannot be found, the command fails instead of fabricating a replacement screen. Update the scene navigation and checks to match the real interface, then run it again.</p>
+<p>Automated checks do not replace visual review. Open all five PNGs before upload and check that text is readable, important controls are in view, the scenes match the intended release, and no personal information appears. Screenshots are not evidence that real Google authorization, synchronization, or store submission succeeded.</p>
+<p>Run <code>npm run test:screenshots</code> for the capture helper's regression checks, including DevTools timeouts, unsafe profile rejection, and rejection of outdated builds. These tests supplement the full <code>npm run screenshots</code> browser run.</p>
+<h2 id="public-website-and-older-artwork">Public Website And Older Artwork</h2>
+<p>This command does not refresh the website gallery or promotional composites. The public images in <code>docs/assets/screenshots/</code> with <code>*-20261004.png</code> filenames document the October 4, 2026 capture. They remain separate from new store capture runs.</p>
+<p>The older <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code> directories are retained as local reference artwork. Neither those directories, the previous <code>Screenshots 2.1.0</code> sets, nor <code>Chrome Submit/Promo/</code> are overwritten. Update the website or promotional images explicitly when a separate task calls for it.</p>
+<p>Before publication, also check that store listing text agrees with the current product, <code>PRIVACY.md</code>, and manifest permissions. Official store publication remains the project owner's responsibility under <a href="https://github.com/communism420/Aura-Start/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
 </main>
       <footer class="site-footer">
         <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>

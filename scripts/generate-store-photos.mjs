@@ -1,705 +1,285 @@
-import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { createServer } from "node:http";
+import { access, copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { findBrowserPath, launchCaptureBrowser } from "./lib/screenshot-browser.mjs";
+import { createDemoChime, screenshotFixtureSource } from "./lib/screenshot-fixture.mjs";
 
-const cwd = process.cwd();
-const chromePhotoDir = path.join(cwd, "Chrome Submit", "Photo");
-const firefoxPhotoDir = path.join(cwd, "Firefox Submit", "Photo");
-const docsScreenshotDir = path.join(cwd, "docs", "assets", "screenshots");
-const previewDistDir = process.env.AURA_SCREENSHOT_DIST_DIR?.trim() || "dist-google";
-const previewPort = 4173;
-const debugPort = 9241;
-const profileDir = await mkdtemp(path.join(tmpdir(), "aura-docs-shots-"));
-const baseUrl = `http://127.0.0.1:${previewPort}/newtab.html`;
-const siteScreenshotDate = "20261004";
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const hash = (value) => createHash("sha256").update(value).digest("hex");
+const { values } = parseArgs({ options: {
+  help: { type: "boolean", short: "h" }, headed: { type: "boolean", default: false },
+  dist: { type: "string" }, "browser-path": { type: "string" }
+} });
 
-const chromeCandidates = [
-  "C:/Program Files/Google/Chrome/Application/chrome.exe",
-  "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
-  `${process.env.LOCALAPPDATA}/Google/Chrome/Application/chrome.exe`,
-  `${process.env.PROGRAMFILES}/Google/Chrome/Application/chrome.exe`
-].filter(Boolean);
+if (values.help) {
+  console.log(`Capture Aura Start's current UI in a real installed Chromium browser.
 
-const chromePath = chromeCandidates.find((candidate) => existsSync(candidate));
+  npm run screenshots
+  npm run screenshots -- --browser-path "C:/path/to/chrome.exe"
+  npm run screenshots -- --headed
+  npm run screenshots -- --dist dist-firefox
 
-if (!chromePath) {
-  throw new Error("Chrome executable was not found.");
+Default: build current source into a temporary directory, then capture five PNGs.
+--dist: explicitly reuse a built directory (its version must match package.json).
+--headed: show the otherwise headless browser, using an isolated temporary profile.
+Environment alternatives: AURA_SCREENSHOT_BROWSER, AURA_SCREENSHOT_DIST_DIR.
+Requires Node.js 22+ and npm dependencies; Chrome, Edge, or Chromium must be installed.
+Results: Chrome Submit/Screenshots/<version>/<run-id>/ and Firefox Submit/Screenshots/<version>/<run-id>/.
+Each run contains five 1280x800 RGB PNGs, a ZIP, README.md and capture-report.json.
+No upload, personal profile, Google login, UI recreation, or replacement styles.`);
+} else {
+  await main().catch((error) => { console.error(`Screenshot capture failed: ${error.message}`); process.exitCode = 1; });
 }
 
-const now = "2026-10-04T10:00:00.000Z";
-const settings = {
-  theme: "dark",
-  language: "en",
-  columns: 2,
-  compactMode: false,
-  openLinksInNewTab: false,
-  showDescriptions: true,
-  showSearch: true,
-  showVersionInHeader: true,
-  captureOpenTabs: true,
-  background: {
-    preset: "forest",
-    blur: 4,
-    dim: 38,
-    position: "center"
-  },
-  widgets: {
-    clock: true,
-    notes: true,
-    pomodoro: true,
-    timer: false
-  },
-  pomodoro: {
-    focusMinutes: 25,
-    breakMinutes: 5
-  },
-  timer: { durationSeconds: 300, volume: 80, customSoundId: null },
-  notes: { text: "# Launch notes\n- Review screenshots\n- Verify Chrome and Firefox packages\n- Test Google Drive sync" },
-  autoRestorePoints: true,
-  sync: {
-    mode: "off",
-    deviceId: "screenshot-device",
-    connected: false,
-    deleteCloudFileOnDisconnect: true
-  }
-};
-
-const link = (id, title, url, order, description = "", tags = []) => ({
-  id,
-  title,
-  url,
-  description,
-  tags,
-  order,
-  createdAt: now,
-  updatedAt: now
-});
-
-const groups = [
-  {
-    id: "group-daily",
-    title: "Daily",
-    parentId: null,
-    collapsed: false,
-    order: 0,
-    links: [
-      link("link-dashboard", "Project dashboard", "https://example.com/dashboard", 0, "Current work overview", ["work"]),
-      link("link-mail", "Inbox", "https://mail.example.com", 1, "Personal mail", ["mail"]),
-      link("link-calendar", "Calendar", "https://calendar.example.com", 2, "Meetings and planning", ["calendar"])
-    ]
-  },
-  {
-    id: "group-research",
-    title: "Research",
-    parentId: null,
-    collapsed: false,
-    order: 1,
-    links: [
-      link("link-docs", "Design notes", "https://example.com/design", 0, "Reference library", ["design"]),
-      link("link-reading", "Reading list", "https://example.com/reading", 1, "Saved articles", ["reading"]),
-      link("link-archive", "Archive", "https://web.archive.org", 2, "Snapshots and references", ["tools"])
-    ]
-  },
-  {
-    id: "group-research-deep",
-    title: "Deep dives",
-    parentId: "group-research",
-    collapsed: false,
-    order: 0,
-    links: [
-      link("link-mdn", "MDN Web Docs", "https://developer.mozilla.org", 0, "API references", ["docs", "web"]),
-      link("link-wiki", "Wikipedia", "https://wikipedia.org", 1, "Background reading", ["research"])
-    ]
-  },
-  {
-    id: "group-tools",
-    title: "Tools",
-    parentId: null,
-    collapsed: false,
-    order: 2,
-    links: [
-      link("link-figma", "Figma", "https://figma.com", 0, "Design workspace", ["design"]),
-      link("link-github", "GitHub", "https://github.com", 1, "Code repositories", ["code"]),
-      link("link-status", "Service status", "https://status.example.com", 2, "Monitoring", ["ops"])
-    ]
-  },
-  {
-    id: "group-personal",
-    title: "Personal",
-    parentId: null,
-    collapsed: false,
-    order: 3,
-    links: [
-      link("link-notes", "Notes", "https://notes.example.com", 0, "Private notes", ["notes"]),
-      link("link-travel", "Travel ideas", "https://example.com/travel", 1, "Plans and maps", ["travel"])
-    ]
-  }
-];
-
-const sampleData = {
-  version: 1,
-  updatedAt: now,
-  settings,
-  groups,
-  restorePoints: [
-    {
-      id: "restore-before-import",
-      name: "Before import",
-      createdAt: now,
-      reason: "before_import",
-      context: {
-        entity: "import",
-        source: "Aura JSON",
-        count: 4,
-        description: "4 groups, 11 links"
-      },
-      data: { version: 1, updatedAt: now, settings, groups: [] }
-    },
-    {
-      id: "restore-before-link-move",
-      name: "Before moving GitHub",
-      createdAt: "2026-10-04T09:30:00.000Z",
-      reason: "before_link_move",
-      context: {
-        entity: "link",
-        title: "GitHub",
-        from: "Daily",
-        to: "Tools"
-      },
-      data: { version: 1, updatedAt: now, settings, groups }
-    }
-  ]
-};
-
-const uiState = {
-  onboardingCompleted: true,
-  demoData: { groupIds: [], linkIds: [] },
-  lastSearchQuery: "",
-  searchFilter: "all",
-  customBackgroundImage: null
-};
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function safeRemove(target) {
-  const resolved = path.resolve(target);
-  if (resolved !== path.resolve(profileDir) || path.dirname(resolved) !== path.resolve(tmpdir())
-    || !path.basename(resolved).startsWith("aura-docs-shots-")) {
-    throw new Error("Refusing to remove a path outside this run's temporary screenshot profile.");
-  }
+async function buildCurrent(outDir, version) {
+  const overrides = {
+    AURA_TARGET_BROWSER: "chromium", AURA_EXTENSION_VERSION: version, AURA_CHROMIUM_EXTENSION_VERSION: version,
+    AURA_STORE_BUILD: "true", AURA_GOOGLE_OAUTH_CLIENT_ID: "",
+    AURA_GOOGLE_WEB_OAUTH_CLIENT_ID: "", AURA_GOOGLE_DEVICE_OAUTH_CLIENT_ID: "", AURA_GOOGLE_DEVICE_OAUTH_CLIENT_SECRET: "",
+    AURA_ENABLE_GOOGLE_WEB_OAUTH_FALLBACK: "false", AURA_ENABLE_GOOGLE_DEVICE_OAUTH_FALLBACK: "false"
+  };
+  const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
+  const originalCwd = process.cwd();
   try {
-    await rm(target, { recursive: true, force: true });
-  } catch {
-    // Chrome can keep its temporary lockfile open briefly after Browser.close.
+    // Vite reads cwd and .env.local. Explicit process values prevent private
+    // OAuth configuration being embedded in this UI-only temporary build.
+    process.chdir(root);
+    Object.assign(process.env, overrides);
+    const { build } = await import("vite");
+    await build({ root, mode: "production", logLevel: "warn", build: { outDir, emptyOutDir: true } });
+  } finally {
+    process.chdir(originalCwd);
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
   }
 }
 
-async function stopChild(child) {
-  if (!child || child.exitCode !== null) return;
-
-  child.kill("SIGKILL");
-  await Promise.race([new Promise((resolve) => child.once("exit", resolve)), delay(2000)]);
-}
-
-async function waitForHttp(url, child, timeout = 30_000) {
-  const started = Date.now();
-  let lastError;
-
-  while (Date.now() - started < timeout) {
-    if (child?.exitCode !== null) {
-      throw new Error(`Preview server exited early with code ${child.exitCode}.`);
-    }
-
+async function serveBuild(directory) {
+  const directoryReal = await realpath(directory);
+  const mime = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".png": "image/png", ".wasm": "application/wasm", ".woff2": "font/woff2", ".ico": "image/x-icon" };
+  const server = createServer(async (request, response) => {
     try {
-      const response = await fetch(url, { cache: "no-store" });
-      if (response.ok) return;
-      lastError = new Error(`HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-
-    await delay(250);
-  }
-
-  throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? "unknown error"}`);
-}
-
-async function startPreview() {
-  const preview = spawn(
-    process.execPath,
-    ["node_modules/vite/bin/vite.js", "preview", "--host", "127.0.0.1", "--port", String(previewPort), "--outDir", previewDistDir],
-    { cwd, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] }
-  );
-
-  await waitForHttp(baseUrl, preview);
-  return preview;
-}
-
-async function startChrome() {
-  const chrome = spawn(
-    chromePath,
-    [
-      "--headless=new",
-      `--remote-debugging-port=${debugPort}`,
-      `--user-data-dir=${profileDir}`,
-      "--window-size=1280,800",
-      "--force-device-scale-factor=1",
-      "--disable-gpu",
-      "--disable-extensions",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--disable-background-networking",
-      "--disable-sync",
-      "--metrics-recording-only",
-      "--remote-allow-origins=*",
-      "--lang=en-US",
-      "about:blank"
-    ],
-    { windowsHide: true, stdio: "ignore" }
-  );
-
-  const started = Date.now();
-
-  while (Date.now() - started < 30_000) {
-    try {
-      const response = await fetch(`http://127.0.0.1:${debugPort}/json/version`);
-      if (response.ok) return { chrome, version: await response.json() };
-    } catch {
-      // Keep polling while Chrome brings up the DevTools endpoint.
-    }
-
-    await delay(250);
-  }
-
-  throw new Error("Chrome DevTools endpoint did not become ready.");
-}
-
-class CdpClient {
-  constructor(wsUrl) {
-    this.ws = new WebSocket(wsUrl);
-    this.nextId = 1;
-    this.pending = new Map();
-    this.waiters = new Map();
-    this.ws.addEventListener("message", (event) => this.handleMessage(JSON.parse(event.data)));
-  }
-
-  async open() {
-    if (this.ws.readyState === WebSocket.OPEN) return;
-
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener("open", resolve, { once: true });
-      this.ws.addEventListener("error", reject, { once: true });
-    });
-  }
-
-  handleMessage(message) {
-    if (message.id && this.pending.has(message.id)) {
-      const { resolve, reject } = this.pending.get(message.id);
-      this.pending.delete(message.id);
-
-      if (message.error) {
-        reject(new Error(message.error.message));
-      } else {
-        resolve(message.result ?? {});
+      const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
+      // Chrome asks for this browser-only icon even though newtab uses logo.png.
+      if (pathname === "/favicon.ico") { response.writeHead(204).end(); return; }
+      const target = await realpath(path.resolve(directoryReal, `.${pathname}`));
+      if (!target.startsWith(directoryReal + path.sep) || !(await stat(target)).isFile()) {
+        response.writeHead(403).end(); return;
       }
-
-      return;
-    }
-
-    if (message.method && this.waiters.has(message.method)) {
-      const waiters = this.waiters.get(message.method);
-      this.waiters.delete(message.method);
-      waiters.forEach((resolve) => resolve(message.params ?? {}));
-    }
-  }
-
-  send(method, params = {}) {
-    const id = this.nextId++;
-
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  waitFor(method, timeout = 10_000) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`Timed out waiting for ${method}`)), timeout);
-      const wrapped = (params) => {
-        clearTimeout(timer);
-        resolve(params);
-      };
-      const waiters = this.waiters.get(method) ?? [];
-      waiters.push(wrapped);
-      this.waiters.set(method, waiters);
-    });
-  }
-
-  close() {
-    try {
-      this.ws.close();
-    } catch {
-      // The browser may already be closed.
-    }
-  }
+      response.writeHead(200, { "Content-Type": mime[path.extname(target)] ?? "application/octet-stream", "Cache-Control": "no-store" });
+      response.end(await readFile(target));
+    } catch { response.writeHead(404).end(); }
+  });
+  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+  return { origin: `http://127.0.0.1:${server.address().port}`, close: () => new Promise((resolve) => { server.close(resolve); server.closeAllConnections(); }) };
 }
 
-async function createPage(browserWsUrl) {
-  const browser = new CdpClient(browserWsUrl);
-  await browser.open();
-
-  const target = await browser.send("Target.createTarget", { url: "about:blank" });
-  const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
-  const pageTarget = targets.find((item) => item.id === target.targetId);
-
-  if (!pageTarget?.webSocketDebuggerUrl) {
-    throw new Error("Could not find page target websocket URL.");
+async function hashBuild(directory, relative = "") {
+  const files = [];
+  for (const entry of (await readdir(path.join(directory, relative), { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
+    const name = path.join(relative, entry.name);
+    if (entry.isDirectory()) files.push(...await hashBuild(directory, name));
+    else if (entry.isFile()) files.push({ file: name.split(path.sep).join("/"), sha256: hash(await readFile(path.join(directory, name))) });
+    else throw new Error(`Build contains a symbolic link or unsupported file: ${name}`);
   }
+  return files;
+}
 
-  const page = new CdpClient(pageTarget.webSocketDebuggerUrl);
-  await page.open();
-  await page.send("Page.enable");
-  await page.send("Runtime.enable");
-  await page.send("Network.enable");
-  await page.send("Network.setBlockedURLs", { urls: ["https://*"] });
-  await page.send("Emulation.setLocaleOverride", { locale: "en-US" });
+async function viewport(page, width = 1280, height = 800) {
   await page.send("Emulation.setDeviceMetricsOverride", {
-    width: 1280,
-    height: 800,
-    deviceScaleFactor: 1,
-    mobile: false,
-    screenWidth: 1280,
-    screenHeight: 800
+    width, height, deviceScaleFactor: 1280 / width, mobile: false, screenWidth: 1280, screenHeight: 800
   });
-  await page.send("Page.addScriptToEvaluateOnNewDocument", { source: chromeStorageMockSource() });
-
-  return { browser, page };
 }
 
-function chromeStorageMockSource() {
-  return `
-    (() => {
-      const STORE_KEY = "aura-start-data-v1";
-      const UI_STATE_KEY = "aura-start-ui-state-v1";
-      const initialData = ${JSON.stringify(sampleData)};
-      if (new URL(location.href).searchParams.get("view") === "countdown") {
-        initialData.settings.widgets = { clock: true, notes: false, pomodoro: false, timer: true };
-      }
-      const initialUiState = ${JSON.stringify(uiState)};
-      const store = { [STORE_KEY]: initialData, [UI_STATE_KEY]: initialUiState };
-      const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
-      const chromeApi = globalThis.chrome && typeof globalThis.chrome === "object" ? globalThis.chrome : {};
-      chromeApi.storage = {
-        local: {
-          get: (key, callback) => {
-            let result;
-            if (typeof key === "string") result = { [key]: clone(store[key]) };
-            else if (Array.isArray(key)) result = Object.fromEntries(key.map((item) => [item, clone(store[item])]));
-            else if (key && typeof key === "object") {
-              result = Object.fromEntries(Object.entries(key).map(([item, fallback]) => [
-                item,
-                store[item] === undefined ? fallback : clone(store[item])
-              ]));
-            } else {
-              result = clone(store);
-            }
-            callback?.(result);
-            return Promise.resolve(result);
-          },
-          set: (items, callback) => {
-            Object.assign(store, clone(items));
-            callback?.();
-            return Promise.resolve();
-          },
-          remove: (key, callback) => {
-            for (const item of Array.isArray(key) ? key : [key]) delete store[item];
-            callback?.();
-            return Promise.resolve();
-          }
-        }
-      };
-      chromeApi.runtime = chromeApi.runtime ?? { openOptionsPage: () => {} };
-      chromeApi.permissions = chromeApi.permissions ?? {
-        contains: (_request, callback) => {
-          callback?.(true);
-          return Promise.resolve(true);
-        },
-        request: (_request, callback) => {
-          callback?.(true);
-          return Promise.resolve(true);
-        }
-      };
-      chromeApi.tabs = chromeApi.tabs ?? {
-        create: () => {},
-        query: (_queryInfo, callback) => {
-          const tabs = [
-            { title: "Aura Start repository", url: "https://github.com/communism420/Aura-Start" },
-            { title: "Cloudflare Pages docs", url: "https://developers.cloudflare.com/pages/" },
-            { title: "Project dashboard", url: "https://example.com/dashboard" },
-            { title: "Firefox Add-ons Developer Hub", url: "https://addons.mozilla.org/developers/" },
-            { title: "Browser settings", url: "chrome://extensions" }
-          ];
-          callback?.(tabs);
-          return Promise.resolve(tabs);
-        }
-      };
-      if (!globalThis.chrome) {
-        Object.defineProperty(globalThis, "chrome", { configurable: true, value: chromeApi });
-      }
-    })();
-  `;
+async function clickButton(page, text) {
+  const point = await page.evaluate(`(() => {
+    const button = Array.from(document.querySelectorAll('button')).find(e => e.textContent.trim() === ${JSON.stringify(text)});
+    if (!button || button.disabled) throw new Error('Button unavailable: ' + ${JSON.stringify(text)});
+    button.scrollIntoView({block:'nearest'});
+    const r = button.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2};
+  })()`);
+  await page.send("Input.dispatchMouseEvent", { type: "mousePressed", button: "left", clickCount: 1, ...point });
+  await page.send("Input.dispatchMouseEvent", { type: "mouseReleased", button: "left", clickCount: 1, ...point });
+  await page.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 1275, y: 795 });
 }
 
-async function evaluate(page, expression) {
-  const result = await page.send("Runtime.evaluate", {
-    expression,
-    awaitPromise: true,
-    returnByValue: true
-  });
-
-  if (result.exceptionDetails) {
-    throw new Error(result.exceptionDetails.text ?? "Runtime evaluation failed.");
-  }
-
-  return result.result?.value;
-}
-
-async function waitForExpression(page, expression, timeout = 10_000) {
-  const started = Date.now();
-
-  while (Date.now() - started < timeout) {
-    if (await evaluate(page, expression)) return;
-    await delay(150);
-  }
-
-  const bodyText = await evaluate(page, `document.body?.innerText?.slice(0, 1000) ?? ""`).catch(() => "");
-  throw new Error(`Timed out waiting for expression: ${expression}\nVisible text: ${bodyText}`);
-}
-
-async function navigateFresh(page, view = "overview") {
-  const load = page.waitFor("Page.loadEventFired", 15_000).catch(() => undefined);
-  await page.send("Page.navigate", { url: `${baseUrl}?shot=${Date.now()}&view=${view}` });
-  await load;
-  await waitForExpression(
-    page,
-    `document.body && document.body.innerText.includes("Aura Start") && document.body.innerText.includes("Project dashboard")`,
-    15_000
-  );
-  await delay(500);
-}
-
-async function clickByText(page, text) {
-  const clicked = await evaluate(
-    page,
-    `(() => {
-      const text = ${JSON.stringify(text)};
-      const button = Array.from(document.querySelectorAll("button")).find((element) => {
-        const label = ((element.getAttribute("aria-label") || "") + " " + (element.textContent || "")).trim();
-        return label.includes(text);
-      });
-      if (!button) return false;
-      button.click();
-      return true;
-    })()`
-  );
-
-  if (!clicked) {
-    throw new Error(`Button not found: ${text}`);
-  }
-}
-
-async function clickByAnyText(page, labels) {
-  for (const label of labels) {
-    const clicked = await evaluate(
-      page,
-      `(() => {
-        const text = ${JSON.stringify(label)};
-        const button = Array.from(document.querySelectorAll("button")).find((element) => {
-          const label = ((element.getAttribute("aria-label") || "") + " " + (element.textContent || "")).trim();
-          return label.includes(text);
-        });
-        if (!button) return false;
-        button.click();
-        return true;
-      })()`
-    );
-
-    if (clicked) {
-      return;
+async function settle(page) {
+  await page.evaluate(`(async () => {
+    await document.fonts.ready;
+    await Promise.all(Array.from(document.images).map(i => i.complete ? Promise.resolve() : i.decode()));
+    const layer = document.querySelector('.aura-background-image');
+    if (layer) {
+      const url = getComputedStyle(layer).backgroundImage.match(/^url\\(["']?(.*?)["']?\\)$/)?.[1];
+      if (url) { const image = new Image(); image.src = url; await image.decode(); }
     }
-  }
-
-  throw new Error(`Button not found: ${labels.join(" / ")}`);
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  })()`);
 }
 
-async function assertEditModeOff(page) {
-  const editPressed = await evaluate(
-    page,
-    `Array.from(document.querySelectorAll("button"))
-      .filter((button) => (button.textContent || "").includes("Edit"))
-      .every((button) => button.getAttribute("aria-pressed") !== "true")`
-  );
-
-  if (!editPressed) {
-    throw new Error("Edit mode is active in a generated screenshot.");
-  }
+async function visible(page, expression) {
+  await page.waitForExpression(`(() => {
+    const elements = ${expression};
+    return elements.length > 0 && elements.every(e => {
+      if (!e) return false;
+      const r = e.getBoundingClientRect(); const style = getComputedStyle(e);
+      return r.width > 0 && r.height > 0 && r.top >= -1 && r.left >= -1 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1 && style.visibility !== 'hidden' && style.display !== 'none';
+    });
+  })()`);
 }
 
-async function screenshot(page, { storeName, docsName }) {
-  await evaluate(page, `window.scrollTo(0, 0)`);
-  await assertEditModeOff(page);
-  await delay(350);
-  const result = await page.send("Page.captureScreenshot", {
-    format: "png",
-    fromSurface: true,
-    captureBeyondViewport: false
-  });
-
-  const buffer = Buffer.from(result.data, "base64");
-  const targets = [];
-  if (storeName) {
-    targets.push(path.join(chromePhotoDir, storeName), path.join(firefoxPhotoDir, storeName));
+async function capture(page, session, directory, name, requiredElements, manifest) {
+  await settle(page);
+  await visible(page, requiredElements);
+  const state = await page.evaluate(`(() => {
+    const badge = document.querySelector('.aura-version-badge');
+    return {
+      version: badge?.textContent.trim(),
+      horizontalOverflow: document.documentElement.scrollWidth > innerWidth,
+      alerts: Array.from(document.querySelectorAll('[role="alert"]')).map(e => e.textContent.trim()).filter(Boolean),
+      connected: !!document.querySelector('.sync-account-marker'),
+      edit: !!document.querySelector('button[aria-pressed="true"][aria-label="Disable edit mode"]')
+    };
+  })()`);
+  if (state.version !== `v${manifest.version}`) throw new Error(`UI version mismatch: ${state.version} vs ${manifest.version}`);
+  if (state.horizontalOverflow || state.alerts.length || state.connected || state.edit) throw new Error(`Scene ${name} failed UI checks: ${JSON.stringify(state)}`);
+  if (session.errors.length) throw new Error(`Browser page errors: ${JSON.stringify(session.errors)}`);
+  const { data } = await page.send("Page.captureScreenshot", { format: "png", fromSurface: true, captureBeyondViewport: false });
+  const png = Buffer.from(data, "base64");
+  if (png.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a" || png.readUInt32BE(16) !== 1280 || png.readUInt32BE(20) !== 800 || png[24] !== 8 || png[25] !== 2) {
+    throw new Error(`Browser returned a non-RGB or incorrectly sized PNG for ${name}; no image postprocessing is performed.`);
   }
-  if (docsName) {
-    targets.push(path.join(docsScreenshotDir, docsName));
-  }
-
-  await Promise.all(targets.map((target) => writeFile(target, buffer)));
+  await writeFile(path.join(directory, name), png);
+  console.log(`Captured ${name}`);
+  return { name, width: 1280, height: 800, color: "RGB, 8 bits per channel, no alpha", bytes: png.length, sha256: hash(png) };
 }
 
-let preview;
-let chrome;
-let browserClient;
-let page;
-
-try {
-  await Promise.all([
-    mkdir(chromePhotoDir, { recursive: true }),
-    mkdir(firefoxPhotoDir, { recursive: true }),
-    mkdir(docsScreenshotDir, { recursive: true })
-  ]);
-  preview = await startPreview();
-  const chromeStart = await startChrome();
-  chrome = chromeStart.chrome;
-  const created = await createPage(chromeStart.version.webSocketDebuggerUrl);
-  browserClient = created.browser;
-  page = created.page;
-
-  await navigateFresh(page);
-  await screenshot(page, {
-    storeName: "01-new-tab-overview-1280x800.png",
-    docsName: `01-new-tab-overview-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByText(page, "Search");
-  await waitForExpression(
-    page,
-    `document.querySelector('input[type="search"]')?.placeholder === "Search title, URL, description, tags"`
-  );
-  await evaluate(page, `(() => {
-    const input = document.querySelector('input[type="search"]');
-    if (!(input instanceof HTMLInputElement)) return false;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-    setter?.call(input, "githb");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    return true;
-  })()`);
-  await waitForExpression(page, `document.body.innerText.includes("GitHub")`);
-  await screenshot(page, {
-    storeName: "02-search-mode-1280x800.png",
-    docsName: `02-fuzzy-search-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByText(page, "Import");
-  await waitForExpression(
-    page,
-    `document.body.innerText.includes("Import backup") && document.body.innerText.includes("Import format")`
-  );
-  await screenshot(page, {
-    storeName: "03-import-export-1280x800.png",
-    docsName: `03-import-export-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByText(page, "Settings");
-  await waitForExpression(
-    page,
-    `document.body.innerText.includes("Settings") && document.body.innerText.includes("Backgrounds") && document.body.innerText.includes("Widgets")`
-  );
-  await evaluate(page, `(() => {
-    const scroller = document.querySelector('[role="presentation"]');
-    const heading = Array.from(document.querySelectorAll('h2, h3, h4')).find((element) => element.textContent?.trim() === 'Backgrounds');
-    if (scroller instanceof HTMLElement && heading instanceof HTMLElement) {
-      scroller.scrollTop += heading.getBoundingClientRect().top - 32;
-    }
-  })()`);
-  await delay(250);
-  await screenshot(page, {
-    storeName: "04-settings-1280x800.png",
-    docsName: `04-backgrounds-widgets-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByText(page, "Settings");
-  await waitForExpression(page, `document.body.innerText.includes("Restore Timeline")`);
-  await clickByText(page, "Restore Timeline");
-  await waitForExpression(
-    page,
-    `document.body.innerText.includes("Before import") && Array.from(document.querySelectorAll("input")).some((input) => input.value === "Manual checkpoint")`
-  );
-  await screenshot(page, {
-    storeName: "05-restore-points-1280x800.png",
-    docsName: `05-restore-timeline-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByAnyText(page, ["Save tabs", "Tabs", "Save open tabs"]);
-  await waitForExpression(page, `document.body.innerText.includes("Save open tabs")`);
-  await clickByText(page, "Review open tabs");
-  await waitForExpression(page, `document.body.innerText.includes("tabs will be saved")`);
-  await screenshot(page, {
-    docsName: `06-save-open-tabs-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page);
-  await clickByText(page, "Command Palette");
-  await waitForExpression(page, `document.querySelector(".command-palette-input") instanceof HTMLInputElement`);
-  await evaluate(page, `(() => {
-    const input = document.querySelector('.command-palette-input');
-    if (!(input instanceof HTMLInputElement)) return false;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-    setter?.call(input, "tabs");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    return true;
-  })()`);
-  await waitForExpression(page, `document.body.innerText.includes("Save open tabs")`);
-  await screenshot(page, {
-    docsName: `07-command-palette-${siteScreenshotDate}.png`
-  });
-
-  await navigateFresh(page, "countdown");
-  await waitForExpression(page, `document.body.innerText.includes("Countdown")`);
-  await screenshot(page, { docsName: `08-countdown-${siteScreenshotDate}.png` });
-
-  console.log("Store screenshots generated in Chrome Submit/Photo and Firefox Submit/Photo.");
-  console.log("Site screenshots generated in docs/assets/screenshots.");
-} finally {
+async function main() {
+  if (Number(process.versions.node.split(".")[0]) < 22) throw new Error("Use Node.js 22 or newer.");
+  const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+  const version = packageJson.extensionVersions?.chromium ?? packageJson.version;
+  if (!/^\d+(?:\.\d+){1,3}$/.test(version)) throw new Error("Invalid current version in package.json.");
+  if ((packageJson.extensionVersions?.firefox ?? version) !== version) throw new Error("Chromium and Firefox versions differ; a shared screenshot set requires the same version.");
+  const browserPath = await findBrowserPath(values["browser-path"] ?? process.env.AURA_SCREENSHOT_BROWSER);
+  const requestedDist = values.dist ?? process.env.AURA_SCREENSHOT_DIST_DIR;
+  const temporary = await mkdtemp(path.join(tmpdir(), "aura-store-screenshots-"));
+  const ownedTemporary = await realpath(temporary);
+  let server; let session;
   try {
-    await browserClient?.send("Browser.close");
-  } catch {
-    // Browser.close may race with process shutdown.
-  }
+    const dist = requestedDist ? path.resolve(requestedDist) : path.join(temporary, "build");
+    if (!requestedDist) {
+      console.log(`Building current Aura Start ${version} UI in a temporary directory...`);
+      await buildCurrent(dist, version);
+    }
+    const manifest = JSON.parse(await readFile(path.join(dist, "manifest.json"), "utf8"));
+    if (manifest.version !== version) throw new Error(`Build is version ${manifest.version}; package.json requires ${version}. Rebuild or omit --dist.`);
+    await access(path.join(dist, "newtab.html"));
+    const buildFiles = await hashBuild(dist);
+    server = await serveBuild(dist);
+    const profileDir = path.join(temporary, "browser-profile");
+    await mkdir(profileDir);
+    session = await launchCaptureBrowser({ executablePath: browserPath, profileDir, headed: values.headed, allowedOrigin: server.origin });
+    const { page } = session;
+    await page.send("Emulation.setLocaleOverride", { locale: "en-US" });
+    await page.send("Page.addScriptToEvaluateOnNewDocument", { source: screenshotFixtureSource(manifest) });
+    const staging = path.join(temporary, "screenshots");
+    await mkdir(staging);
+    const wavPath = path.join(temporary, "Gentle chime.wav");
+    await writeFile(wavPath, createDemoChime());
+    const fresh = async (scene = "overview") => {
+      await page.send("Page.navigate", { url: `${server.origin}/newtab.html?view=${scene}` });
+      await page.waitForExpression(`document.readyState === 'complete' && document.body.innerText.includes('Project dashboard') && document.body.innerText.includes('v${version}')`);
+      await settle(page);
+    };
+    const shots = [];
+    const take = async (name, elements) => shots.push(await capture(page, session, staging, name, elements, manifest));
+    await viewport(page);
+    await fresh();
+    await take("01-links-and-groups-1280x800.png", `[document.querySelector('.notes-widget'), document.querySelector('.aura-group-grid'), document.querySelector('.aura-group-grid a'), ...document.querySelectorAll('.aura-group-grid a')]`);
+    await fresh("countdown");
+    await take("02-notes-and-countdown-1280x800.png", `[document.querySelector('.notes-widget'), document.querySelector('.countdown-widget'), document.querySelector('.aura-group-grid'), document.querySelector('.aura-group-grid a'), ...document.querySelectorAll('.aura-group-grid a')]`);
+    await fresh();
+    await clickButton(page, "Export");
+    await page.waitForExpression(`document.querySelector('.export-menu-popover')?.innerText.includes('Full backup (ZIP)')`);
+    await take("03-full-backup-zip-1280x800.png", `[document.querySelector('.export-menu-popover')]`);
 
-  page?.close();
-  browserClient?.close();
-  await stopChild(chrome);
-  await stopChild(preview);
-  await delay(800);
-  await safeRemove(profileDir);
+    await viewport(page, 896, 560);
+    await fresh("sound");
+    await clickButton(page, "Settings");
+    await page.waitForExpression(`document.querySelector('input[type="file"][aria-label]') !== null`);
+    const { root: documentNode } = await page.send("DOM.getDocument");
+    const { nodeId } = await page.send("DOM.querySelector", { nodeId: documentNode.nodeId, selector: 'input[type="file"][aria-label]' });
+    await page.send("DOM.setFileInputFiles", { nodeId, files: [wavPath] });
+    await page.waitForExpression(`document.body.innerText.includes('Gentle chime.wav')`, 30000);
+    await page.evaluate(`(() => {
+      const label = Array.from(document.querySelectorAll('label')).find(e => e.textContent.trim().startsWith('Countdown'));
+      document.querySelector('[role="presentation"]').scrollTop += label.getBoundingClientRect().top - 8;
+    })()`);
+    await take("04-custom-timer-sound-1280x800.png", `[
+      Array.from(document.querySelectorAll('h4')).find(e => e.textContent.trim() === 'Timer signal')?.parentElement,
+      document.querySelector('.settings-info-table')
+    ]`);
+
+    await viewport(page, 1024, 640);
+    await fresh();
+    await clickButton(page, "Settings");
+    await page.waitForExpression(`Array.from(document.querySelectorAll('h3')).some(e => e.textContent.trim() === 'Google Drive Sync')`);
+    await page.evaluate(`(() => {
+      const section = Array.from(document.querySelectorAll('h3')).find(e => e.textContent.trim() === 'Google Drive Sync').closest('.surface-flat');
+      document.querySelector('[role="presentation"]').scrollTop += section.getBoundingClientRect().top - 32;
+    })()`);
+    await take("05-google-drive-sync-1280x800.png", `[
+      Array.from(document.querySelectorAll('h3')).find(e => e.textContent.trim() === 'Google Drive Sync'),
+      Array.from(document.querySelectorAll('button')).find(e => e.textContent.trim() === 'Connect Google Drive')
+    ]`);
+
+    const { zipSync, unzipSync } = await import("fflate");
+    const zipEntries = Object.fromEntries(await Promise.all(shots.map(async (shot) => [shot.name, new Uint8Array(await readFile(path.join(staging, shot.name)))])));
+    const zip = zipSync(zipEntries, { level: 6 });
+    const unpacked = unzipSync(zip);
+    if (Object.keys(unpacked).length !== 5 || shots.some((shot) => hash(unpacked[shot.name]) !== shot.sha256)) throw new Error("Screenshot ZIP integrity check failed.");
+    const archiveName = `aura-start-${version}-store-screenshots.zip`;
+    await writeFile(path.join(staging, archiveName), zip);
+    const createdAt = new Date().toISOString();
+    const runId = createdAt.replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z") + "-" + randomUUID().slice(0, 8);
+    const report = {
+      version, createdAt, runId, browserVersion: session.browserVersion,
+      source: requestedDist ? "explicit existing build (--dist); source freshness not asserted" : "fresh build of current source",
+      buildFingerprint: hash(JSON.stringify(buildFiles)), buildFiles,
+      capture: "real Chromium browser, actual Aura Start UI, synthetic storage data only; no CSS/DOM design replacement or image postprocessing",
+      scenes: shots, browserErrors: session.errors, blockedRequests: session.blockedRequests,
+      drive: "disabled and disconnected", customSound: { name: "Gentle chime.wav", sha256: hash(await readFile(wavPath)) },
+      archive: { name: archiveName, sha256: hash(zip), files: shots.length }
+    };
+    await writeFile(path.join(staging, "capture-report.json"), JSON.stringify(report, null, 2) + "\n");
+    await writeFile(path.join(staging, "README.md"), `# Aura Start ${version} store screenshots\n\nCaptured ${createdAt} in a real browser from the actual app.\n\nUpload the five PNGs in filename order to Chrome Web Store or Firefox Add-ons. Each is 1280 x 800 RGB PNG without transparency. The ZIP contains only these five PNGs; it is not an extension package.\n\n1. Links, nested groups and Markdown notes\n2. Notes and Countdown\n3. Full ZIP backup\n4. Custom Countdown sound, imported through the real file picker\n5. Optional Google Drive sync, disconnected\n\nInspect every image before publishing. This is a UI illustration, not a real-account or native-extension integration test. No personal data or Google account was used. The same shared UI images are copied to both store directories.\n\nReproduce from the repository: npm run screenshots\n\nBrowser/build identity and image hashes: capture-report.json.\n\nStore image guidance:\n- https://developer.chrome.com/docs/webstore/images\n- https://extensionworkshop.com/documentation/develop/create-an-appealing-listing/\n`);
+    const names = [...shots.map((shot) => shot.name), archiveName, "README.md", "capture-report.json"];
+    for (const store of ["Chrome Submit", "Firefox Submit"]) {
+      const parent = path.join(root, store, "Screenshots", version);
+      await mkdir(parent, { recursive: true });
+      const destination = path.join(parent, runId);
+      await mkdir(destination); // Unique per run; never replace earlier screenshots.
+      for (const name of names) await copyFile(path.join(staging, name), path.join(destination, name));
+      for (const name of names) if (hash(await readFile(path.join(destination, name))) !== hash(await readFile(path.join(staging, name)))) throw new Error(`Output copy verification failed: ${store}/${name}`);
+      console.log(`Saved: ${destination}`);
+    }
+    console.log("Done: five real-browser screenshots and a verified ZIP in each store directory. Review images before uploading.");
+  } finally {
+    // A stuck browser must not leave the HTTP server keeping Node alive. If it
+    // cannot be stopped, keep its profile instead of deleting files still in use.
+    try { await session?.close(); }
+    finally { await server?.close(); }
+    // Only the directory allocated by this run may ever be recursively removed.
+    const resolved = await realpath(temporary);
+    if (resolved !== ownedTemporary || path.dirname(resolved) !== await realpath(tmpdir()) || !path.basename(resolved).startsWith("aura-store-screenshots-")) {
+      throw new Error("Refusing to clean a directory outside this run's temporary workspace.");
+    }
+    await rm(resolved, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {
+      console.warn(`Browser files are still locked; temporary capture files remain in ${resolved}`);
+    });
+  }
 }

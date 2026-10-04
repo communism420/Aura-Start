@@ -24,81 +24,37 @@
 <div class="kicker">Aura Start Docs · 2.1.0</div>
 <h1 id="screenshot-demo-data">Screenshot Demo Data</h1>
 <blockquote>
-<p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
+<p>Maintainer-only document. These fixtures are for isolated screenshot capture and manual preview only.</p>
 </blockquote>
-<p>This data is for manual screenshot setup, staging mockups, and local testing only. It must not be injected automatically for production users and must not change Aura Start's user data behavior.</p>
-<p>The automated screenshot script (<code>node scripts/generate-store-photos.mjs</code>) prepares equivalent non-personal demo data before capture. Use the same shape for manual screenshots so documentation, store assets, and the public site stay consistent.</p>
-<h2 id="groups-and-links">Groups And Links</h2>
-<h3 id="daily">Daily</h3>
+<p><code>npm run screenshots</code> uses non-personal data to render the current Aura Start application in a real installed Chromium browser. The executable fixture lives in <code>scripts/lib/screenshot-fixture.mjs</code>; the <a href="screenshots.html">capture guide</a> describes the command and output. The fixture is not shipped as user data and does not change production defaults.</p>
+<h2 id="data-boundaries">Data Boundaries</h2>
 <ul>
-<li>Project dashboard - <code>https://example.com/dashboard</code></li>
-<li>Inbox - <code>https://mail.example.com</code></li>
-<li>Calendar - <code>https://calendar.google.com</code></li>
+<li>Use example links and public reference URLs, never a personal bookmark export or browsing session.</li>
+<li>Keep all fixture storage inside the run's isolated preview and temporary browser profile.</li>
+<li>Keep Google Drive off and disconnected. Do not seed credentials, a fake connected account, cloud files, successful uploads, or sync timestamps.</li>
+<li>Use the application's real settings schema, controls, and bundled assets. Do not replace the interface with screenshot-specific HTML or CSS.</li>
+<li>Derive release/version information from the current package and rendered application. Do not hardcode a future version into the screenshot.</li>
+<li>Do not claim that these local-preview screenshots test native browser permissions or Google Drive integration.</li>
 </ul>
-<h3 id="research">Research</h3>
-<ul>
-<li>Design notes - <code>https://example.com/design-notes</code></li>
-<li>Reading list - <code>https://example.com/reading</code></li>
-<li>Archive - <code>https://example.com/archive</code></li>
-</ul>
-<h3 id="deep-dives">Deep dives</h3>
-<p>Child group under <strong>Research</strong>.</p>
-<ul>
-<li>MDN Web Docs - <code>https://developer.mozilla.org</code></li>
-<li>Wikipedia - <code>https://wikipedia.org</code></li>
-</ul>
-<h3 id="tools">Tools</h3>
-<ul>
-<li>Figma - <code>https://figma.com</code></li>
-<li>GitHub - <code>https://github.com</code></li>
-<li>Service status - <code>https://status.example.com</code></li>
-</ul>
-<h3 id="personal">Personal</h3>
-<ul>
-<li>Notes - <code>https://notes.example.com</code></li>
-<li>Travel ideas - <code>https://example.com/travel</code></li>
-</ul>
-<h2 id="settings-for-screenshots">Settings For Screenshots</h2>
-<ul>
-<li>Theme: dark or system-dark, depending on contrast.</li>
-<li>Background: built-in forest preset.</li>
-<li>Background dim: enabled enough for text readability.</li>
-<li>Widgets: header clock, Markdown notes, and Pomodoro enabled.</li>
-<li>Notes widget sample: a short launch note with two checklist items.</li>
-<li>Search query sample: a typo-tolerant query such as <code>dashbord</code>.</li>
-<li>Google Drive: disconnected. Do not fabricate a connected account, successful upload, or sync timestamp.</li>
-<li>Countdown: a separate capture shows a five-minute timer with built-in sound; the main overview keeps its original clock/notes/Pomodoro layout.</li>
-<li>Store Markdown notes under <code>settings.notes.text</code>, timer preferences under <code>settings.timer</code>, and optional widgets under <code>settings.widgets</code>; do not seed the old <code>uiState.widgetNotes</code> field.</li>
-</ul>
-<h2 id="save-open-tabs-setup">Save Open Tabs Setup</h2>
-<p>For the Save open tabs screenshot, use only synthetic or public URLs. Include at least one already-saved duplicate and one unsupported browser URL so the preview demonstrates duplicate/unsupported filtering without showing private browsing data.</p>
-<p>Recommended preview tabs:</p>
-<ul>
-<li>Aura Start repository - <code>https://github.com/communism420/Aura-Start</code></li>
-<li>Cloudflare Pages docs - <code>https://developers.cloudflare.com/pages/</code></li>
-<li>Project dashboard - <code>https://example.com/dashboard</code> (duplicate)</li>
-<li>Firefox Add-ons Developer Hub - <code>https://addons.mozilla.org/developers/</code></li>
-<li>Browser settings - <code>chrome://extensions</code> or <code>about:addons</code> (unsupported)</li>
-</ul>
-<h2 id="a-fine-start-import-setup">A Fine Start Import Setup</h2>
-<p>Use a small local sample export code created only from non-personal demo links. Confirm the import preview shows group/link counts before capturing the screenshot. Do not show A Fine Start branding, UI, or screenshots.</p>
-<h2 id="duplicate-finder-setup">Duplicate Finder Setup</h2>
-<p>For Duplicate Finder screenshots or manual QA, add a few intentional duplicates manually:</p>
-<ul>
-<li>GitHub - <code>https://github.com</code></li>
-<li>GitHub Home - <code>https://github.com/</code></li>
-<li>MDN Web Docs - <code>https://developer.mozilla.org</code></li>
-<li>MDN Docs - <code>http://developer.mozilla.org</code></li>
-</ul>
-<p>Keep at least one item in every duplicate group unselected so the screenshot never implies automatic deletion.</p>
-<h2 id="manual-setup-notes">Manual Setup Notes</h2>
-<ol>
-<li>Use an isolated test profile or the automated local-preview capture; never replace a personal profile for screenshots.</li>
-<li>Build the current UI, then create demo groups in the isolated installation or run the capture script. The automated preview supplies synthetic extension storage and tabs, blocks external HTTPS requests, and uses its own temporary Chrome profile.</li>
-<li>Keep account identifiers, local paths, OAuth data, and browser profile information out of screenshots.</li>
-<li>Keep demo captures separate from integration tests and real Google accounts.</li>
-<li>Verify all output images visually and remove only temporary resources owned by the capture process.</li>
-</ol>
+<p>The preview supplies a synthetic extension API surface so the built application can run on its loopback page. It does not load a user's installed Aura Start profile. External requests are blocked; visible example links are not opened during capture.</p>
+<h2 id="the-five-scenes">The Five Scenes</h2>
+<h3 id="links-and-groups">Links And Groups</h3>
+<p>Use a small, readable collection of everyday groups, such as Daily, Research, Tools, and Personal, with a nested group to demonstrate organization. Suitable links include a project dashboard on <code>example.com</code>, public documentation, a reading list, and planning notes. Keep titles and descriptions short enough for the actual layout.</p>
+<p>Choose the theme, built-in background, columns, and other appearance options through valid application settings. Those settings change the real interface in the same way as a user's preferences; they do not introduce a separate screenshot design.</p>
+<h3 id="notes-and-countdown">Notes And Countdown</h3>
+<p>Use a short Markdown note about planning or reviewing a project. Enable Notes and Countdown for this scene and show their real controls without a long-running or completed personal timer.</p>
+<p>Store notes under <code>settings.notes.text</code>, timer preferences under <code>settings.timer</code>, and widget visibility under <code>settings.widgets</code>. Do not seed the legacy <code>uiState.widgetNotes</code> field. Google Drive stays disconnected even though the feature can synchronize notes and timer preferences in a connected installation.</p>
+<h3 id="full-backup-zip">Full Backup ZIP</h3>
+<p>Open Aura Start's actual export/backup interface and show its Full Backup ZIP choice. Use the ordinary sample groups and settings; no private backup is imported. The screenshot documents the visible export feature, not the contents of a user's archive.</p>
+<h3 id="custom-timer-sound">Custom Timer Sound</h3>
+<p>Generate a small sample WAV in the run's temporary workspace. Supply it through the real audio file input and wait for Aura Start's normal import/preparation workflow to finish. Capture the resulting custom-sound setting and its controls.</p>
+<p>Do not seed a fake processed file, borrow a user's recording, or rename an unrelated file to suggest codec support. This scene demonstrates the actual WAV import path; it does not certify every supported audio format.</p>
+<h3 id="google-drive-sync">Google Drive Sync</h3>
+<p>Open the real Google Drive settings with synchronization off and the account disconnected. Show the connection controls and explanatory text as the application renders them. Do not click Connect, authorize a real account, or manufacture a successful sync state for a screenshot.</p>
+<h2 id="manual-capture-and-review">Manual Capture And Review</h2>
+<p>For manual captures, use an isolated test browser profile and equivalent public/example data. Follow the same privacy and authenticity rules as the automated workflow. Never clear or replace a personal Aura Start installation just to prepare store images.</p>
+<p>Review every image before uploading. Check readability, scene framing, the visible release version where present, and the absence of account information, local paths, or browser profile data. If an application change breaks automated navigation, update the capture script to use the new real controls; do not draw substitute controls or edit product text into the image.</p>
+<p>New automated captures are stored as separate runs under the ignored Chrome and Firefox submission folders. The public website's October 4, 2026 gallery and older local <code>Photo</code> artwork are historical captures, maintained separately.</p>
 </main>
       <footer class="site-footer">
         <p>Aura Start is independent. Its application source uses MIT; bundled components retain their own licenses.</p>

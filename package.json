@@ -19,7 +19,9 @@
     "validate:firefox:submit": "node scripts/validate-firefox-build.mjs --submit-zip",
     "validate:zip": "node scripts/validate-chrome-submit-zip.mjs",
     "build:store": "node scripts/build-store.mjs",
-    "preview": "node node_modules/vite/bin/vite.js preview"
+    "preview": "node node_modules/vite/bin/vite.js preview",
+    "screenshots": "node scripts/generate-store-photos.mjs",
+    "test:screenshots": "node --test scripts/lib/screenshot-browser.node-test.mjs scripts/lib/screenshot-pipeline.node-test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
