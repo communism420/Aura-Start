@@ -6,7 +6,7 @@ Aura Start is an independent open-source project, not affiliated with A Fine Sta
 
 Positioning: A private, local-first start page for your links - free, open-source, and easy to export.
 
-This documentation describes Aura Start **2.1.1** (updated October 4, 2026). Store availability may differ from the source version; see the [changelog](CHANGELOG.md).
+This documentation describes Aura Start **2.1.2** (updated October 15, 2026). Store availability may differ from the source version; see the [changelog](CHANGELOG.md).
 
 ## Download
 
@@ -44,9 +44,10 @@ For a tour of the current interface and first-run choices, see [Getting Started]
 - Layout-aware keyboard shortcuts that continue to work on Latin and Cyrillic keyboard layouts
 - Duplicate Finder that scans read-only and deletes only after user selection and confirmation
 - Explicit edit mode: drag-and-drop and inline edit controls stay disabled until you turn editing on
-- Drag and drop for groups and links, including moving links between groups and moving groups into or out of nested parents
+- Drag and drop with a visible insertion marker for groups and links, including empty/collapsed link destinations and exact placement when moving groups between parents. Neighboring links smoothly move aside while stable hit targets keep the destination precise. Reduced-motion preferences disable the animation; dropping outside a valid destination cancels the move.
 - Optional Save open tabs workflow with preview, duplicate filtering, and runtime `tabs` permission request
 - Optional bidirectional Google Drive sync with automatic merging of concurrent and offline edits
+- Connected Google Drive account name and email in Settings, with its email in the header and automatic retrieval for existing connections after updating
 - Settings migration that adds newly introduced options while preserving existing choices in local storage and Google Drive
 - Google Chrome OAuth through `chrome.identity.getAuthToken`, plus configured device-code fallback builds for Firefox and Chromium browsers that reject Chrome's built-in Google sign-in
 - Visible Export / Backup hub and Restore Timeline
@@ -64,9 +65,9 @@ For a tour of the current interface and first-run choices, see [Getting Started]
 
 Aura Start does not need a server to work. Your groups and links stay in your browser profile by default, and the extension does not use analytics, trackers, bookmarks permission, history permission, Firebase, Supabase, or a custom backend.
 
-Google Drive sync is optional, off by default, and user-controlled. Aura Start makes no Google authorization or Drive requests before you choose to connect. Google authorization is used only so Aura Start can read and write its own sync files; it is not used for analytics, tracking, account profiling, or broad access to Drive files.
+Google Drive sync is optional, off by default, and user-controlled. Aura Start makes no Google authorization or Drive requests before you choose to connect. Google authorization is used to read and write Aura Start's own sync files and identify the connected Drive account; it is not used for analytics, tracking, account profiling, or broad access to Drive files.
 
-Aura Start 2.1.1 uses `https://www.googleapis.com/auth/drive.file` for one shared `aura-start-sync.json` in normal Google Drive storage, marked with Aura Start app properties. All updated installations connected to the same Google account read and update that file. Existing accessible Aura Start copies are merged and removed only after their contents have been verified in the shared file. Aura Start does not access unrelated Drive files.
+Aura Start 2.1.2 uses `https://www.googleapis.com/auth/drive.file` for one shared `aura-start-sync.json` in normal Google Drive storage, marked with Aura Start app properties. All updated installations connected to the same Google account read and update that file. Existing accessible Aura Start copies are merged and removed only after their contents have been verified in the shared file. Aura Start does not access unrelated Drive files.
 
 Google Chrome builds whose extension ID supports the configured native OAuth client use `chrome.identity.getAuthToken`, with `drive.file` for shared sync and `drive.appdata` for legacy hidden backups. Firefox, unpacked Chromium builds (including unpacked builds running in Google Chrome), and compatible Chromium browsers without native Google sign-in use the configured Google Device OAuth fallback with `drive.file` for sync and deletion. The authorization flow depends on the build and browser, not just the browser name. Hidden backups are included only with existing access; otherwise a persistent notice explains how to check the Google account used for cleanup. Neither flow requests the full `https://www.googleapis.com/auth/drive` scope.
 
@@ -78,7 +79,7 @@ Aura Start does not request browser history, bookmarks, cookies, `webRequest`, s
 | `alarms` | Schedule periodic Google Drive checks while connected automatic sync is enabled and the browser runs. |
 | `identity` (Chromium builds) | Use native Google Chrome extension authorization; Firefox Device OAuth builds omit this permission. |
 | `tabs` (optional) | Read the current window's tab titles and URLs only for the user-requested Save open tabs preview. Receiving the setting through sync does not grant this permission. |
-| Google API hosts (`www.googleapis.com`, `oauth2.googleapis.com`) | Authorize and exchange Aura Start sync data after the user connects Google Drive. Host permissions are declared in the package; Google consent is a separate step. |
+| Google API hosts (`www.googleapis.com`, `oauth2.googleapis.com`) | Authorize and exchange Aura Start sync data, and identify the connected Drive account. Host permissions are declared in the package; Google consent is a separate step. |
 
 Custom images, sound preparation, and file backups run locally and need no additional browser permissions. The packaged audio decoder uses `wasm-unsafe-eval` in the extension content security policy; it is not a browser permission or a remote-code exception. See the [Privacy Policy](PRIVACY.md) for data handling and browser-specific permission details.
 
@@ -119,6 +120,7 @@ The extension overrides the browser new tab page with `newtab.html`. In Firefox,
 ```bash
 npm install
 npm run test
+npm run test:drag
 npm run typecheck
 npm run build
 npm run build:local
@@ -129,11 +131,15 @@ npm run validate:zip
 
 In Vite development mode, Aura Start falls back to `localStorage` when the WebExtension storage API is not available. Production extension builds use browser-local extension storage.
 
+`npm run test:drag` checks actual pointer and keyboard drags in an installed Chromium browser using an isolated temporary profile, synthetic offline data, and the current UI. Set `AURA_SCREENSHOT_BROWSER` to test another Chromium executable. To run the same scenarios in Firefox, set `AURA_DND_BROWSER=firefox` and provide an already installed Playwright module and its compatible Firefox build; `AURA_DND_PLAYWRIGHT_MODULE` and `AURA_DND_FIREFOX_PATH` optionally select their paths. The test never opens a personal profile or downloads a browser.
+
+In edit mode, focus a link's drag area or a group's grip and press Space/Enter to start dragging. Arrow keys choose the insertion position, Space/Enter drops, and Escape cancels. During group dragging, Alt+Right selects an eligible nesting target (preferring the indicated group); Alt+Left returns a nested group to the top level.
+
 When adding or changing a stored setting, follow the migration and compatibility checklist in [Settings Schema](docs/SETTINGS_SCHEMA.md).
 
 `npm run build:local` creates a local unpacked-extension build in `dist-local`. `npm run build:firefox` creates a Firefox-oriented package in `dist-firefox` and rewrites the built manifest for Firefox ES-module background scripts plus `browser_specific_settings.gecko`. `npm run build:store` builds the Chrome Web Store release package in `dist` and validates Manifest V3, least-privilege permissions, required extension files, localized manifest messages, CSP, OAuth configuration, and no obvious remote-code patterns. `npm run validate:zip` checks the Chrome Submit ZIP against the current `dist` package after a fresh ZIP is created.
 
-The working release matrix also uses the four review folders `dist-google`, `dist-google-local`, `dist-firefox`, and `dist-firefox-local`; these names are not all default outputs of individual npm commands. See [Release Checklist](docs/RELEASE_CHECKLIST.md) for the build/client mapping and exact preparation workflow. All four outputs target 2.1.1 and must be rebuilt for that release. Existing submission ZIPs must be rebuilt and validated separately; updating documentation or a build directory does not update an older archive.
+The working release matrix also uses the four review folders `dist-google`, `dist-google-local`, `dist-firefox`, and `dist-firefox-local`; these names are not all default outputs of individual npm commands. See [Release Checklist](docs/RELEASE_CHECKLIST.md) for the build/client mapping and exact preparation workflow. All four outputs target 2.1.2 and must be rebuilt for that release. Existing submission ZIPs must be rebuilt and validated separately; updating documentation or a build directory does not update an older archive.
 
 Extension store versions are configured separately in `package.json` under `extensionVersions.chromium` and `extensionVersions.firefox`. Build-time manifest injection writes the target browser version into the generated `manifest.json`, and release validators fail if a Chromium or Firefox package contains the wrong target version. Use `AURA_CHROMIUM_EXTENSION_VERSION`, `AURA_FIREFOX_EXTENSION_VERSION`, or `AURA_EXTENSION_VERSION` only for one-off build overrides.
 
@@ -196,7 +202,7 @@ Pomodoro alternates focus and break periods, with configurable durations of 5–
 
 ## Optional Google Drive Sync
 
-Google Drive Sync is available in Settings and is disabled by default. Connect the same Google account on every device and update every connected installation to 2.1.1. Aura Start combines the devices' groups, links, ordering, nesting, and shared settings into one dataset. An empty installation receives the existing cloud data. Onboarding's Restore from Google Drive action reports a clear error without changing local data if no Aura Start backup exists.
+Google Drive Sync is available in Settings and is disabled by default. Connect the same Google account on every device and update every connected installation to 2.1.2. Aura Start combines the devices' groups, links, ordering, nesting, and shared settings into one dataset. An empty installation receives the existing cloud data. Onboarding's Restore from Google Drive action reports a clear error without changing local data if no Aura Start backup exists.
 
 Actual shared edits are queued in the extension background context. While an Aura Start page is visible and online, quiet checks look for remote changes about every five seconds. Multiple open pages share the same background checks. Opening, closing, or focusing a page does not itself start synchronization or its animation. A background alarm keeps checking about once a minute while the browser runs, including with all Aura Start pages closed. When verified remote revisions are unchanged and there are no pending local edits, checks read only small Drive file metadata: no data/media downloads, uploads, animation, or changes to the displayed last-sync time. New or unverified remote revisions are read when needed; explicit connection/restore/check actions can also request synchronization.
 
@@ -204,7 +210,7 @@ Offline changes stay local and retry after background startup or an online event
 
 Changes to different fields merge independently. Concurrent changes to the same field resolve consistently using logical revision counters and a device identifier as a tie-breaker. Deletion records prevent an older snapshot from silently restoring a deleted item. Normal automatic sync does not ask users to choose between whole local and cloud copies. Updates to the shared file are conditional on the revision read: if another device has changed it, Aura Start reads the newer contents, merges again, and retries. An interrupted or repeatedly conflicting transfer keeps local changes pending.
 
-Existing per-device copies are consolidated into one shared file. Migration creates a new file ID, verifies the merged data and selected media there, and only then conditionally deletes covered older copies. A copy changed during cleanup is read and merged again before deletion. If two installations create the first shared file simultaneously, more than one file can briefly appear; subsequent synchronization selects the same surviving file and consolidates the others. Update every connected installation to the latest 2.1.1 build so an older build does not keep creating per-device copies.
+Existing per-device copies are consolidated into one shared file. Migration creates a new file ID, verifies the merged data and selected media there, and only then conditionally deletes covered older copies. A copy changed during cleanup is read and merged again before deletion. If two installations create the first shared file simultaneously, more than one file can briefly appear; subsequent synchronization selects the same surviving file and consolidates the others. Update every connected installation to the latest 2.1.2 build so an older build does not keep creating per-device copies.
 
 While sync is enabled, the saved custom background image also syncs through Google Drive, including replacement and removal. A saved image is included even when a built-in background is selected. With sync off, the image stays local.
 
@@ -223,7 +229,7 @@ Google can still require new consent or invalidate a grant. In particular, an ex
 Upgrading from an earlier version:
 
 - Aura Start reads older accessible backups, including Chrome's hidden `appDataFolder`, during migration. Their data joins the shared file; covered older files are removed only after verification and a conditional revision check. Unreadable or invalid files are not discarded.
-- A custom background saved in 2.0.5 is migrated automatically before the first 2.1.1 sync, including a saved image that is not currently selected. The existing image is kept until migration is durably saved, and an older cloud snapshot with no image does not delete it. Re-uploading the image is not required.
+- A custom background saved in 2.0.5 is migrated automatically before the first sync after upgrading, including a saved image that is not currently selected. The existing image is kept until migration is durably saved, and an older cloud snapshot with no image does not delete it. Re-uploading the image is not required.
 - Existing local widget notes move into shared settings before sync. Aura Start saves a local recovery point and the main document before clearing the old copy. If another explicit shared note already exists, it is kept and the older local note remains recoverable. Older snapshots without notes do not clear newer text.
 - New settings receive their defaults while valid existing choices are preserved, including nested background and widget options. A setting absent from an older Drive snapshot does not reset an existing choice. The same migration applies when loading older JSON backups or Restore Points.
 - Countdown starts disabled when upgrading a snapshot that predates it. Older local, cloud, or Restore Point data without timer fields does not erase a duration, volume, or custom sound already selected in a newer installation.
@@ -249,7 +255,11 @@ If authorization or deletion fails, sync stays paused and Aura Start retains the
 
 Connection and reconnection merge existing local data with accessible cloud snapshots. Aura Start creates a local restore point before applying cloud content changes, including during connection or onboarding.
 
-When Google Drive sync is enabled and connected, Aura Start shows a compact status marker in the upper-right header. The marker indicates connection/sync status only; it does not mean Aura Start has full Drive access.
+When a Google account is connected, Aura Start shows its email in the upper-right status marker and its name and email in Settings. The account remains visible if synchronization is paused. These details come from the Drive API using the same authorization as synchronization, so they identify the connected Drive account rather than the browser profile. No additional OAuth scopes, browser permissions, or remote avatar requests are needed.
+
+Existing connections receive account details automatically after updating, without a new sign-in prompt solely for this lookup. A temporary lookup failure does not interrupt synchronization or discard the connection; the details are retried automatically. Account information is cached locally and excluded from the shared Drive sync document. User-created JSON and ZIP backups can include local account metadata, but never authorization tokens. Until Drive verifies older cached account details, Aura Start displays a neutral account-information message instead of a potentially incorrect email.
+
+This optional account lookup is separate from file synchronization. It can run quietly on startup or when a page opens, including for a retained paused connection, without uploading settings, changing the last-sync time, or starting the sync animation. Disconnecting clears the active connection and stops these lookups; existing exported backups and local restore history are not rewritten.
 
 Connect Google Drive opens Google's authorization prompt when the browser needs sign-in or consent. A Google Chrome installation using the configured native flow shows Chrome's extension OAuth prompt. Firefox and builds using Device fallback, including unpacked Chrome builds, open Google's device sign-in page and show a short device code until the connection finishes. Users do not enter OAuth client IDs in Aura Start settings. Importing a local JSON backup preserves the current local Google Drive connection metadata for the installed extension so sync does not disconnect just because local bookmark data changed.
 
@@ -279,6 +289,7 @@ PowerShell:
 ```powershell
 $env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID='PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com'
 $env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET='PASTE_REAL_DEVICE_SECRET_HERE'
+$env:AURA_FIREFOX_EXTENSION_ID='PASTE_EXISTING_AMO_ADDON_ID_HERE'
 npm run build:firefox
 ```
 
@@ -287,6 +298,7 @@ POSIX shells:
 ```bash
 AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID=PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com \
 AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET=PASTE_REAL_DEVICE_SECRET_HERE \
+AURA_FIREFOX_EXTENSION_ID=PASTE_EXISTING_AMO_ADDON_ID_HERE \
 npm run build:firefox
 ```
 
@@ -322,6 +334,7 @@ To reproduce the submitted Firefox package from the source archive:
 npm ci
 $env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_ID='PASTE_REAL_CLIENT_ID_HERE.apps.googleusercontent.com'
 $env:AURA_GOOGLE_FIREFOX_DEVICE_OAUTH_CLIENT_SECRET='PASTE_REAL_DEVICE_SECRET_HERE'
+$env:AURA_FIREFOX_EXTENSION_ID='PASTE_EXISTING_AMO_ADDON_ID_HERE'
 npm run build:firefox
 ```
 
@@ -336,7 +349,7 @@ npm run validate:firefox:submit
 
 ## Privacy
 
-Aura Start has no backend, no analytics, no tracking scripts, no required sync, and no access to browser history or bookmarks. Optional Google Drive sync uses Google API host permissions only when the user enables it; Chrome builds also use the `identity` permission for native extension OAuth. Shared sync uses `drive.file` for the Aura Start-owned shared file and migration of older copies; Chrome retains `drive.appdata` for legacy backup migration. The `alarms` permission supports periodic background sync while the browser runs. Aura Start does not request full Drive access.
+Aura Start has no backend, no analytics, no tracking scripts, no required sync, and no access to browser history or bookmarks. Google API host access is used for the user-authorized Drive connection, synchronization, cleanup, and connected-account lookup; Chrome builds also use the `identity` permission for native extension OAuth. Shared sync uses `drive.file` for the Aura Start-owned shared file and migration of older copies; Chrome retains `drive.appdata` for legacy backup migration. The `alarms` permission supports periodic background sync while the browser runs. Aura Start does not request full Drive access. See the [Privacy Policy](PRIVACY.md) for local account metadata and backup handling.
 
 ## More Docs
 

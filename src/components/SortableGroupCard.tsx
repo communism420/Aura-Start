@@ -1,8 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { ReactNode } from "react";
 import type { AuraStartGroup, AuraStartLink, AuraStartSettings } from "../types";
 import type { SearchHighlightMap } from "../utils/search";
+import type { DropPlacement } from "../utils/dragPlacement";
 import { BookmarkGroupCard } from "./BookmarkGroupCard";
 
 type SortableGroupCardProps = {
@@ -16,6 +16,8 @@ type SortableGroupCardProps = {
   highlightTerms?: string[];
   searchHighlights?: SearchHighlightMap;
   isDropPending: boolean;
+  hasChildren?: boolean;
+  placement?: DropPlacement | null;
   selectedSearchResultId?: string | null;
   settings: AuraStartSettings;
   searchMode: boolean;
@@ -32,7 +34,8 @@ export function SortableGroupCard(props: SortableGroupCardProps) {
   const sortable = useSortable({
     id: `group:${props.group.id}`,
     disabled: props.searchMode || !props.editMode,
-    data: { type: "group", groupId: props.group.id },
+    data: { type: "group", groupId: props.group.id, parentId: props.group.parentId, order: props.group.order, hasChildren: props.hasChildren },
+    animateLayoutChanges: () => false,
     transition: {
       duration: 165,
       easing: "cubic-bezier(0.2, 0, 0, 1)"
@@ -41,17 +44,16 @@ export function SortableGroupCard(props: SortableGroupCardProps) {
 
   return (
     <div
-      className={`sortable-group-shell group-tree-depth-${props.depth ?? 0}`}
+      className={`sortable-group-shell group-tree-depth-${props.depth ?? 0} ${sortable.isDragging ? "group-shell-dragging" : ""}`}
       data-group-id={props.group.id}
+      data-drop-edge={props.placement?.kind === "group" && props.placement.markerId === `group:${props.group.id}` ? props.placement.edge : undefined}
+      data-drop-axis={props.placement?.axis}
       ref={sortable.setNodeRef}
-      style={{
-        transform: sortable.transform ? CSS.Translate.toString(sortable.transform) ?? undefined : undefined,
-        transition: sortable.transition
-      }}
     >
       <BookmarkGroupCard
         {...props}
         sortable={{
+          setActivatorNodeRef: sortable.setActivatorNodeRef,
           attributes: sortable.attributes,
           isDragging: sortable.isDragging,
           isDropPending: props.isDropPending,

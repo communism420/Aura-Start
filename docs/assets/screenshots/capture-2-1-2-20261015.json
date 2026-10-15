@@ -1,0 +1,48 @@
+{
+  "version": "2.1.2",
+  "createdAt": "2026-10-15T10:14:32.062Z",
+  "runId": "20261015T101432Z-175107ab",
+  "browserVersion": "Chrome/155.0.8059.41",
+  "source": "fresh build of current source",
+  "buildFingerprint": "8bf90ec8028138498af7808fc86ead1a500737655f6f8a8e0b9b1aae7a4ca54c",
+  "environment": "Isolated loopback UI preview with synthetic extension APIs and non-personal demo data",
+  "googleDriveConnected": false,
+  "nativeBrowserIntegrationTest": false,
+  "files": [
+    {
+      "file": "01-links-and-groups-2-1-2-20261015.png",
+      "width": 1280,
+      "height": 800,
+      "format": "RGB PNG",
+      "sha256": "77b4234687803ff1ba4dfeccc380d7f171012bedbda18d5ac9e22ca38016947b"
+    },
+    {
+      "file": "02-notes-and-countdown-2-1-2-20261015.png",
+      "width": 1280,
+      "height": 800,
+      "format": "RGB PNG",
+      "sha256": "fe02b3907d7fd05f3fc134b65a3be7a4daa2f39b479d15a6afc24fc1cd991296"
+    },
+    {
+      "file": "03-full-backup-zip-2-1-2-20261015.png",
+      "width": 1280,
+      "height": 800,
+      "format": "RGB PNG",
+      "sha256": "04082d06d35fb71a0f3d72e4b63985804c4d698ae1c7682138c8e6dabdd5b2fa"
+    },
+    {
+      "file": "04-custom-timer-sound-2-1-2-20261015.png",
+      "width": 1280,
+      "height": 800,
+      "format": "RGB PNG",
+      "sha256": "e4acee051d79768cf718e94d68407175de3cdc6e19c5e8de996ff3c8039f26d8"
+    },
+    {
+      "file": "05-google-drive-sync-2-1-2-20261015.png",
+      "width": 1280,
+      "height": 800,
+      "format": "RGB PNG",
+      "sha256": "47d7448c28fcc9125bd8fef2db44e5b5672d200a9abb82eb6fd1ae4d4e9f71e4"
+    }
+  ]
+}

@@ -21,7 +21,7 @@
         </nav>
       </header>
       <main class="doc">
-<div class="kicker">Aura Start Docs · 2.1.1</div>
+<div class="kicker">Aura Start Docs · 2.1.2</div>
 <h1 id="aura-start-screenshot-capture">Aura Start Screenshot Capture</h1>
 <blockquote>
 <p>Maintainer-only document. This workflow prepares store images; it does not publish a release.</p>
@@ -90,6 +90,7 @@ Firefox Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/
 </tr>
 </tbody>
 </table></div>
+<p>The current 2.1.2 interface also includes smooth link-placement previews, keyboard dragging, reduced-motion support, and verified connected-account details. The five static scenes do not demonstrate movement, and the Drive scene deliberately stays disconnected: it does not show or validate a Google account. Describe those features in the accompanying guides; never paste a name/email or drawn drag state into a capture.</p>
 <p>The screenshot ZIP is a convenient bundle of the five interface images, not an extension release package. Store screenshot fields expect the individual PNG files.</p>
 <p>The Chrome run directory additionally contains:</p>
 <div aria-label="Scrollable table" class="table-wrap" role="region" tabindex="0"><table>
@@ -123,7 +124,7 @@ Firefox Submit/Screenshots/&lt;version&gt;/&lt;run-id&gt;/
 <p>Automated checks do not replace visual review. Open all five screenshots and both promotional PNGs before upload and check that text is readable, important controls are in view, the scenes match the intended release, and no personal information appears. Screenshots are not evidence that real Google authorization, synchronization, or store submission succeeded.</p>
 <p>Run <code>npm run test:screenshots</code> for the capture helper's regression checks, including DevTools timeouts, unsafe profile rejection, and rejection of outdated builds. These tests supplement the full <code>npm run screenshots</code> browser run.</p>
 <h2 id="public-website-and-older-artwork">Public Website And Older Artwork</h2>
-<p>This command does not refresh the website gallery automatically. The current public images in <code>docs/assets/screenshots/</code> with <code>*-2-1-1-20261004.png</code> filenames are reviewed copies from the 2.1.1 run <code>20261004T030628Z-10391764</code>, captured on October 4, 2026 in Chrome 154. The <a href="store-assets.html">asset inventory</a> maps the store and public names, and a <a href="assets/screenshots/capture-2-1-1-20261004.json">public capture record</a> records their hashes and build fingerprint.</p>
+<p>This command does not refresh the website gallery automatically. The current public images in <code>docs/assets/screenshots/</code> with <code>*-2-1-2-20261015.png</code> filenames are reviewed copies from the 2.1.2 run <code>20261015T101432Z-175107ab</code>, captured on October 15, 2026 in Chrome 155. The <a href="store-assets.html">asset inventory</a> maps the store and public names, and a <a href="assets/screenshots/capture-2-1-2-20261015.json">public capture record</a> records their hashes and build fingerprint.</p>
 <p>When updating the website, copy the reviewed original PNGs without redrawing or changing their contents. Use new versioned filenames, update the home-page images and gallery captions to match the actual scenes, and refresh the public capture record. Keep local paths, credentials, and personal data out of that record.</p>
 <p>The older <code>Chrome Submit/Photo/</code> and <code>Firefox Submit/Photo/</code> directories are retained as local reference artwork. Neither those directories, the previous <code>Screenshots 2.1.0</code> sets, nor <code>Chrome Submit/Promo/</code> are overwritten. Fresh promotional images are saved only in the new Chrome run's <code>Promo/</code> subdirectory. Updating the website gallery remains a separate task.</p>
 <p>Before publication, also check that store listing text agrees with the current product, <code>PRIVACY.md</code>, and manifest permissions. Official store publication remains the project owner's responsibility under <a href="https://github.com/communism420/Aura-Start/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>

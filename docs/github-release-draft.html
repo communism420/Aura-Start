@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Draft Aura Start 2.1.1 release notes: Firefox homepage and new windows, with earlier 2.1.0 changes.">
+    <meta name="description" content="Draft Aura Start 2.1.2 release notes: smoother link and group reordering and connected Google Drive account details.">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Aura Start 2.1.1 — Firefox Homepage and New Windows — Aura Start</title>
+    <title>Aura Start 2.1.2 — Smoother Reordering and Connected Account Details</title>
     <link rel="stylesheet" href="assets/site.css">
   </head>
   <body>
@@ -21,13 +21,29 @@
         </nav>
       </header>
       <main class="doc">
-<div class="kicker">Aura Start Docs · 2.1.1</div>
-<h1 id="aura-start-211-firefox-homepage-and-new-windows">Aura Start 2.1.1 — Firefox Homepage and New Windows</h1>
+<div class="kicker">Aura Start Docs · 2.1.2</div>
+<h1 id="aura-start-212-smoother-reordering-and-connected-account-details">Aura Start 2.1.2 — Smoother Reordering and Connected Account Details</h1>
 <blockquote>
-<p>Maintainer-only draft. Version 2.1.1 adds Firefox homepage support; the 2.1.0 changes since 2.0.5 are retained below. Verify final packages and publication status before publishing; this page does not announce a completed store release.</p>
+<p>Maintainer-only draft. This describes the current 2.1.2 source and changes since 2.1.1. Earlier release changes remain below for context. Verify final packages and publication status before publishing; this page does not announce a completed store release.</p>
 </blockquote>
-<p>Reviewed October 4, 2026.</p>
-<h2 id="whats-new-in-211">What's new in 2.1.1</h2>
+<p>Reviewed October 15, 2026.</p>
+<h2 id="whats-new-in-212">What's new in 2.1.2</h2>
+<ul>
+<li>Improved drag-and-drop for links and groups, reducing jitter and making placement more accurate.</li>
+<li>Added smooth movement of neighboring links to preview the drop position, with support for reduced-motion preferences.</li>
+<li>Improved drag previews, insertion indicators, and moving groups between nesting levels.</li>
+<li>Added support for dropping links into empty and collapsed groups.</li>
+<li>Improved keyboard drag-and-drop controls and cancellation.</li>
+<li>Fixed cases where rapid consecutive moves could restore an earlier link or group order.</li>
+<li>Avoided unnecessary saves, Google Drive sync uploads, and restore points when a drop leaves the order unchanged.</li>
+<li>Added the connected Google Drive account's name and email to Settings, with its email prioritized in the header, including when synchronization is paused.</li>
+<li>Added automatic retrieval of account information for existing connections after updating, using their current authorization.</li>
+<li>Added automatic retries when account information is temporarily unavailable, without interrupting synchronization.</li>
+<li>Kept account information cached locally and excluded from the shared Google Drive sync file.</li>
+<li>Updated documentation, privacy disclosures, website screenshots, and store promotional images.</li>
+<li>No additional browser permissions or Google OAuth scopes are required.</li>
+</ul>
+<h2 id="previously-added-in-211">Previously added in 2.1.1</h2>
 <ul>
 <li>Added Firefox homepage support so new windows and the Home button can open the same Aura Start page as new tabs.</li>
 <li>Preserved Firefox's confirmation, homepage controls, and previous-session restoration preference without adding browser permissions.</li>
@@ -53,16 +69,21 @@
 <li>Corrected misleading messages when a clean installation receives an existing cloud backup.</li>
 <li>Improved import, restore, and Undo handling so the current Drive connection and unrelated synchronized changes are preserved.</li>
 </ul>
+<h2 id="upgrading-from-211">Upgrading from 2.1.1</h2>
+<p>Existing links, settings, media, and the Google Drive connection are retained. Connected installations fill in the account display automatically when online and authorized; no new permission prompt is needed for this lookup. A revoked grant can still require the normal reconnect flow. Account name/email are local display metadata and are not shared with other devices through the sync file. Manually exported JSON/ZIP settings can include them, so review a backup before sharing it.</p>
 <h2 id="upgrading-from-205">Upgrading from 2.0.5</h2>
 <p>Update the existing installation when possible. Aura Start migrates local settings, notes, and the custom background before synchronizing; failed migration retains the previous local copy for retry. New settings are added without resetting known choices.</p>
 <p>Old JSON backups remain importable, but 2.0.5 did not include the notes widget's text or custom background image bytes in JSON. Import cannot recover content the file never contained. Updating an existing profile can migrate those local values. Older portable JSON and ZIP v1 backups also remain supported.</p>
 <p>Native Chrome authorization requests <code>drive.file</code> for the shared visible file and retains <code>drive.appdata</code> for accessible hidden legacy backups. An old app-data-only connection may need explicit reconnection to approve the shared-file scope. The current Device flow in Firefox, Helium, other compatible Chromium browsers, and some unpacked Chrome installations uses <code>drive.file</code> only. It cannot read a hidden legacy copy through that authorization. Accessible legacy copies are merged before verified conditional cleanup.</p>
-<p>Update every connected installation to the current build. The shared sync protocol introduced in 2.1.0 is unchanged in 2.1.1. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.</p>
+<p>Update every connected installation to the current build. The shared sync protocol introduced in 2.1.0 is unchanged in 2.1.2. Use the same Google account and compatible release OAuth configuration. A simultaneous first connection can briefly create more than one file; updated installations consolidate those accessible copies after verification.</p>
+<h2 id="reordering-links-and-groups">Reordering links and groups</h2>
+<p>Links and groups have stable insertion previews, keyboard drag controls, and cancellation. Neighboring links move smoothly around the proposed insertion, with reduced-motion preferences respected. Links can be dropped into empty or collapsed groups; groups can move between nesting levels. Rapid consecutive moves retain the latest order, and dropping without a change avoids unnecessary saves, restore points, or sync uploads.</p>
 <h2 id="local-data-privacy-and-permissions">Local data, privacy, and permissions</h2>
 <p>Aura Start remains local-first, with no required account, analytics, tracking, ads, or Aura Start backend. Drive sync is optional and off by default. The shared file contains preferences, links, groups, notes, the saved background, the selected sound, and merge metadata. Credentials, connection state, actual browser permission grants, running countdowns, search/filter state, and Restore Timeline stay local. Deleted link/group fields can remain in causal deletion records to prevent resurrection.</p>
 <p>Chromium packages declare <code>storage</code>, <code>identity</code>, and <code>alarms</code>; Firefox packages declare <code>storage</code> and <code>alarms</code>. <code>tabs</code> remains optional for Save open tabs. Host permissions are limited to <code>https://www.googleapis.com/*</code> and <code>https://oauth2.googleapis.com/*</code>. No browser history/bookmarks permission or full Google Drive scope is requested.</p>
 <p>Firefox builds require version 142 or later, remove Chromium's <code>oauth2</code> entry and <code>identity</code>, and declare <code>data_collection_permissions</code> as required <code>none</code>, with optional <code>browsingActivity</code> and <code>technicalAndInteraction</code> for Google Drive synchronization. The packaged WebAssembly decoder uses the CSP's <code>wasm-unsafe-eval</code> allowance and adds no timer permission. Conversion stays on the device.</p>
 <p>The Countdown completion sound requires an Aura Start page to remain open. It is not a system alarm that can play after the browser closes. Polling intervals are not guaranteed cloud-delivery times. Aura Start does not add password protection or end-to-end encryption to its visible Drive JSON or exported backups. See the <a href="privacy-policy.html">privacy policy</a>.</p>
+<p>Aura Start reads the connected Drive account's name and email through the existing authorized Drive API, rather than the browser profile. Settings shows the name and email; the header prioritizes the email, including while a connection is paused. Existing connections retrieve these details automatically after updating when their current authorization works. Missing details retry quietly without starting a new consent flow or changing file-sync status. Verified details are refreshed periodically and retained locally during temporary failures. No avatar is fetched, and no browser permission or OAuth scope is added. This cache is excluded from the shared Drive file; manually exported JSON/ZIP settings can include account display metadata, but never OAuth tokens. Disconnect clears this installation's account display cache.</p>
 <h2 id="export-and-backup">Export and backup</h2>
 <ul>
 <li><strong>Full Backup ZIP:</strong> settings, links, notes, Restore Points, current/historical background files, and the selected original Countdown audio only. Playback is prepared locally on import.</li>

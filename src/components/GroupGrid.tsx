@@ -1,26 +1,25 @@
 import {
-  closestCenter,
   DndContext,
   DragOverlay,
   KeyboardSensor,
   MeasuringStrategy,
-  pointerWithin,
   PointerSensor,
-  rectIntersection,
   type DragEndEvent,
   type DragStartEvent,
-  type CollisionDetection,
+  type DragMoveEvent,
   useDroppable,
   useSensor,
   useSensors
 } from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates, SortableContext, rectSortingStrategy, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext } from "@dnd-kit/sortable";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { t } from "../i18n";
 import type { AuraStartData, AuraStartGroup, AuraStartLink, GroupTreeNode } from "../types";
 import { buildGroupTree, flattenGroupTree } from "../utils/groupTree";
 import type { SearchHighlightMap } from "../utils/search";
+import { createPointerStableCollision, stableKeyboardCoordinates, placementFromCollisions, type DropPlacement } from "../utils/dragPlacement";
+import { BookmarkLinkItem } from "./BookmarkLinkItem";
 import { BookmarkGroupCard } from "./BookmarkGroupCard";
 import { SortableGroupCard } from "./SortableGroupCard";
 
@@ -39,8 +38,7 @@ type GroupGridProps = {
   onToggle: (groupId: string) => void;
   onEditLink: (groupId: string, link: AuraStartLink) => void;
   onDeleteLink: (groupId: string, link: AuraStartLink) => void;
-  onReorderGroups: (orderedGroupIds: string[], parentId?: string | null) => Promise<void> | void;
-  onMoveGroup: (groupId: string, targetParentId: string | null) => Promise<void> | void;
+  onMoveGroup: (groupId: string, targetParentId: string | null, beforeGroupId?: string) => Promise<void> | void;
   onMoveLink: (linkId: string, targetGroupId: string, overLinkId?: string) => Promise<void> | void;
 };
 
@@ -56,186 +54,9 @@ function findLink(groups: AuraStartGroup[], linkId: string): AuraStartLink | und
   return groups.flatMap((group) => group.links).find((link) => link.id === linkId);
 }
 
-function findGroup(groups: AuraStartGroup[], groupId: string): AuraStartGroup | undefined {
-  return groups.find((group) => group.id === groupId);
-}
-
-function siblingGroupIds(groups: AuraStartGroup[], parentId: string | null): string[] {
-  return groups
-    .filter((group) => (group.parentId ?? null) === parentId)
-    .sort((a, b) => a.order - b.order)
-    .map((group) => group.id);
-}
-
-function isActiveAfterOver(event: DragEndEvent): boolean {
-  const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
-  const overRect = event.over?.rect;
-
-  if (!activeRect || !overRect) return false;
-
-  return activeRect.top + activeRect.height / 2 > overRect.top + overRect.height / 2;
-}
-
-function beforeLinkIdForDrop(
-  activeLinkId: string,
-  targetGroup: AuraStartGroup,
-  overLinkId: string,
-  insertAfter: boolean
-): string | undefined {
-  const targetLinks = targetGroup.links
-    .slice()
-    .sort((a, b) => a.order - b.order)
-    .filter((link) => link.id !== activeLinkId);
-  const overIndex = targetLinks.findIndex((link) => link.id === overLinkId);
-
-  if (overIndex < 0) {
-    return undefined;
-  }
-
-  return targetLinks[insertAfter ? overIndex + 1 : overIndex]?.id;
-}
-
-function dragTargetIds(event: DragEndEvent): string[] {
-  return [
-    event.over?.id,
-    ...(event.collisions ?? []).map((collision) => collision.id)
-  ]
-    .filter((id): id is NonNullable<typeof id> => id !== undefined && id !== null)
-    .map(String);
-}
-
-function findDragTargetId(event: DragEndEvent, targetId: string): boolean {
-  return dragTargetIds(event).includes(targetId);
-}
-
-function findPrefixedDragTarget(event: DragEndEvent, prefix: string, ignoredId?: string): string | undefined {
-  for (const id of dragTargetIds(event)) {
-    const candidate = stripPrefix(id, prefix);
-    if (candidate && candidate !== ignoredId) {
-      return candidate;
-    }
-  }
-
-  return undefined;
-}
-
-function findOverGroupId(event: DragEndEvent, ignoredGroupId: string): string | undefined {
-  for (const id of dragTargetIds(event)) {
-    const groupId = stripPrefix(id, "group:") ?? stripPrefix(id, "group-drop:");
-    if (groupId && groupId !== ignoredGroupId) {
-      return groupId;
-    }
-  }
-
-  return undefined;
-}
-
-function findFallbackOverGroupId(event: DragEndEvent, activeGroupId: string, validGroupIds: string[]): string | undefined {
-  const movedEnough = Math.abs(event.delta.x) > 3 || Math.abs(event.delta.y) > 3;
-  const activeRect = event.active.rect.current.translated ?? event.active.rect.current.initial;
-
-  if (!movedEnough || !activeRect || typeof document === "undefined") {
-    return undefined;
-  }
-
-  const validIds = new Set(validGroupIds);
-  const activeCenter = {
-    x: activeRect.left + activeRect.width / 2,
-    y: activeRect.top + activeRect.height / 2
-  };
-
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-group-id]"))
-    .map((element) => {
-      const groupId = element.dataset.groupId;
-      if (!groupId || groupId === activeGroupId || !validIds.has(groupId)) {
-        return undefined;
-      }
-
-      const rect = element.getBoundingClientRect();
-      const center = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      };
-
-      return {
-        groupId,
-        distance: Math.hypot(activeCenter.x - center.x, activeCenter.y - center.y)
-      };
-    })
-    .filter((candidate): candidate is { groupId: string; distance: number } => Boolean(candidate))
-    .sort((a, b) => a.distance - b.distance)[0]?.groupId;
-}
-
-const responsiveCollisionDetection: CollisionDetection = (args) => {
-  const activeId = String(args.active.id);
-
-  if (stripPrefix(activeId, "group:")) {
-    const groupDropContainers = args.droppableContainers.filter((container) => {
-      const containerId = String(container.id);
-      return containerId.startsWith("group-child-drop:") || containerId === "group-root-drop";
-    });
-    const groupContainers = args.droppableContainers.filter((container) => {
-      const containerId = String(container.id);
-      return containerId.startsWith("group:") && containerId !== activeId;
-    });
-
-    const dropPointerCollisions = pointerWithin({
-      ...args,
-      droppableContainers: groupDropContainers
-    });
-    if (dropPointerCollisions.length) {
-      return dropPointerCollisions;
-    }
-
-    const pointerCollisions = pointerWithin({
-      ...args,
-      droppableContainers: groupContainers
-    });
-    if (pointerCollisions.length) {
-      return pointerCollisions;
-    }
-
-    const intersections = rectIntersection({
-      ...args,
-      droppableContainers: groupContainers
-    });
-
-    if (intersections.length) {
-      return intersections;
-    }
-
-    return closestCenter({
-      ...args,
-      droppableContainers: groupContainers.length ? groupContainers : groupDropContainers
-    });
-  }
-
-  if (stripPrefix(activeId, "link:")) {
-    const linkContainers = args.droppableContainers.filter((container) => {
-      const containerId = String(container.id);
-      return containerId.startsWith("link:");
-    });
-    const groupDropContainers = args.droppableContainers.filter((container) =>
-      String(container.id).startsWith("group-drop:")
-    );
-    const containers = [...linkContainers, ...groupDropContainers];
-
-    for (const droppableContainers of [linkContainers, containers]) {
-      const intersections = rectIntersection({ ...args, droppableContainers });
-      if (intersections.length) return intersections;
-
-      const pointerCollisions = pointerWithin({ ...args, droppableContainers });
-      if (pointerCollisions.length) return pointerCollisions;
-    }
-
-    return closestCenter({
-      ...args,
-      droppableContainers: containers
-    });
-  }
-
-  return closestCenter(args);
-};
+// Link presentation animates separately from these stable measured rows.
+const stationarySortingStrategy = () => null;
+const inertPreview = (node: HTMLDivElement | null) => { if (node) node.inert = true; };
 
 function gridStyle(columns: AuraStartData["settings"]["columns"]): CSSProperties {
   if (columns === "auto") {
@@ -263,7 +84,7 @@ function RootGroupDropZone({ enabled, language }: { enabled: boolean; language: 
       ref={droppable.setNodeRef}
       role="button"
     >
-      <span className="sr-only">{t(language, "moveGroupToTopLevel")}</span>
+      <span>{t(language, "moveGroupToTopLevel")}</span>
     </div>
   );
 }
@@ -283,117 +104,68 @@ export function GroupGrid({
   onToggle,
   onEditLink,
   onDeleteLink,
-  onReorderGroups,
   onMoveGroup,
   onMoveLink
 }: GroupGridProps) {
   const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null);
+  const [placement, setPlacement] = useState<DropPlacement | null>(null);
+  const collision = useMemo(() => createPointerStableCollision(), []);
+  useEffect(() => {
+    // Capture scrolls from any ancestor, including auto-scroll while the pointer
+    // stays still. Spacer-driven layout changes are deliberately not inputs.
+    window.addEventListener("scroll", collision.reset, true);
+    window.addEventListener("resize", collision.reset);
+    return () => {
+      window.removeEventListener("scroll", collision.reset, true);
+      window.removeEventListener("resize", collision.reset);
+    };
+  }, [collision]);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: stableKeyboardCoordinates, scrollBehavior: "auto" })
   );
 
   const groupTree = buildGroupTree(groups);
   const flatGroupNodes = flattenGroupTree(groupTree);
-  const groupIds = flatGroupNodes.map((group) => group.id);
   const activeGroup = activeGroupId ? flatGroupNodes.find((group) => group.id === activeGroupId) : undefined;
   const activeGroupHasChildren = Boolean(activeGroupId && groups.some((group) => group.parentId === activeGroupId));
   const activeLink = activeLinkId ? findLink(data.groups, activeLinkId) : undefined;
   const language = data.settings.language;
 
   function handleDragStart(event: DragStartEvent) {
+    collision.reset();
     const activeId = String(event.active.id);
     const groupId = stripPrefix(activeId, "group:");
     const linkId = stripPrefix(activeId, "link:");
 
+    setPlacement(null);
     setActiveGroupId(groupId ?? null);
     setActiveLinkId(linkId ?? null);
   }
 
   function clearGroupDragState() {
+    collision.reset();
     setActiveGroupId(null);
     setActiveLinkId(null);
+    setPlacement(null);
+  }
+
+  function handleDragMove(event: DragMoveEvent) {
+    const next = placementFromCollisions(event.collisions);
+    setPlacement((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
   }
 
   async function handleDragEnd(event: DragEndEvent) {
+    const target = placementFromCollisions(event.collisions);
     const activeId = String(event.active.id);
-    const overId = event.over ? String(event.over.id) : "";
-
-    const activeGroupId = stripPrefix(activeId, "group:");
-    if (activeGroupId) {
-      try {
-        const childDropGroupId = findPrefixedDragTarget(event, "group-child-drop:", activeGroupId);
-        if (childDropGroupId) {
-          await onMoveGroup(activeGroupId, childDropGroupId);
-          return;
-        }
-
-        const overGroupId = findOverGroupId(event, activeGroupId) ?? findFallbackOverGroupId(event, activeGroupId, groupIds);
-        const activeIndex = groupIds.indexOf(activeGroupId);
-        const overIndex = overGroupId ? groupIds.indexOf(overGroupId) : -1;
-
-        if (activeIndex >= 0 && overIndex >= 0 && activeIndex !== overIndex) {
-          const activeGroup = findGroup(groups, activeGroupId);
-          const overGroup = overGroupId ? findGroup(groups, overGroupId) : undefined;
-          if (!activeGroup || !overGroup) return;
-
-          const targetParentId = overGroup.parentId ?? null;
-          if ((activeGroup.parentId ?? null) !== targetParentId) {
-            await onMoveGroup(activeGroupId, targetParentId);
-            return;
-          }
-
-          const siblings = siblingGroupIds(groups, targetParentId);
-          const activeSiblingIndex = siblings.indexOf(activeGroupId);
-          const overSiblingIndex = siblings.indexOf(overGroup.id);
-          if (activeSiblingIndex >= 0 && overSiblingIndex >= 0 && activeSiblingIndex !== overSiblingIndex) {
-            const finalOrder = arrayMove(siblings, activeSiblingIndex, overSiblingIndex);
-            await onReorderGroups(finalOrder, targetParentId);
-          }
-
-          return;
-        }
-
-        if (findDragTargetId(event, "group-root-drop")) {
-          await onMoveGroup(activeGroupId, null);
-        }
-      } finally {
-        clearGroupDragState();
-      }
-      return;
-    }
-
-    const activeLinkId = stripPrefix(activeId, "link:");
-    if (!activeLinkId) {
-      clearGroupDragState();
-      return;
-    }
-
-    try {
-      if (!overId) return;
-
-      const overLinkId = stripPrefix(overId, "link:");
-      if (overLinkId) {
-        if (overLinkId === activeLinkId) return;
-
-        const targetGroup = findGroupForLink(data.groups, overLinkId);
-        if (targetGroup) {
-          await onMoveLink(
-            activeLinkId,
-            targetGroup.id,
-            beforeLinkIdForDrop(activeLinkId, targetGroup, overLinkId, isActiveAfterOver(event))
-          );
-        }
-        return;
-      }
-
-      const dropGroupId = stripPrefix(overId, "group-drop:");
-      if (dropGroupId) {
-        await onMoveLink(activeLinkId, dropGroupId);
-      }
-    } finally {
-      clearGroupDragState();
+    // The store updates optimistically. End the visual gesture before awaiting disk I/O.
+    clearGroupDragState();
+    if (!target) return;
+    if (target.kind === "group" && activeId.startsWith("group:")) {
+      await onMoveGroup(activeId.slice(6), target.containerId, target.beforeId);
+    } else if (target.kind === "link" && activeId.startsWith("link:") && target.containerId) {
+      await onMoveLink(activeId.slice(5), target.containerId, target.beforeId);
     }
   }
 
@@ -419,13 +191,13 @@ export function GroupGrid({
 
     const content = <div className="nested-group-list">{children}</div>;
     return sortable ? (
-      <SortableContext items={node.children.map((child) => `group:${child.id}`)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={node.children.map((child) => `group:${child.id}`)} strategy={stationarySortingStrategy}>
         {content}
       </SortableContext>
     ) : content;
   }
 
-  function renderStaticNode(group: GroupTreeNode) {
+  function renderStaticNode(group: GroupTreeNode, overlay = false) {
     return (
       <div className={`group-tree-node group-tree-depth-${group.depth}`} key={group.id}>
         <BookmarkGroupCard
@@ -435,7 +207,8 @@ export function GroupGrid({
           searchHighlights={searchHighlights}
           selectedSearchResultId={selectedSearchResultId}
           searchMode={searchMode}
-          editMode={false}
+          editMode={overlay}
+          overlay={overlay}
           settings={data.settings}
           onAddGroup={onAddGroup}
           onAddLink={(groupId) => onAddLink(groupId)}
@@ -445,7 +218,7 @@ export function GroupGrid({
           onEditLink={onEditLink}
           onToggle={onToggle}
         />
-        {renderChildren(group, false)}
+        {overlay && !group.collapsed ? <div className="nested-group-list">{group.children.map((child) => renderStaticNode(child, true))}</div> : renderChildren(group, false)}
       </div>
     );
   }
@@ -453,9 +226,11 @@ export function GroupGrid({
   function renderSortableNode(group: GroupTreeNode) {
     return (
       <SortableGroupCard
+        placement={placement}
         activeGroupId={activeGroupId}
         activeLinkId={activeLinkId}
         canAcceptChildGroups={canNestInto(group)}
+        hasChildren={groups.some((item) => item.parentId === group.id)}
         depth={group.depth}
         editMode={editMode}
         group={group}
@@ -503,14 +278,16 @@ export function GroupGrid({
 
   return (
     <DndContext
-      collisionDetection={responsiveCollisionDetection}
+      collisionDetection={collision.collisionDetection}
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       sensors={sensors}
       onDragCancel={clearGroupDragState}
+      onDragMove={handleDragMove}
+      onDragOver={handleDragMove}
       onDragEnd={handleDragEnd}
       onDragStart={handleDragStart}
     >
-      <SortableContext items={groupTree.map((group) => `group:${group.id}`)} strategy={rectSortingStrategy}>
+      <SortableContext items={groupTree.map((group) => `group:${group.id}`)} strategy={stationarySortingStrategy}>
         <div
           className={`aura-group-grid ${data.settings.columns === 1 ? "aura-group-grid-left" : ""}`}
           style={gridStyle(data.settings.columns)}
@@ -521,38 +298,11 @@ export function GroupGrid({
       </SortableContext>
       <DragOverlay adjustScale={false} dropAnimation={null}>
         {activeGroup ? (
-          <div className="group-drag-overlay" style={gridStyle(1)}>
-            <div className="bookmark-group">
-              <div className="group-name-row">
-                <h2 className="group-name">{activeGroup.title}</h2>
-              </div>
-              {!activeGroup.collapsed ? (
-                <div className="bookmark-list">
-                  {activeGroup.links
-                    .slice()
-                    .sort((a, b) => a.order - b.order)
-                    .map((link) => (
-                      <div className="bookmark-row" key={link.id}>
-                        <div className="bookmark-row-inner">
-                          <span className="bookmark-link">
-                            <span className="bookmark-title">{link.title}</span>
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <div aria-hidden="true" className="group-drag-overlay" ref={inertPreview}>{renderStaticNode(activeGroup, true)}</div>
         ) : activeLink ? (
-          <div className="link-drag-overlay">
-            <div className="bookmark-row">
-              <div className="bookmark-row-inner">
-                <span className="bookmark-link">
-                  <span className="bookmark-title">{activeLink.title}</span>
-                </span>
-              </div>
-            </div>
+          <div aria-hidden="true" className="link-drag-overlay" ref={inertPreview}>
+            <BookmarkLinkItem link={activeLink} groupId={findGroupForLink(data.groups, activeLink.id)!.id}
+              settings={data.settings} editMode onEdit={() => {}} onDelete={() => {}} />
           </div>
         ) : null}
       </DragOverlay>

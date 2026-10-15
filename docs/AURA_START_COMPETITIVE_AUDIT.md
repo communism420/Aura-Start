@@ -1,12 +1,15 @@
 # Aura Start Competitive Audit
 
-## Current status — Aura Start 2.1.1, 2026-10-04
+## Current status — Aura Start 2.1.2, 2026-10-15
 
 This document keeps the original 2026-05-18 audit as historical evidence below. Its scores, package warnings, missing-feature findings, permission inventory, and recommendations describe that earlier review, not the current release. The current product comparison is [Aura Start vs A Fine Start](AURA_START_VS_A_FINE_START.md).
 
 ### Current functionality and policy
 
-- Firefox 2.1.1 also declares Aura Start as the homepage for new windows and the Home button, subject to Firefox's confirmation and user controls. Session restoration remains a Firefox preference; Chromium retains only the new-tab override. Current Firefox builds require version 142 or later.
+- Version 2.1.2 adds stable, precise link/group dragging with animated insertion space, reduced-motion support, keyboard controls, empty/collapsed link destinations, and protection against delayed saves reverting newer moves. Unchanged drops do not create redundant saves, sync requests, or Restore Points.
+- Connected Drive account name and email are shown from the authenticated Drive API, with quiet retrieval for existing connections after updating and no extra permissions. Account lookup is separate from file synchronization, can also run for retained paused connections, and does not trigger content uploads or sync animation. Identity metadata stays out of the shared Drive file but can be present in manual backups.
+
+- Since 2.1.1, Firefox builds also declare Aura Start as the homepage for new windows and the Home button, subject to Firefox's confirmation and user controls. Session restoration remains a Firefox preference; Chromium retains only the new-tab override. Current Firefox builds require version 142 or later.
 - All supported browser builds synchronize through one visible `aura-start-sync.json` in ordinary Google Drive. Links, groups, saved preferences, notes, the custom background, and selected Countdown audio merge across devices; restore history, running timers, credentials, connection mode, and browser grants stay local.
 - Concurrent writes use conditional revision checks and merge/retry; deletions are tracked. Separate fields can both survive, while simultaneous values of the same field resolve deterministically. Accessible legacy copies are merged and verified before conditional cleanup. Simultaneous first connections can briefly create more than one file before consolidation.
 - Visible online pages normally poll about every five seconds, with checks coordinated across pages. Hidden/closed pages rely on approximately one-minute background checks while the browser runs. No-change polls do not upload unchanged data. These are polling intervals, not delivery guarantees.
@@ -27,8 +30,8 @@ This document keeps the original 2026-05-18 audit as historical evidence below. 
 | Chrome-only/older sync transport | Shared Drive transport now covers Chrome, compatible Chromium, and Firefox; current Device grants do not provide hidden legacy access. |
 | No complete media backup | Full ZIP v2 now carries background assets and the selected original custom sound; media-free JSON remains separately named. |
 | Native browser/OAuth behavior unverified | See the dated [installed-extension test matrix](INSTALLED_EXTENSION_TEST_MATRIX.md). Controlled tests use real browsers with simulated Google HTTP; they do not prove live-service behavior or equal reliability to a competitor. The maintainer also reported working sync in Firefox, Helium, and Chrome; this review does not independently date or measure that user report. |
-| Stale 2.0.0 ZIP warning | Historical artifact finding; validate newly generated 2.1.1 submission packages against the exact release source, configuration, and screenshots. This documentation update does not rebuild, sign, or publish them. |
-| Public comparison needs evidence | Current comparison uses official A Fine Start homepage/help/changelog checked on 2026-10-04. It avoids assertions about private internals, measured reliability parity, or absent features that were not verified. |
+| Stale 2.0.0 ZIP warning | Historical artifact finding; validate newly generated 2.1.2 submission packages against the exact release source, configuration, and screenshots. This documentation update does not rebuild, sign, or publish them. |
+| Public comparison needs evidence | Current comparison uses official A Fine Start homepage/help/changelog checked on 2026-10-15. It avoids assertions about private internals, measured reliability parity, or absent features that were not verified. |
 
 ### Current release and evidence boundaries
 
@@ -38,7 +41,7 @@ A Fine Start's [homepage](https://afinestart.me/) lists its supported platforms,
 
 ## Historical audit — 2026-05-18 (not current release guidance)
 
-The original review follows. Read references to “current”, old permission lists, missing tests/features, scores, package status, and next actions in the context of this historical audit. The 2.1.1 status above supersedes those statements for current documentation.
+The original review follows. Read references to “current”, old permission lists, missing tests/features, scores, package status, and next actions in the context of this historical audit. The 2.1.2 status above supersedes those statements for current documentation.
 
 Audit date: 2026-05-18  
 Repository audited: local working copy of `communism420/Aura-Start` at Aura Start 2.0.0

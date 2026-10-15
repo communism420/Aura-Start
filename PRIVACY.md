@@ -1,10 +1,10 @@
 # Aura Start Privacy Policy
 
-Effective date: October 4, 2026
+Effective date: October 15, 2026
 
 Aura Start is a local-first browser extension. It replaces the new tab page with user-created groups of links and keeps those groups under the user's control. Aura Start works without an account, and Google Drive sync is optional and off by default.
 
-In Firefox, Aura Start 2.1.1 also declares its bundled page as the homepage used for new windows and the Home action. Firefox manages confirmation and the user's homepage choice. This browser-local setting requires no additional extension permissions, does not change the search engine, and is not sent to Google Drive. Restoring a previous browser session remains a Firefox setting.
+Since version 2.1.1, Aura Start also declares its bundled page as the Firefox homepage used for new windows and the Home action. Firefox manages confirmation and the user's homepage choice. This browser-local setting requires no additional extension permissions, does not change the search engine, and is not sent to Google Drive. Restoring a previous browser session remains a Firefox setting.
 
 ## Scope
 
@@ -26,13 +26,13 @@ Aura Start handles only the data needed for its user-facing features:
 - Local restore timeline entries created before imports, resets, cloud restores, group/link moves, tab saves, and destructive actions
 - Backup files or A Fine Start export codes selected or pasted by the user for import
 - Current-window tab titles and URLs only when the user enables Save open tabs and grants the optional `tabs` permission
-- Optional Google Drive sync metadata, such as connection status, last sync time, sync file ID, account label when available from the browser, and a locally generated device ID
+- Optional Google Drive sync metadata, such as connection status, last sync time, sync file ID, the connected account's name and email returned by Google Drive, and a locally generated device ID
 
 Aura Start does not request browser history, browser bookmarks, cookies, web requests, scripting, or full Google Drive access.
 
 ## Browser Permissions
 
-The current 2.1.1 packages declare these permissions:
+The current 2.1.2 packages declare these permissions:
 
 | Permission | Where used | Purpose |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ The current 2.1.1 packages declare these permissions:
 | `alarms` | Chromium and Firefox | Schedule periodic background Drive checks while sync is enabled and the browser is running. |
 | `identity` | Chromium packages | Use browser identity APIs for Google authorization where supported. Firefox packages remove this permission and the Chromium `oauth2` manifest entry. |
 | `tabs` | Optional, Chromium and Firefox | Read current-window tab titles and URLs only when the user previews tabs for Save open tabs and grants access. |
-| `https://www.googleapis.com/*` | Chromium and Firefox host permission | Read and write Aura Start's authorized Google Drive files. |
+| `https://www.googleapis.com/*` | Chromium and Firefox host permission | Read and write Aura Start's authorized Google Drive files and identify the connected Drive account. |
 | `https://oauth2.googleapis.com/*` | Chromium and Firefox host permission | Obtain and renew authorization for optional Google Drive sync. |
 
 These declarations do not turn sync on or give Aura Start access to a Google account before the user authorizes it. Save open tabs remains optional; synchronizing its preference does not grant `tabs` access on another installation. Aura Start does not monitor general browsing activity or read browser history.
@@ -66,7 +66,7 @@ When the user explicitly connects through Chrome's native extension identity flo
 
 The current builds use one shared `aura-start-sync.json` in normal Drive storage, marked with Aura Start app properties and visible in Google Drive. All updated installations connected to the same account read and update it. Accessible older copies, including authorized hidden backups, are merged into the shared file and conditionally deleted only after their contents have been verified there. Simultaneous first connections can briefly create duplicates before consolidation. Chrome users upgrading a 2.0.5 connection may need to reconnect once to approve `drive.file` access; the single-file protocol adds no permissions.
 
-In Firefox and compatible Chromium browsers where Chrome's built-in identity flow is unavailable, Aura Start can use Google Device OAuth. Unpacked Chrome installations can also use this flow. Its current sync and deletion requests use only the per-file `https://www.googleapis.com/auth/drive.file` scope for Aura Start-owned sync files; Aura Start's Device flow does not request `drive.appdata`. It therefore cannot read or migrate hidden 2.0.5 backups through that authorization. If hidden legacy data cannot be checked during deletion, a persistent Settings notice explains how to check it in the Google account used for that cleanup. Aura Start does not request `https://www.googleapis.com/auth/drive` or `identity.email`. Google authorization is used only for Aura Start sync and backup cleanup and is not used for analytics, telemetry, tracking, advertising, account profiling, or reading the user's normal Drive contents. Aura Start does not read, scan, list, edit, delete, or create unrelated visible files in the user's Google Drive.
+In Firefox and compatible Chromium browsers where Chrome's built-in identity flow is unavailable, Aura Start can use Google Device OAuth. Unpacked Chrome installations can also use this flow. Its current sync and deletion requests use only the per-file `https://www.googleapis.com/auth/drive.file` scope for Aura Start-owned sync files; Aura Start's Device flow does not request `drive.appdata`. It therefore cannot read or migrate hidden 2.0.5 backups through that authorization. If hidden legacy data cannot be checked during deletion, a persistent Settings notice explains how to check it in the Google account used for that cleanup. Aura Start does not request `https://www.googleapis.com/auth/drive` or `identity.email`. Google authorization is used only for Aura Start sync, backup cleanup, and identifying the connected Drive account, and is not used for analytics, telemetry, tracking, advertising, account profiling, or reading the user's normal Drive contents. Aura Start does not read, scan, list, edit, delete, or create unrelated visible files in the user's Google Drive.
 
 When Google Drive sync is enabled, Aura Start transmits groups, nested group relationships, links, ordering, all saved user preferences, Markdown notes, background preferences, the saved custom background image when present, the selected timer sound and its filename/original audio/portable playback copy when present, and merge metadata to Google Drive. Shared preferences include Save open tabs and the delete-backup-on-disconnect choice. Merge metadata includes logical revision counters, deletion records, and a locally generated device identifier so edits from multiple installations can be combined consistently. Account credentials, connection and sync-mode metadata, local Restore Timeline entries, running timers, search/filter and onboarding/demo state, and actual browser permission grants are not included in the shared file. Another device's merge identifier does not replace the current installation's identity. Older backups may contain fields written by earlier releases; migration preserves their synchronized content in the verified shared file before removing covered copies. Aura Start does not operate a backend service, and data is not sent to an Aura Start server.
 
@@ -99,15 +99,19 @@ Before applying cloud content changes, including connection or onboarding restor
 
 Opening, closing, focusing, or showing a page does not itself force an immediate transfer or start the sync animation. The delayed visible-page polling schedule still checks for remote changes. Unchanged verified revisions do not download/upload data or media or update the displayed last-sync time. New or unverified revisions are read when needed. Local content changes queue synchronization; offline edits stay local and retry on background startup or network reconnection when pending work exists. Explicit connect, reconnect, and restore actions can also request synchronization. Aura Start uses polling, not server push.
 
-## Account Marker
+## Connected Account Information
 
-When Google Drive sync is enabled and connected, Aura Start may show a compact Google Drive status marker in the top-right header. The marker is used only to show sync status, last sync time, and connected account information if the browser exposes it through existing extension APIs. Aura Start does not request additional Google permissions only to display an avatar or email address.
+Aura Start shows the connected Google account's email in the header and its name and email in Settings, including when synchronization is paused. It reads only the name and email fields from the Google Drive `about` endpoint using the same authorization as synchronization. This identifies the account connected to Drive rather than the browser profile. No additional Google scopes or browser permissions are requested, and no remote avatar is loaded.
+
+Already-connected installations retrieve these details automatically after updating without opening a new sign-in prompt solely for the lookup. Aura Start caches the details locally and refreshes them automatically. A failed lookup does not disconnect the account or prevent normal synchronization. Account information is excluded from the shared Drive document and is not sent to an Aura Start server. Manual JSON or ZIP backups can include this local account metadata; authorization tokens are never included. Disconnecting clears the account information from the active connection, but does not modify backups already saved by the user.
+
+The optional account lookup is separate from reading or writing the sync file. It can run quietly on startup or page opening, including while a retained connection is paused, without uploading settings or starting a sync animation. Disconnecting stops these lookups. Local restore history may retain older connection metadata; it is not automatically rewritten on disconnect, and restoring a point preserves the current connection instead of signing in to an old account.
 
 ## Network, Accounts, Analytics, And Tracking
 
 Aura Start does not require an account for normal use. It does not include analytics, trackers, ads, affiliate replacement, telemetry, behavioral profiling, or hidden data collection.
 
-Aura Start's service requests are used only for optional Google authorization and Drive synchronization initiated by the user's connection choice. They go to Google OAuth and Drive API endpoints for connection, token renewal, automatic sync, explicit connection/reconnection, connection-time restore/create, and backup cleanup. Google's sign-in pages open as part of authorization. Aura Start does not make background tracking calls or send data to an Aura Start server. Opening a saved link or an external help page navigates to the chosen website normally. Export files are created locally in the browser with Blob downloads. Import files are read locally by the browser and validated before they change local extension storage.
+Aura Start's service requests are used only for optional Google authorization and Drive synchronization initiated by the user's connection choice. They go to Google OAuth and Drive API endpoints for connection, token renewal, automatic sync, explicit connection/reconnection, connection-time restore/create, backup cleanup, and retrieving the connected account’s name and email. Google's sign-in pages open as part of authorization. Aura Start does not make background tracking calls or send data to an Aura Start server. Opening a saved link or an external help page navigates to the chosen website normally. Export files are created locally in the browser with Blob downloads. Import files are read locally by the browser and validated before they change local extension storage.
 
 ## User Control
 

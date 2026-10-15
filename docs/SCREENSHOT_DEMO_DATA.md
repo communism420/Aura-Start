@@ -43,10 +43,12 @@ Do not seed a fake processed file, borrow a user's recording, or rename an unrel
 
 Open the real Google Drive settings with synchronization off and the account disconnected. Show the connection controls and explanatory text as the application renders them. Do not click Connect, authorize a real account, or manufacture a successful sync state for a screenshot.
 
+Aura Start 2.1.2 displays verified account name/email after a real connection, including for a retained paused connection. Keep those fields absent in this disconnected capture fixture; test account-display states separately with clearly identified synthetic test data. A screenshot with Drive off is not evidence that account lookup, upgrade hydration, or sync succeeded.
+
 ## Manual Capture And Review
 
 For manual captures, use an isolated test browser profile and equivalent public/example data. Follow the same privacy and authenticity rules as the automated workflow. Never clear or replace a personal Aura Start installation just to prepare store images.
 
 Review every image before uploading. Check readability, scene framing, the visible release version where present, and the absence of account information, local paths, or browser profile data. If an application change breaks automated navigation, update the capture script to use the new real controls; do not draw substitute controls or edit product text into the image.
 
-New automated captures are stored as separate runs under the ignored Chrome and Firefox submission folders. The current website gallery uses reviewed copies from the October 4, 2026 Aura Start 2.1.1 run, with versioned filenames and a public capture record. Website copies are maintained separately; older 2.1.0 public images and local `Photo` artwork remain historical captures.
+New automated captures are stored as separate runs under the ignored Chrome and Firefox submission folders. The current website gallery uses reviewed copies from the October 15, 2026 Aura Start 2.1.2 run, with versioned filenames and a public capture record. Website copies are maintained separately; older public images and local `Photo` artwork remain historical captures.

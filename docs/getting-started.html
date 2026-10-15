@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Getting started with Aura Start: install, create nested groups, add links, use fuzzy search, save open tabs, choose backgrounds, enable widgets, and keep backups."
+      content="Getting started with Aura Start 2.1.2: install, arrange links and groups, use search and widgets, identify your connected Google Drive account, and keep backups."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.1 user guide</span>
+        <span class="kicker">Aura Start 2.1.2 user guide</span>
         <h1>Getting Started</h1>
         <p>
           Aura Start replaces your browser new tab page with clean nested groups of links.
@@ -40,7 +40,7 @@
           Install from the <a href="https://chromewebstore.google.com/detail/aura-start/pdhhhnmcampmmklkbbfbmniijmgjiabi" rel="noopener noreferrer">Chrome Web Store</a>
           for Google Chrome or a compatible Chromium browser, or use
           <a href="https://addons.mozilla.org/firefox/addon/aura-start/" rel="noopener noreferrer">Firefox Add-ons</a>
-          for Firefox 142 or newer. This guide describes version 2.1.1; store availability may differ.
+          for Firefox 142 or newer. This guide describes version 2.1.2; store availability may differ.
           For a local source build, follow these steps:
         </p>
         <ol>
@@ -77,9 +77,31 @@
           <li>Create groups for areas like Work, Reading, Tools, or Research.</li>
           <li>Create nested groups when one level of structure helps, such as Research -> Deep dives.</li>
           <li>Add links with titles, URLs, optional descriptions, and optional tags.</li>
-          <li>Use edit mode when you want to reorder groups or links with drag and drop, including moving a group into or out of a parent group.</li>
           <li>Use compact mode or configurable columns when you want a denser layout.</li>
         </ul>
+
+        <h2>Rearrange groups and links</h2>
+        <p>
+          Turn on edit mode and clear any active search or filter to arrange the full
+          collection. Drag a link by its drag area or a group by its grip. The insertion
+          preview shows where the item will land; neighboring links smoothly move aside.
+          Your system's reduced-motion preference disables this animation.
+        </p>
+        <p>
+          Links can move within a group or into another group, including an empty or
+          collapsed group. The folder drop zone nests an eligible group; the top-level
+          zone moves a nested group back out. Aura Start supports one nested level, so
+          a group with children cannot itself be nested. Drop outside a valid destination
+          or press Escape to cancel.
+        </p>
+        <p>
+          For keyboard dragging, focus a link's drag area or a group's grip and press
+          Space or Enter. Use arrow keys to choose a position, then Space or Enter to
+          drop. Alt+Right chooses an eligible group to nest into; Alt+Left moves a nested
+          group to the top level. Escape cancels. A drop that leaves the order unchanged
+          creates no save, restore point, or synchronization request. Successful moves
+          are protected by the automatic movement-snapshot preference, which is on by default.
+        </p>
 
         <h2>Find links quickly</h2>
         <p>
@@ -174,7 +196,7 @@
         <h2>Connect other devices</h2>
         <p>
           Google Drive sync is off by default and needs your explicit connection.
-          Update every installation to 2.1.1, then connect the same Google account in Settings.
+          Update every installation to 2.1.2, then connect the same Google account in Settings.
           Groups, links, settings, notes, the saved background image, and the selected
           Countdown sound share one <code>aura-start-sync.json</code> in normal Google Drive.
           Connected pages that are visible and online check for changes about every five seconds;
@@ -182,6 +204,16 @@
           Network and browser scheduling can delay delivery. The running timer and
           Restore Timeline stay local. See <a href="google-drive-sync.html">Google Drive Sync</a>
           for migration, reconnecting, and cloud deletion.
+        </p>
+        <p>
+          The header shows the connected account's email, and Settings shows its name
+          and email. These details identify the Google Drive account even if your
+          browser profile uses a different account. Existing connections load this
+          information automatically after updating, without a new sign-in prompt solely
+          for the lookup. If the information is temporarily unavailable, Aura Start
+          retries automatically and keeps the connection and local data. Verified details
+          remain visible while synchronization is paused. This separate account lookup does
+          not upload links, notes, or media, and does not mark your content as changed.
         </p>
         <p>
           Aura Start uses local storage and an alarm permission for connected background sync;

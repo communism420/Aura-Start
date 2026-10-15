@@ -18,6 +18,7 @@ import {
   sendExtensionRuntimeMessage
 } from "./utils/browserApi";
 import { loadAuraData } from "./utils/storage";
+import { refreshGoogleDriveAccountInfo } from "./services/googleDriveAccount";
 import {
   GOOGLE_DRIVE_SYNC_ALARM_NAME,
   GOOGLE_DRIVE_SYNC_ALARM_PERIOD_MINUTES,
@@ -136,6 +137,7 @@ addExtensionStorageChangeListener((changes, areaName) => {
 });
 
 addExtensionRuntimeStartupListener(() => {
+  void refreshGoogleDriveAccountInfo();
   void refreshGoogleDriveSyncAlarm().catch(() => undefined);
   void recoverPendingGoogleDriveChanges().catch(() => undefined);
 });
@@ -167,5 +169,7 @@ async function recoverPendingGoogleDriveChanges(): Promise<void> {
 // Recreate missing alarms and retry unsent edits without syncing clean data on context startup.
 void refreshGoogleDriveSyncAlarm().catch(() => undefined);
 void recoverPendingGoogleDriveChanges().catch(() => undefined);
+// Upgrade existing connections quietly, including retained paused accounts.
+void refreshGoogleDriveAccountInfo();
 
 export {};

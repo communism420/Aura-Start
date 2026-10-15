@@ -22,6 +22,7 @@ import {
   type GoogleDriveBackgroundSyncResult
 } from "../services/googleDriveBackgroundSync";
 import { installGoogleDriveSyncPageLifecycle } from "../services/googleDriveSyncLifecycle";
+import { refreshGoogleDriveAccountInfo } from "../services/googleDriveAccount";
 import { clearGoogleDrivePollCache } from "../services/googleDrivePollCache";
 import type {
   AuraRestorePoint,
@@ -120,7 +121,7 @@ type AuraStore = {
   updateGroupTitle: (groupId: string, title: string) => Promise<void>;
   toggleGroupCollapsed: (groupId: string) => Promise<void>;
   deleteGroup: (groupId: string, mode?: GroupDeleteMode) => Promise<void>;
-  moveGroup: (groupId: string, newParentId: string | null) => Promise<void>;
+  moveGroup: (groupId: string, newParentId: string | null, beforeGroupId?: string) => Promise<void>;
   addLink: (groupId: string, input: LinkInput) => Promise<void>;
   updateLink: (groupId: string, linkId: string, input: LinkInput) => Promise<void>;
   deleteLink: (groupId: string, linkId: string) => Promise<void>;
@@ -169,6 +170,10 @@ let pendingNotesWrites = 0;
 let notesWriteRequest = 0;
 let unsavedNotes = false;
 let pendingLegacyNotes: string | undefined;
+let pendingOptimisticCommits = 0;
+let optimisticCommitGeneration = 0;
+let optimisticCommitsSettled: Promise<void> | undefined;
+let resolveOptimisticCommits: (() => void) | undefined;
 
 /** A retained editor draft must not be mistaken for a successfully backed-up note. */
 export function hasUnsavedWidgetNotes(): boolean {
@@ -615,22 +620,38 @@ async function optimisticCommit(
   options: CommitOptions = {}
 ): Promise<void> {
   const next = touch(data);
+  if (!pendingOptimisticCommits) {
+    optimisticCommitsSettled = new Promise<void>((resolve) => { resolveOptimisticCommits = resolve; });
+  }
+  pendingOptimisticCommits += 1;
+  optimisticCommitGeneration += 1;
   set({ data: next, status: "ready", error: null });
 
   try {
     const persisted = await saveAuraData(next, { baseline: previous });
-    set({ data: persisted, status: "ready", error: null });
+    // A newer drag may already be visible while this older write finishes.
+    if (useAuraStore.getState().data === next) set({ data: persisted, status: "ready", error: null });
     if (!options.skipAutoSync && (!sameSyncContent(previous, persisted) || !sameSyncReplica(previous, persisted))) {
       scheduleAutoSync(persisted);
     }
   } catch (error) {
-    const durable = await loadAuraData().catch(() => undefined);
-    set({
-      data: durable?.status === "ready" ? durable.data : previous,
-      status: "ready",
-      error: error instanceof Error ? error.message : "Local storage could not be updated."
-    });
+    if (useAuraStore.getState().data === next) {
+      const durable = await loadAuraData().catch(() => undefined);
+      if (useAuraStore.getState().data === next) set({
+        data: durable?.status === "ready" ? durable.data : previous,
+        status: "ready",
+        error: error instanceof Error ? error.message : "Local storage could not be updated."
+      });
+    }
     throw error;
+  } finally {
+    pendingOptimisticCommits -= 1;
+    if (!pendingOptimisticCommits) {
+      const resolve = resolveOptimisticCommits;
+      optimisticCommitsSettled = undefined;
+      resolveOptimisticCommits = undefined;
+      resolve?.();
+    }
   }
 }
 
@@ -894,6 +915,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         customBackgroundImage,
         widgetNotes: result.notesMigrationError ? uiState.widgetNotes : data.settings.notes.text
       });
+      if (data.settings.sync.connected) void refreshGoogleDriveAccountInfo(data.settings.sync);
       if (result.backgroundMigrationError || result.notesMigrationError) {
         if (result.notesMigrationError) set({ widgetNotes: uiState.widgetNotes });
         const message = text(data, result.notesMigrationError ? "notesMigrationFailed" : "backgroundMigrationFailed");
@@ -1085,16 +1107,35 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
   },
 
-  async moveGroup(groupId, newParentId) {
+  async moveGroup(groupId, newParentId, beforeGroupId) {
     const data = get().data;
     if (!data) return;
 
     const normalizedParentId = resolveGroupParentId(data, newParentId);
     canMoveGroupToParent(data, groupId, normalizedParentId);
     const group = findGroup(data, groupId);
-    if (groupHasParent(group, normalizedParentId)) return;
+    if (beforeGroupId === groupId) return;
 
-    const targetSiblingCount = data.groups.filter((item) => groupHasParent(item, normalizedParentId)).length;
+    const targetSiblings = data.groups
+      .filter((item) => item.id !== groupId && groupHasParent(item, normalizedParentId))
+      .sort((a, b) => a.order - b.order);
+    const beforeIndex = beforeGroupId ? targetSiblings.findIndex((item) => item.id === beforeGroupId) : -1;
+    // A removed or reparented anchor is not an instruction to append elsewhere.
+    if (beforeGroupId && beforeIndex < 0) return;
+    targetSiblings.splice(beforeIndex >= 0 ? beforeIndex : targetSiblings.length, 0, group);
+    const sameParent = groupHasParent(group, normalizedParentId);
+    const originalSiblings = data.groups
+      .filter((item) => groupHasParent(item, normalizedParentId))
+      .sort((a, b) => a.order - b.order);
+    if (sameParent && targetSiblings.every((item, index) => item.id === originalSiblings[index]?.id)) return;
+
+    const nextOrders = new Map(targetSiblings.map((item, index) => [item.id, index]));
+    if (!sameParent) {
+      data.groups
+        .filter((item) => item.id !== groupId && groupHasParent(item, groupParentId(group)))
+        .sort((a, b) => a.order - b.order)
+        .forEach((item, index) => nextOrders.set(item.id, index));
+    }
     const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeMovingGroup", { title: group.title }), "before_group_move", {
       entity: "group",
       title: group.title,
@@ -1103,9 +1144,11 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
     });
     await optimisticCommit(set, data, {
       ...withSafety,
-      groups: withSafety.groups.map((item) =>
-        item.id === groupId ? { ...item, parentId: normalizedParentId, order: targetSiblingCount } : item
-      )
+      groups: withSafety.groups.map((item) => {
+        const order = nextOrders.get(item.id);
+        if (item.id === groupId) return { ...item, parentId: normalizedParentId, order: order ?? item.order };
+        return order === undefined ? item : { ...item, order };
+      })
     });
   },
 
@@ -1276,14 +1319,19 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
 
     const link = sourceGroup.links.find((item) => item.id === linkId);
     if (!link) return;
+    if (overLinkId === linkId) return;
 
-    const sourceLinks = sourceGroup.links.filter((item) => item.id !== linkId);
+    const orderedOriginalSource = sourceGroup.links.slice().sort((a, b) => a.order - b.order);
+    const sourceLinks = orderedOriginalSource.filter((item) => item.id !== linkId);
     const targetWithoutMoved =
-      sourceGroup.id === targetGroup.id ? sourceLinks : targetGroup.links.filter((item) => item.id !== linkId);
+      sourceGroup.id === targetGroup.id ? sourceLinks : targetGroup.links
+        .slice().sort((a, b) => a.order - b.order).filter((item) => item.id !== linkId);
     const foundOverIndex = overLinkId ? targetWithoutMoved.findIndex((item) => item.id === overLinkId) : -1;
+    if (overLinkId && foundOverIndex < 0) return;
     const insertIndex = foundOverIndex >= 0 ? foundOverIndex : targetWithoutMoved.length;
     const nextTargetLinks = targetWithoutMoved.slice();
     nextTargetLinks.splice(insertIndex, 0, link);
+    if (sourceGroup.id === targetGroup.id && nextTargetLinks.every((item, index) => item.id === orderedOriginalSource[index]?.id)) return;
     const orderedSourceLinks = sourceLinks.map((item, index) => ({ ...item, order: index }));
     const orderedTargetLinks = nextTargetLinks.map((item, index) => ({ ...item, order: index }));
     const withSafety = withAutomaticRestorePoint(data, text(data, "restoreNameBeforeMovingLink", { title: link.title }), "before_link_move", {
@@ -1669,11 +1717,12 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         // can legitimately reuse the same token; a stale metadata commit
         // must not erase the grant used by the page that connected first.
         await requireStoredSyncConnection(data.settings.sync);
-        const account = await getConnectedAccountInfo().catch(() => undefined);
+        const account = await getConnectedAccountInfo(token).catch(() => undefined);
         await commitSyncMetadata(set, get().data ?? data, {
           accountEmail: account?.email,
           accountName: account?.name,
           accountAvatarUrl: account?.avatarUrl,
+          accountInfoUpdatedAt: account ? nowIso() : undefined,
           mode: "auto", connected: true, reconnectRequired: false,
           connectionId: createId("connection"),
           cloudFileId: undefined, lastSyncedAt: undefined,
@@ -1709,7 +1758,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         const result = await disconnectGoogleDriveAccount();
         const next = await commitSyncMetadata(set, paused, {
           mode: "off", connected: false, reconnectRequired: false,
-          accountEmail: undefined, accountName: undefined, accountAvatarUrl: undefined,
+          accountEmail: undefined, accountName: undefined, accountAvatarUrl: undefined, accountInfoUpdatedAt: undefined,
           cloudFileId: undefined, lastSyncedAt: undefined,
           lastSyncedLocalUpdatedAt: undefined, lastCloudUpdatedAt: undefined
         }, "idle", text(data, "googleDriveAccountDisconnected"), null, operation);
@@ -1851,7 +1900,7 @@ export const useAuraStore = create<AuraStore>((set, get) => ({
         const result = await disconnectGoogleDriveAccount(token);
         const next = await commitSyncMetadata(set, receipt, {
           mode: "off", connected: false, reconnectRequired: false,
-          accountEmail: undefined, accountName: undefined, accountAvatarUrl: undefined,
+          accountEmail: undefined, accountName: undefined, accountAvatarUrl: undefined, accountInfoUpdatedAt: undefined,
           cloudFileId: undefined, lastSyncedAt: undefined,
           lastSyncedLocalUpdatedAt: undefined, lastCloudUpdatedAt: undefined
         }, "idle", text(data, legacyUnchecked ? "googleDriveBackupDeletedLegacyUncheckedTitle"
@@ -2100,7 +2149,9 @@ useAuraStore.subscribe((state, previous) => {
 });
 
 export function installAuraStoreSyncLifecycle(): () => void {
-  return installGoogleDriveSyncPageLifecycle({
+  let storageChangeRequest = 0;
+  const cleanup = installGoogleDriveSyncPageLifecycle({
+    refreshAccount: refreshGoogleDriveAccountInfo,
     canPollRemote: () => {
       const state = useAuraStore.getState();
       const sync = state.data?.settings.sync;
@@ -2116,7 +2167,24 @@ export function installAuraStoreSyncLifecycle(): () => void {
         && !sync.reconnectRequired && !isActiveSyncStatus(state.syncStatus)
         && Boolean(state.data && hasPendingGoogleDriveLocalChanges(state.data));
     },
-    onDataChanged: (data) => {
+    onDataChanged: async (incoming) => {
+      const request = ++storageChangeRequest;
+      let data = incoming;
+      if (pendingOptimisticCommits) {
+        // Own writes and other pages can emit intermediate durable snapshots.
+        // Wait for local drag intents, then read their final merged result.
+        while (true) {
+          await optimisticCommitsSettled;
+          if (request !== storageChangeRequest) return;
+          const generation = optimisticCommitGeneration;
+          const loaded = await loadAuraData();
+          if (request !== storageChangeRequest) return;
+          if (pendingOptimisticCommits || generation !== optimisticCommitGeneration) continue;
+          if (loaded.status !== "ready") return;
+          data = loaded.data;
+          break;
+        }
+      }
       const state = useAuraStore.getState();
       const sameConnection = state.data && sameStoredSyncConnection(data.settings.sync, state.data.settings.sync);
       useAuraStore.setState({
@@ -2131,4 +2199,5 @@ export function installAuraStoreSyncLifecycle(): () => void {
       });
     }
   });
+  return () => { storageChangeRequest += 1; cleanup(); };
 }

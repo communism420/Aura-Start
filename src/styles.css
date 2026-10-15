@@ -267,7 +267,6 @@ select.field {
 }
 
 .bookmark-group.group-placeholder {
-  opacity: 0;
   pointer-events: none;
   transition: none;
 }
@@ -753,10 +752,65 @@ select.field {
 
 .sortable-group-shell,
 .sortable-link-shell {
-  transform-origin: 0 0;
-  will-change: transform;
-  backface-visibility: hidden;
+  position: relative;
 }
+
+.bookmark-link-preview-list { position: relative; }
+
+.sortable-link-content[data-preview-active] {
+  transition: transform 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.sortable-link-content[data-drag-source] { visibility: hidden; }
+
+/* Measured shells never move; their presentation and the insertion gap do. */
+.sortable-link-shell[data-drop-edge]::before { display: none; }
+
+.link-insertion-gap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  border: 1px dashed var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  pointer-events: none;
+  transition: top 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.link-insertion-space { pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sortable-link-content[data-preview-active], .link-insertion-gap { transition: none; }
+}
+
+.group-shell-dragging {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+[data-drop-edge="before"]::before,
+[data-drop-edge="after"]::before {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+[data-drop-axis="y"][data-drop-edge]::before {
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+[data-drop-axis="y"][data-drop-edge="before"]::before { top: -2px; }
+[data-drop-axis="y"][data-drop-edge="after"]::before { bottom: -2px; }
+[data-drop-axis="x"][data-drop-edge]::before { top: 0; bottom: 0; width: 3px; }
+[data-drop-axis="x"][data-drop-edge="before"]::before { left: -5px; }
+[data-drop-axis="x"][data-drop-edge="after"]::before { right: -5px; }
+[data-drop-edge="inside"] { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .group-tree-node,
 .sortable-group-shell {
@@ -774,6 +828,7 @@ select.field {
 }
 
 .aura-group-grid {
+  position: relative;
   display: grid;
   justify-content: center;
   align-items: start;
@@ -974,24 +1029,35 @@ select.field {
 
 .group-root-drop-zone,
 .group-child-drop-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 0.85rem;
   border: 1px dashed var(--border);
   border-radius: 0.2rem;
   background: transparent;
+  color: var(--muted);
+  font-size: 10px;
   transition:
     background-color 0.14s ease,
     border-color 0.14s ease;
 }
 
 .group-root-drop-zone {
-  grid-column: 1 / -1;
+  position: absolute;
+  z-index: 6;
+  top: -1.5rem;
+  left: 0;
   width: min(27rem, 100%);
-  justify-self: start;
-  margin: 0 0 0.25rem;
 }
 
 .group-child-drop-zone {
-  margin: 0.35rem 0.8rem 0.2rem;
+  position: absolute;
+  z-index: 6;
+  top: 0.15rem;
+  right: 0;
+  width: 3rem;
+  height: 1.1rem;
 }
 
 .group-drop-zone-active {
@@ -1479,7 +1545,9 @@ select.field {
 }
 
 .group-drag-overlay {
-  width: min(27rem, calc(100vw - 2rem));
+  width: 100%;
+  background: var(--surface);
+  border-radius: 3px;
   color: var(--text);
   cursor: grabbing;
   opacity: 0.96;
@@ -1492,7 +1560,9 @@ select.field {
 }
 
 .link-drag-overlay {
-  width: min(27rem, calc(100vw - 2rem));
+  width: 100%;
+  background: var(--surface);
+  border-radius: 3px;
   color: var(--text);
   cursor: grabbing;
   opacity: 0.96;

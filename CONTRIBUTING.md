@@ -28,12 +28,15 @@ npm test
 
 `npm run dev` starts a UI preview; extension APIs and real OAuth require an installed extension build. `npm run build` generates `dist`, and `npm run build:local` generates `dist-local`. `npm run build:store` requires the release Device OAuth credential in the environment and generates/validates `dist`; it does not create a ZIP. `npm run build:firefox` requires configured Device OAuth credentials and generates, sanitizes, finalizes, and validates `dist-firefox`.
 
+For drag-and-drop changes, also run `npm run test:drag`. It builds the actual application in an isolated browser preview and checks pointer/keyboard placement, smooth neighboring-link movement, reduced motion, and the saved order. Select an existing matching-version output with `AURA_DND_DIST_DIR`; the default fresh build avoids stale assets. Firefox coverage uses `AURA_DND_BROWSER=firefox` and an already installed compatible Playwright/Firefox runtime, optionally selected with `AURA_DND_PLAYWRIGHT_MODULE` and `AURA_DND_FIREFOX_PATH`. The harness downloads no browsers and does not use personal profiles. These UI checks do not establish native extension or Google OAuth behavior.
+
 For this project's delivery workflow, refresh all four browser/credential variants after changes, including documentation changes: `dist-google`, `dist-google-local`, `dist-firefox`, and `dist-firefox-local`. Follow the [release checklist](docs/RELEASE_CHECKLIST.md) for explicit output directories and matching credentials. Do not mix release and local OAuth configurations or claim UI-only builds verify OAuth.
 
 ## Data And Documentation Changes
 
 - Follow [the settings schema contract](docs/SETTINGS_SCHEMA.md) when adding settings. Preserve explicit values, compatible unknown fields, and older backups; missing fields must not become false user edits.
 - Cover meaningful sync/storage changes with regression tests for concurrent writes, deletion, offline recovery, and older data. Use the [installed-extension test matrix](docs/INSTALLED_EXTENSION_TEST_MATRIX.md) for browser checks and their recorded limits.
+- Keep the displayed Google account tied to the active Drive token, not the browser's profile. Account-name/email hydration is optional local metadata: it must preserve content revisions, pending edits, connection state, and manual disconnect, without adding shared fields or new permissions.
 - Keep README, the privacy policy, the English site in `docs`, and store materials consistent with shipped behavior. Refresh screenshots when the interface changes. Keep historical release notes clearly marked as history.
 - Update matching Markdown and HTML pages together. Check local links, image references, and headings after editing; preview the site at desktop and narrow widths. The store listing guide contains separate Chrome and Firefox fields, so review both when a shared feature changes.
 - Use the real-browser screenshot pipeline described in [Screenshot Capture](docs/SCREENSHOTS.md). Website gallery updates require copying reviewed images, updating captions and versioned references, and recording their provenance; a capture alone does not update the site.

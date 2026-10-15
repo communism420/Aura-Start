@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import type { AuraStartLink, AuraStartSettings } from "../types";
 import type { LinkSearchHighlights } from "../utils/search";
+import type { DropPlacement } from "../utils/dragPlacement";
 import { BookmarkLinkItem } from "./BookmarkLinkItem";
 
 type SortableLinkItemProps = {
@@ -13,6 +13,9 @@ type SortableLinkItemProps = {
   highlightTerms?: string[];
   highlights?: LinkSearchHighlights;
   isDropPending: boolean;
+  placement?: DropPlacement | null;
+  previewOffset?: number;
+  linkDragActive?: boolean;
   selected?: boolean;
   onEdit: (groupId: string, link: AuraStartLink) => void;
   onDelete: (groupId: string, link: AuraStartLink) => void;
@@ -27,6 +30,9 @@ export function SortableLinkItem({
   highlightTerms,
   highlights,
   isDropPending,
+  placement,
+  previewOffset = 0,
+  linkDragActive = false,
   selected,
   onEdit,
   onDelete
@@ -34,34 +40,43 @@ export function SortableLinkItem({
   const sortable = useSortable({
     id: `link:${link.id}`,
     disabled,
-    data: { type: "link", linkId: link.id, groupId },
+    data: { type: "link", linkId: link.id, groupId, order: link.order },
+    animateLayoutChanges: () => false,
     transition: {
       duration: 145,
       easing: "cubic-bezier(0.2, 0, 0, 1)"
     }
   });
-  const transform = sortable.transform ? CSS.Translate.toString(sortable.transform) : undefined;
 
   return (
     <div
       className="sortable-link-shell"
+      data-link-id={link.id}
+      data-drop-edge={placement?.kind === "link" && placement.markerId === `link:${link.id}` ? placement.edge : undefined}
+      data-drop-axis="y"
       ref={sortable.setNodeRef}
-      style={{ transform, transition: sortable.transition }}
     >
-      <BookmarkLinkItem
-        dragAttributes={sortable.attributes}
-        dragListeners={sortable.listeners}
-        dragging={sortable.isDragging || isDropPending}
-        editMode={editMode}
-        groupId={groupId}
-        highlightTerms={highlightTerms}
-        highlights={highlights}
-        link={link}
-        selected={selected}
-        settings={settings}
-        onDelete={onDelete}
-        onEdit={onEdit}
-      />
+      <div
+        className="sortable-link-content"
+        data-preview-active={linkDragActive || undefined}
+        data-drag-source={sortable.isDragging || isDropPending || undefined}
+        style={{ transform: previewOffset ? `translate3d(0, ${previewOffset}px, 0)` : undefined }}
+      >
+        <BookmarkLinkItem
+          dragAttributes={sortable.attributes}
+          dragListeners={sortable.listeners}
+          dragging={sortable.isDragging || isDropPending}
+          editMode={editMode}
+          groupId={groupId}
+          highlightTerms={highlightTerms}
+          highlights={highlights}
+          link={link}
+          selected={selected}
+          settings={settings}
+          onDelete={onDelete}
+          onEdit={onEdit}
+        />
+      </div>
     </div>
   );
 }

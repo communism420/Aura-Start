@@ -2,7 +2,7 @@
 
 Aura Start is an independent, open-source project and is not affiliated with A Fine Start. Migration support exists so users can move their own grouped links using A Fine Start export codes.
 
-This guide describes Aura Start 2.1.1. For installation, Firefox homepage controls, and the current interface, see [Getting Started](getting-started.html).
+This guide describes Aura Start 2.1.2. For installation, Firefox homepage controls, and the current interface, see [Getting Started](getting-started.html).
 
 ## 1. Why migrate?
 
@@ -22,7 +22,7 @@ Aura Start may be a good fit if you want:
 
 Group names and links should migrate if the A Fine Start export code is valid and contains supported URL values.
 
-Aura Start reads groups in column order and keeps the links in each group in their exported order. Groups arrive at the top level; you can organize them into nested groups afterward. The original column layout is not an imported preference.
+Aura Start reads groups in column order and keeps the links in each group in their exported order. Groups arrive at the top level; you can organize them into nested groups afterward. The original column layout is not an imported preference. In edit mode, use the insertion preview to move links between groups, or use keyboard drag controls; clear an active search first. Aura Start supports one nested level.
 
 ## 3. What may not be preserved?
 
@@ -89,11 +89,11 @@ No. Aura Start imports grouped links from supported export-code shapes. It does 
 
 **Can I use Aura Start without Google Drive?**
 
-Yes. Aura Start is local-first, and Google Drive sync is optional and off by default. After connection, installations share one visible Drive file and merge changes automatically. Visible, online pages normally check about every five seconds; background checks run about once a minute while the browser is running.
+Yes. Aura Start is local-first, and Google Drive sync is optional and off by default. After connection, installations share one visible Drive file and merge changes automatically. Visible, online pages normally check about every five seconds; background checks run about once a minute while the browser is running. Settings identifies the connected account by name and email, and existing connections retrieve those details automatically after updating. Network conditions and browser scheduling can delay updates.
 
 **Can I keep a normal backup file?**
 
-Yes. In 2.1.1, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive. See [Export / Backup](export-backup.html) for import modes and compatibility with older backups.
+Yes. In 2.1.2, Full Backup ZIP contains JSON settings, links, notes, restore history, referenced custom backgrounds, and only the currently selected original Countdown audio file. The built-in alarm and older custom sounds are excluded. Settings and links only JSON includes notes and history but omits media bytes. Both work without Drive. See [Export / Backup](export-backup.html) for import modes and compatibility with older backups.
 
 **Can I export back to A Fine Start-compatible format?**
 

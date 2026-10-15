@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start 2.1.1 release notes: Firefox homepage and new-window support, with earlier release history."
+      content="Aura Start 2.1.2 release notes: smoother, more precise drag and drop and connected Google Drive account details, with earlier release history."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -29,8 +29,23 @@
 
       <main class="doc">
         <span class="kicker">Release notes</span>
-        <h1>Aura Start 2.1.1</h1>
-        <p>This describes the current source; store availability may differ.</p>
+        <h1>Aura Start 2.1.2</h1>
+        <p>Changes since 2.1.1, reviewed October 15, 2026. This describes the current source; store availability may differ.</p>
+        <ul>
+          <li>Improved link and group dragging with stable hit targets and a visible insertion marker, reducing jitter and making the saved position match the preview.</li>
+          <li>Added smooth movement of neighboring links to preview the drop position. The gap matches the dragged row's height, and reduced-motion preferences disable the animation.</li>
+          <li>Improved drag previews and moving groups between nesting levels, and added link drops into empty and collapsed groups.</li>
+          <li>Improved keyboard controls: Space/Enter starts or completes a drag, arrows choose the position, and Escape cancels. During group dragging, Alt+Right nests into an eligible group and Alt+Left returns a nested group to the top level.</li>
+          <li>Cancel drops outside valid destinations. Group action buttons no longer initiate dragging, and stale insertion targets no longer cause an unintended append.</li>
+          <li>Prevented delayed saves from restoring an earlier order after rapid consecutive moves. Drops that leave the order unchanged do not cause redundant saves, sync requests, or Restore Points.</li>
+          <li>Added the connected Google Drive account's name and email in Settings, with its email in the header, including for a retained paused connection.</li>
+          <li>Existing connections retrieve account details automatically after updating using their current Drive authorization. Temporary lookup failures retry quietly without interrupting file synchronization; late responses cannot restore account details after disconnect.</li>
+          <li>Kept account details cached locally and excluded from the shared Drive document. The lookup does not upload settings or start a sync animation. Manual JSON/ZIP backups can include local account metadata, but never authorization tokens.</li>
+          <li>Updated user and contributor documentation, privacy disclosures, website screenshots, and store promotional images for 2.1.2.</li>
+          <li>No additional browser permissions or Google scopes are required.</li>
+        </ul>
+
+        <h2>Aura Start 2.1.1</h2>
         <ul>
           <li>Added Firefox homepage support so new windows and the Home button can open the same Aura Start page as new tabs.</li>
           <li>Kept Firefox's homepage confirmation and user controls, with no new browser permissions. The preference to restore previous windows and tabs remains unchanged.</li>

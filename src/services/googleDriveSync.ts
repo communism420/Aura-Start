@@ -4,7 +4,6 @@ import {
   createExtensionTab,
   getExtensionAuthToken,
   getExtensionManifest,
-  getExtensionProfileUserInfo,
   getExtensionRedirectUrl,
   getExtensionRuntimeId,
   getExtensionStorageArea,
@@ -2249,14 +2248,28 @@ export async function disconnectGoogleAccount(token?: string): Promise<{ revokeE
   return clearError ? { revokeError: mapDriveError(clearError) } : {};
 }
 
-export async function getConnectedAccountInfo(): Promise<{
+export async function getConnectedAccountInfo(token?: string): Promise<{
   email?: string;
   name?: string;
   avatarUrl?: string;
 } | undefined> {
-  const info = await getExtensionProfileUserInfo();
-  const email = typeof info?.email === "string" && info.email ? info.email : undefined;
-  return email ? { email } : undefined;
+  // Browser profile identity may differ from the account selected for Drive,
+  // and is unavailable in Device OAuth. Ask the account that owns this token.
+  const authToken = token ?? await getAuthToken(false);
+  const session = tokenAuthSessions.get(currentAuthToken(authToken));
+  const params = new URLSearchParams({ fields: "user(emailAddress,displayName)" });
+  const response = await driveFetch<unknown>(authToken, `${DRIVE_API_BASE}/about?${params}`, {
+    signal: AbortSignal.timeout(5_000)
+  });
+  // A response already on the wire must not survive an explicit disconnect or
+  // a new authorization generation while it was in flight.
+  if (session) await requireAuthSession(session);
+  if (!isRecord(response) || !isRecord(response.user)) return undefined;
+  const clean = (value: unknown, limit: number) => typeof value === "string"
+    ? value.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, limit) || undefined : undefined;
+  const email = clean(response.user.emailAddress, 320);
+  const name = clean(response.user.displayName, 256);
+  return email || name ? { email, name } : undefined;
 }
 
 function syncFileQuery(storageMode: GoogleDriveStorageMode, deleting = false): string {

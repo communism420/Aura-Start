@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.1 user guide</span>
+        <span class="kicker">Aura Start 2.1.2 user guide</span>
         <h1>Restore Timeline</h1>
         <p>
           Restore points are local safety snapshots. Restore Timeline turns them into
@@ -52,7 +52,9 @@
           The automatic movement-snapshot preference defaults to on. It does not turn
           off the safety points made for imports, deletion, reset, media changes, or
           cloud replacement. Restore Timeline is not a complete edit log: ordinary
-          typing and every settings change do not each create a snapshot.
+          typing and every settings change do not each create a snapshot. Canceling a drag
+          or dropping an item back into its current position creates no movement snapshot.
+          Refreshing the connected account's name or email creates no snapshot either.
         </p>
 
         <h2>Restore Timeline</h2>
@@ -84,7 +86,8 @@
           Restoring retains this installation's current Google Drive connection. When
           connected automatic sync is enabled, the resulting changes also reach other
           connected devices. A Restore Point is not a backup of Google credentials or
-          the active running countdown.
+          the active running countdown. A snapshot may contain cached account display
+          metadata; restoring it still retains the receiving installation's live connection.
         </p>
         <p>
           Deleting one point or clearing the timeline removes local recovery history;

@@ -10,6 +10,7 @@ import { mergeSyncData, sameSyncContent, sameSyncReplica } from "../utils/syncRe
 import { loadAuraData, nextStorageRevision, updateAuraData } from "../utils/storage";
 import { hasUnchangedGoogleDriveFiles, rememberGoogleDriveFiles } from "./googleDrivePollCache";
 import { synchronizeSharedGoogleDrive } from "./googleDriveSharedSync";
+import { refreshGoogleDriveAccountInfo } from "./googleDriveAccount";
 import {
   getAuthToken,
   GoogleDriveSyncError,
@@ -172,7 +173,9 @@ async function runSyncPass(force: boolean): Promise<GoogleDriveBackgroundSyncRes
 async function runConnectedSyncPass(started: AuraSyncSettings): Promise<GoogleDriveBackgroundSyncResult> {
   try {
     const token = await getAuthToken(false);
-    const files = await listSyncFiles(token);
+    const [files] = await Promise.all([
+      listSyncFiles(token), refreshGoogleDriveAccountInfo(started, token)
+    ]);
     // A periodic check reads small file metadata first. A clean installation
     // needs no media download, merge, timestamp change or main-storage write
     // when every observed server revision still matches the completed pass.

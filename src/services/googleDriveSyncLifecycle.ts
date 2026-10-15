@@ -25,6 +25,7 @@ export function isGoogleDriveAutoSyncActive(value: unknown): boolean {
 type GoogleDriveSyncPageLifecycleOptions = {
   canSync: () => boolean;
   canPollRemote?: () => boolean;
+  refreshAccount?: () => Promise<void>;
   onDataChanged: (data: AuraStartData) => void | Promise<void>;
 };
 
@@ -32,6 +33,7 @@ type GoogleDriveSyncPageLifecycleOptions = {
 export function installGoogleDriveSyncPageLifecycle({
   canSync,
   canPollRemote = () => false,
+  refreshAccount,
   onDataChanged
 }: GoogleDriveSyncPageLifecycleOptions): () => void {
   if (typeof window === "undefined" || typeof document === "undefined") return () => undefined;
@@ -52,10 +54,14 @@ export function installGoogleDriveSyncPageLifecycle({
 
   const pollRemoteChanges = () => {
     if (disposed || running || document.visibilityState !== "visible"
-      || globalThis.navigator?.onLine === false || !canPollRemote()) {
+      || globalThis.navigator?.onLine === false) {
       scheduleNextPoll();
       return;
     }
+    // Account display is independent of file sync, including retained paused
+    // connections. Its service coalesces requests and enforces a retry cooldown.
+    void refreshAccount?.().catch(() => undefined);
+    if (!canPollRemote()) { scheduleNextPoll(); return; }
     running = true;
     let nextDelay = GOOGLE_DRIVE_VISIBLE_POLL_INTERVAL_MS;
     // The background shares one cooldown across all pages and joins an
@@ -90,11 +96,15 @@ export function installGoogleDriveSyncPageLifecycle({
     if (event.key !== STORAGE_KEY || !event.newValue) return;
     try { applyData(JSON.parse(event.newValue)); } catch { /* Ignore malformed fallback storage. */ }
   };
+  const onOnline = () => {
+    retryPendingChanges();
+    void refreshAccount?.().catch(() => undefined);
+  };
 
   addExtensionStorageChangeListener(onStorageChanged);
   window.addEventListener("storage", onLocalStorage);
-  window.addEventListener("online", retryPendingChanges);
-  // Opening/focusing a page does not itself request network work. Only the
+  window.addEventListener("online", onOnline);
+  // Opening/focusing a page does not itself request file synchronization. The
   // delayed cadence checks remote revisions while this page remains visible.
   scheduleNextPoll();
 
@@ -102,7 +112,7 @@ export function installGoogleDriveSyncPageLifecycle({
     disposed = true;
     removeExtensionStorageChangeListener(onStorageChanged);
     window.removeEventListener("storage", onLocalStorage);
-    window.removeEventListener("online", retryPendingChanges);
+    window.removeEventListener("online", onOnline);
     window.clearTimeout(pollTimer);
   };
 }

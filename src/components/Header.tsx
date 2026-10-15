@@ -58,8 +58,10 @@ export function Header({
   const searchVisible = data.settings.showSearch && (searchOpen || search.length > 0);
   const language = data.settings.language;
   const sync = data.settings.sync;
-  const showSyncMarker = sync.mode !== "off" && Boolean(sync.connected);
-  const syncMarkerLabel = sync.accountName ?? sync.accountEmail ?? t(language, "googleDriveConnectedShort");
+  const showSyncMarker = Boolean(sync.connected);
+  const accountName = sync.accountInfoUpdatedAt ? sync.accountName?.trim() : undefined;
+  const accountEmail = sync.accountInfoUpdatedAt ? sync.accountEmail?.trim() : undefined;
+  const syncMarkerLabel = accountEmail || accountName || t(language, "googleDriveConnectedShort");
   const appVersion = getAuraStartVersion();
   const syncMarkerTitle = [
     syncStatus === "syncing"
@@ -70,8 +72,11 @@ export function Header({
           ? t(language, "googleDriveSyncFailed")
           : syncStatus === "conflict"
             ? t(language, "googleDriveConflictDetected")
-            : t(language, "googleDriveConnected"),
-    sync.accountEmail ?? sync.accountName,
+            : sync.mode === "off"
+              ? t(language, "googleDriveSyncDisabled")
+              : t(language, "googleDriveConnected"),
+    accountName,
+    accountEmail,
     sync.lastSyncedAt ? t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) }) : undefined,
     syncMessage
   ].filter(Boolean).join("\n");

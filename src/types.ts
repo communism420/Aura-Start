@@ -23,6 +23,8 @@ export type AuraSyncSettings = {
   accountEmail?: string;
   accountName?: string;
   accountAvatarUrl?: string;
+  /** Local timestamp: account details verified with the active Drive token. */
+  accountInfoUpdatedAt?: string;
   cloudFileId?: string;
   connected?: boolean;
   reconnectRequired?: boolean;

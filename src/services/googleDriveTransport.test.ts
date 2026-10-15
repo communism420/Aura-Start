@@ -168,6 +168,62 @@ beforeEach(async () => {
   drive = await import("./googleDriveSync");
 });
 
+describe("Google Drive connected account transport", () => {
+  it("reads the account behind the supplied Drive token, not the browser profile", async () => {
+    const profile = vi.fn(() => ({ email: "other-browser-profile@example.test" }));
+    Object.assign(identity, { getProfileUserInfo: profile });
+    route = (url, init) => {
+      expect(url.origin + url.pathname).toBe("https://www.googleapis.com/drive/v3/about");
+      expect([...url.searchParams]).toEqual([["fields", "user(emailAddress,displayName)"]]);
+      expect(init.method ?? "GET").toBe("GET");
+      expect(new Headers(init.headers).get("Authorization")).toBe("Bearer connected-drive-token");
+      return json({ user: { emailAddress: "drive@example.test", displayName: "Drive account",
+        photoLink: "https://example.test/private-avatar" } });
+    };
+    expect(await drive.getConnectedAccountInfo("connected-drive-token"))
+      .toEqual({ email: "drive@example.test", name: "Drive account" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(identity.getAuthToken).not.toHaveBeenCalled();
+    expect(profile).not.toHaveBeenCalled();
+    expect(writes()).toHaveLength(0);
+  });
+
+  it.each([null, {}, { user: null }, { user: [] }, { user: { emailAddress: 42, displayName: " \n " } }])
+    ("ignores unusable account responses: %j", async (response) => {
+      route = () => json(response);
+      expect(await drive.getConnectedAccountInfo("drive-token")).toBeUndefined();
+    });
+
+  it("normalizes and bounds displayed text without accepting an avatar URL", async () => {
+    route = () => json({ user: { emailAddress: ` \n${"e".repeat(400)}\u0000 `,
+      displayName: ` \r${"n".repeat(300)}\u007f `, photoLink: "https://example.test/avatar" } });
+    expect(await drive.getConnectedAccountInfo("drive-token"))
+      .toEqual({ email: "e".repeat(320), name: "n".repeat(256) });
+  });
+
+  it("acquires an existing token silently when none is supplied", async () => {
+    route = () => json({ user: { emailAddress: "drive@example.test" } });
+    expect(await drive.getConnectedAccountInfo()).toEqual({ email: "drive@example.test", name: undefined });
+    expect(identity.getAuthToken).toHaveBeenCalled();
+    expect(identity.getAuthToken.mock.calls.every(([options]) => options.interactive === false)).toBe(true);
+  });
+
+  it("rejects an in-flight account response after explicit disconnection", async () => {
+    const token = await drive.getAuthToken(false);
+    let resolve!: (value: Response) => void;
+    let requested!: () => void;
+    const called = new Promise<void>((done) => { requested = done; });
+    route = () => { requested(); return new Promise<Response>((done) => { resolve = done; }); };
+    const pending = drive.getConnectedAccountInfo(token);
+    await called;
+    await drive.disconnectGoogleAccount();
+    const rejected = expect(pending).rejects.toMatchObject({ reason: "authorization_changed" });
+    resolve(json({ user: { emailAddress: "previous-account@example.test", displayName: "Previous account" } }));
+    await rejected;
+    expect(writes()).toHaveLength(0);
+  });
+});
+
 describe("Google Drive custom background transport", () => {
   const firstImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII=";
   const secondImage = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'%3E%3C/svg%3E";
@@ -818,6 +874,7 @@ describe("Google Drive replica transport", () => {
     data.settings.sync = {
       ...data.settings.sync, cloudFileId: "foreign-replica", connectionId: "private-connection",
       accountEmail: "local@invalid.test", accountName: "Local account", accountAvatarUrl: "https://invalid.test/avatar.png",
+      accountInfoUpdatedAt: "2026-10-15T12:34:56.000Z",
       lastSyncedAt: ISO, lastSyncedLocalUpdatedAt: ISO, lastCloudUpdatedAt: ISO, reconnectRequired: true, deleteCloudFileOnDisconnect: false
     };
     data.restorePoints = [{
@@ -841,6 +898,7 @@ describe("Google Drive replica transport", () => {
     expect(sent.data.settings.sync).toEqual({ ...DEFAULT_SETTINGS.sync, deviceId: "my-device", deleteCloudFileOnDisconnect: false });
     expect(JSON.stringify(sent)).not.toContain("private-connection");
     expect(JSON.stringify(sent)).not.toContain("local@invalid.test");
+    expect(JSON.stringify(sent)).not.toContain("accountInfoUpdatedAt");
     expect(JSON.stringify(sent)).not.toContain("local-history");
     expect(data.restorePoints).toHaveLength(1);
   });

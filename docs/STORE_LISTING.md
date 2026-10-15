@@ -1,11 +1,11 @@
-# Store Listing Drafts — 2.1.1
+# Store Listing Drafts — 2.1.2
 
 > Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
 
 
 Use the separate Chrome Web Store and Firefox Add-ons fields below. Copy only the appropriate description into that store's English description field. The remaining sections are preparation notes, not extra description text. Do not append feature lists, a changelog, technical format lists, or reviewer notes to a public description.
 
-This copy reflects the current 2.1.1 source. It does not confirm a store upload, approval, or publication. Only the project owner publishes official releases; contributors can propose improvements to these materials.
+This copy reflects the current 2.1.2 source. It does not confirm a store upload, approval, or publication. Only the project owner publishes official releases; contributors can propose improvements to these materials.
 
 ## Extension Name
 
@@ -19,11 +19,11 @@ A private, local-first, customizable start page for your browser new tab.
 
 ### Detailed Description
 
-Aura Start turns your new tab into a personal start page for the links you use every day. Organize links into nested groups, add descriptions and tags, and find what you need with search.
+Aura Start turns your new tab into a personal start page for the links you use every day. Organize links into nested groups, add descriptions and tags, and find what you need with search. Reorder links and groups with clear drop previews, smoothly moving neighboring links, or keyboard controls. Movement respects reduced-motion preferences.
 
 Choose a theme or your own background image. Keep notes on the page and use the optional clock, Pomodoro timer, or Countdown widget. Countdown supports a custom alarm sound and adjustable volume; leave an Aura Start page open to hear the alarm. Audio files are prepared on your device, with a 20 MiB import limit and a playback clip of up to 60 seconds.
 
-Your data stays on your device by default, and no account is required. Google Drive sync is optional and off by default. Connect the same Google account on your devices to share links, settings, notes, your custom background, and the selected Countdown sound. Concurrent changes merge automatically, and pending offline edits are retried when a connection is available.
+Your data stays on your device by default, and no account is required. Google Drive sync is optional and off by default. Connect the same Google account on your devices to share links, settings, notes, your custom background, and the selected Countdown sound. Concurrent changes merge automatically, and pending offline edits are retried when a connection is available. The connected account is shown in Settings and the page header so you can check which account is in use.
 
 Create a full backup with your settings and custom media, or export your links for use elsewhere. Import previews and local restore points help you review and recover changes. You can also find duplicate links and save tabs from the current window after granting optional tab access.
 
@@ -39,13 +39,13 @@ A private, local-first start page for your Firefox homepage, new windows, and ne
 
 ### Description
 
-Aura Start turns your Firefox homepage, new windows, and new tabs into a personal start page for the links you use every day. Organize links into nested groups, add descriptions and tags, and find what you need with search.
+Aura Start turns your Firefox homepage, new windows, and new tabs into a personal start page for the links you use every day. Organize links into nested groups, add descriptions and tags, and find what you need with search. Reorder links and groups with clear drop previews, smoothly moving neighboring links, or keyboard controls. Movement respects reduced-motion preferences.
 
 Firefox may ask you to confirm the homepage change, which also applies to the Home button. You can change it in Firefox's Home settings. Your preference to restore previous windows and tabs stays unchanged.
 
 Choose a theme or your own background image. Keep notes on the page and use the optional clock, Pomodoro timer, or Countdown widget. Countdown supports a custom alarm sound and adjustable volume; leave an Aura Start page open to hear the alarm. Audio files are prepared on your device, with a 20 MiB import limit and a playback clip of up to 60 seconds.
 
-Your data stays on your device by default, and no account is required. Google Drive sync is optional and off by default. Connect the same Google account on your devices to share links, settings, notes, your custom background, and the selected Countdown sound. Concurrent changes merge automatically, and pending offline edits are retried when a connection is available.
+Your data stays on your device by default, and no account is required. Google Drive sync is optional and off by default. Connect the same Google account on your devices to share links, settings, notes, your custom background, and the selected Countdown sound. Concurrent changes merge automatically, and pending offline edits are retried when a connection is available. The connected account is shown in Settings and the page header so you can check which account is in use.
 
 Create a full backup with your settings and custom media, or export your links for use elsewhere. Import previews and local restore points help you review and recover changes. You can also find duplicate links and save tabs from the current window after granting optional tab access.
 
@@ -57,14 +57,18 @@ Requires Firefox 142 or newer.
 
 ## Privacy Disclosure Short Text
 
-Aura Start stores user-created groups, links, settings, widget state, background preferences, and restore timeline entries locally by default. It has no backend, no analytics, no tracking, no ads, and no required account. Optional Google Drive sync is user-initiated and accesses only Aura Start's shared sync file and its own legacy backups. The saved custom background image syncs through Google Drive when enabled, including replacement and removal. The selected custom audio is synchronized with its original file and a portable playback clip. Saved user preferences and Markdown notes also sync, including edits and clearing while the widget is hidden, the Save open tabs preference, and the delete-backup-on-disconnect preference. Restore Timeline, running timers, search/filter and onboarding/demo state, account credentials, and connection/sync mode stay local. Actual browser permission grants remain local; receiving Save open tabs never grants access. Existing local notes migrate with a recovery point before the old copy is cleared.
+Aura Start stores user-created groups, links, settings, widget state, background preferences, and restore timeline entries locally by default. It has no backend, no analytics, no tracking, no ads, and no required account. Optional Google Drive sync is user-initiated and accesses Aura Start's shared sync file, its own legacy backups, and the connected account's name/email for display. The saved custom background image syncs through Google Drive when enabled, including replacement and removal. The selected custom audio is synchronized with its original file and a portable playback clip. Saved user preferences and Markdown notes also sync, including edits and clearing while the widget is hidden, the Save open tabs preference, and the delete-backup-on-disconnect preference. Restore Timeline, running timers, search/filter and onboarding/demo state, account credentials, and connection/sync mode stay local. Actual browser permission grants remain local; receiving Save open tabs never grants access. Existing local notes migrate with a recovery point before the old copy is cleared.
+
+## Connected account display
+
+Aura Start reads the connected Drive account's name and email through the existing authorized Drive API, rather than the browser profile. Settings shows the name and email; the header prioritizes the email, including while a connection is paused. Existing connections retrieve these details automatically after updating when their current authorization works. Missing details retry quietly without starting a new consent flow or changing file-sync status. Verified details are refreshed periodically and retained locally during temporary failures. No avatar is fetched, and no browser permission or OAuth scope is added. This cache is excluded from the shared Drive file; manually exported JSON/ZIP settings can include account display metadata, but never OAuth tokens. Disconnect clears this installation's account display cache.
 
 ## Permission Justification
 
 - `storage`: saves user-created groups, links, settings, sync metadata, and restore points in local extension storage.
 - `identity`: declared by Chromium packages for explicitly requested Google authorization where the browser supports it. Firefox packages omit it and the Chromium `oauth2` manifest entry.
 - `alarms`: schedules remote sync checks while sync is enabled and the browser runs, including when Aura Start pages are closed.
-- `https://www.googleapis.com/*`: Google Drive API access after the user enables sync.
+- `https://www.googleapis.com/*`: Google Drive file operations and connected-account name/email lookup after the user enables sync.
 - `https://oauth2.googleapis.com/*`: Google OAuth authorization/token requests for supported browser fallback flows. These Google hosts do not grant access to arbitrary websites.
 - `optional_permissions.tabs`: requested at runtime only for Save open tabs so Aura Start can preview current-window tab titles and URLs before saving.
 - `https://www.googleapis.com/auth/drive.appdata`: retained by Chrome native authorization for legacy backup migration/deletion; Aura Start's current Device configuration requests only `drive.file`.
@@ -74,7 +78,7 @@ Aura Start intentionally does not request bookmarks, history, cookies, webReques
 
 Firefox 142 or later declares required data collection `["none"]` and optional `["browsingActivity", "technicalAndInteraction"]`. Aura Start requests the optional categories when the user connects Google Drive, separately from Google authorization and optional `tabs` access. These categories describe optional transfer to the user's Drive, including saved notes, backgrounds, and selected audio; they do not enable analytics or browser-history access.
 
-Both packages replace new tabs with the bundled `newtab.html`. Firefox 2.1.1 additionally declares that page as its homepage for new windows and the Home button. Firefox controls confirmation and user choice; session restore is unchanged. This adds no permission, remote navigation, or synchronized browser setting. Chromium builds do not override the homepage.
+Both packages replace new tabs with the bundled `newtab.html`. Firefox 2.1.1 and later additionally declare that page as its homepage for new windows and the Home button. Firefox controls confirmation and user choice; session restore is unchanged. This adds no permission, remote navigation, or synchronized browser setting. Chromium builds do not override the homepage.
 
 Confirmed Drive backup deletion pauses sync and permanently removes matching normal-Drive snapshots, including old, renamed app-marked and trashed copies, before verifying their absence and clearing this installation's credentials. Hidden legacy backups are included when already authorized; otherwise a persistent notice explains manual cleanup in the account used for deletion without claiming hidden data was deleted. Failed deletion retains a paused account for retry. Local links, preferences, notes, images, and audio remain intact; ordinary disconnect keeps cloud files. Disconnect stops this installation only, preserves other browsers' Google authorization, and cannot be undone by automatic recovery or a delayed sign-in response. Users can revoke access everywhere through Google Account connections.
 
@@ -97,7 +101,7 @@ The extension has no content scripts, no analytics, no tracking, no application 
 - Support URL: GitHub repository issues or repository URL
 - Website URL: `https://aurastart.pages.dev/`
 - Source code URL: `https://github.com/communism420/Aura-Start`
-- Store package: validate a fresh 2.1.1 Chrome store build with the production extension ID/OAuth configuration; local unpacked builds are not store submission packages. Follow `docs/RELEASE_CHECKLIST.md`.
-- Firefox package: use a separately validated Firefox 2.1.1 build, the established AMO add-on ID, and matching release Device OAuth configuration. Supply readable source and reproducible build instructions to AMO; do not submit a Chromium ZIP.
+- Store package: validate a fresh 2.1.2 Chrome store build with the production extension ID/OAuth configuration; local unpacked builds are not store submission packages. Follow `docs/RELEASE_CHECKLIST.md`.
+- Firefox package: use a separately validated Firefox 2.1.2 build, the established AMO add-on ID, and matching release Device OAuth configuration. Supply readable source and reproducible build instructions to AMO; do not submit a Chromium ZIP.
 - Private preparation materials: `Chrome Submit/`, `Firefox Submit/`, and root `STORE_SUBMISSION.md` stay local and are excluded from Git. They may contain artifact-specific verification notes; public source and documentation remain auditable in the repository.
 - Screenshots must come from the actual current interface. Run `npm run screenshots`; review its five shared 1280 × 800 screenshots and the Chrome-only 440 × 280 and 1400 × 560 promotional images. Historical image and archive names are not proof of the current release.

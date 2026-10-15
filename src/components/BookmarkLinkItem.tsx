@@ -75,6 +75,7 @@ export function BookmarkLinkItem({
             className="bookmark-drag-zone"
             {...dragAttributes}
             {...dragListeners}
+            aria-label={t(language, "dragLink", { title: link.title })}
           >
             <span
               aria-label={t(language, "dragLink", { title: link.title })}

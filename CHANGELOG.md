@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## Aura Start 2.1.2 — Drag And Drop And Connected Accounts
+
+Changes compared with 2.1.1. This describes the current source; store availability may differ.
+
+- Reworked link and group dragging with stable hit targets and an explicit insertion marker. The preview and saved order now use the same destination, avoiding jitter and incorrect placement when moving upward, downward, or between groups.
+- Links smoothly move aside to open a space matching the dragged row's height. Incoming links get room in the destination group, and reduced-motion preferences disable the animation.
+- Kept drag previews at the source width and preserved nested group contents. Nesting and top-level drop zones no longer shift the layout when a drag starts.
+- Added link drops into empty and collapsed groups, exact placement when moving groups between parents, and cancellation outside valid destinations.
+- Improved keyboard dragging and prevented group action buttons from starting a drag. Arrow keys select a position, Space/Enter drops, Escape cancels; Alt+Right nests a group into an eligible target and Alt+Left promotes a nested group to the top level.
+- Avoided redundant saves, sync requests and Restore Points when a drop leaves the order unchanged. Stale insertion anchors no longer cause an unintended append.
+- Prevented delayed saves and intermediate storage events from snapping a newer drag back to an earlier order; failed writes retain recovery through the last durable state.
+- Show the connected Google Drive account's name and email in Settings and prioritize its email in the header. Existing connections retrieve these details automatically after updating, using their current Drive authorization without extra permissions or a new sign-in prompt solely for the lookup. Account information is cached locally and excluded from shared synchronization.
+- Keep account information visible for retained paused connections, retry temporary lookup failures quietly, and ignore late responses after disconnect or a connection change. These lookups do not upload settings or start the sync animation; manual JSON/ZIP backups may include local account metadata, but never OAuth tokens.
+- Refreshed user and contributor guides, privacy disclosures, store materials, and the website for 2.1.2. Updated website screenshots and store promotional images from a real browser running the current interface.
+- Updated both browser extension versions to 2.1.2. No new extension permissions are required.
+
 ## Aura Start 2.1.1 — Firefox Home And New Windows
 
 - Added Aura Start as the Firefox homepage and new-window page, alongside the existing new-tab replacement. Firefox manages confirmation and the user's choice of homepage; restoring a previous browser session remains controlled by Firefox.

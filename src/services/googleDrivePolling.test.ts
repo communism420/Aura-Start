@@ -32,6 +32,8 @@ let beforeMedia: (() => void) | undefined;
 let beforeUpload: (() => void) | undefined;
 let afterUpload: (() => void) | undefined;
 let uploadMethods: string[];
+let accountResponse: { emailAddress: string; displayName: string } | undefined;
+let accountRequests: number;
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: { "Content-Type": "application/json" } });
@@ -85,6 +87,8 @@ beforeEach(async () => {
   failMedia = failUpload = rejectCacheWrite = rejectMainWrite = false;
   beforeList = beforeMedia = beforeUpload = afterUpload = undefined;
   uploadMethods = [];
+  accountResponse = undefined;
+  accountRequests = 0;
   vi.stubGlobal("navigator", { language: "en", languages: ["en"] });
   const data = createEmptyData();
   data.settings.sync = { ...data.settings.sync, deviceId: "local-device", connectionId: "connection-one",
@@ -109,6 +113,10 @@ beforeEach(async () => {
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
     const url = new URL(String(input));
     expect(url.origin).toBe("https://www.googleapis.com");
+    if (url.pathname === "/drive/v3/about") {
+      accountRequests++;
+      return accountResponse ? json({ user: accountResponse }) : json({}, 503);
+    }
     if (url.pathname === "/drive/v3/files") {
       lists++;
       expect(url.searchParams.get("fields")).toContain("version");
@@ -171,6 +179,30 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("metadata-only Google Drive polling", () => {
+  it("hydrates an upgraded account during an unchanged poll without uploading or changing sync timestamps", async () => {
+    const installed = current();
+    installed.settings.sync.accountEmail = "drive@example.test";
+    installed.settings.sync.accountInfoUpdatedAt = new Date().toISOString();
+    stored[STORAGE_KEY] = installed;
+    await prime();
+    const legacy = current();
+    delete legacy.settings.sync.accountInfoUpdatedAt;
+    stored[STORAGE_KEY] = legacy;
+    accountResponse = { emailAddress: "drive@example.test", displayName: "My Drive account" };
+    const counts = { downloads, uploads, mainWrites };
+    await quietPoll();
+    const hydrated = current();
+    expect(hydrated.settings.sync).toMatchObject({ ...legacy.settings.sync, accountName: "My Drive account" });
+    expect(hydrated.settings.sync.accountInfoUpdatedAt).toBeTruthy();
+    expect(hydrated.updatedAt).toBe(legacy.updatedAt);
+    expect(hydrated.groups).toEqual(legacy.groups);
+    expect(hydrated.syncReplica).toEqual(legacy.syncReplica);
+    expect({ downloads, uploads, mainWrites }).toEqual({ ...counts, mainWrites: counts.mainWrites + 1 });
+    await quietPoll();
+    expect(accountRequests).toBe(1);
+    expect({ downloads, uploads, mainWrites }).toEqual({ ...counts, mainWrites: counts.mainWrites + 1 });
+  });
+
   it("performs no network work for a clean local-change request", async () => {
     const clean = current();
     clean.settings.sync.lastSyncedLocalUpdatedAt = clean.updatedAt;

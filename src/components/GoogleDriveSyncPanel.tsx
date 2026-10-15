@@ -1,4 +1,4 @@
-import { AlertTriangle, Cloud, LogOut, RefreshCw, Trash2, X } from "lucide-react";
+import { AlertTriangle, Cloud, LogOut, RefreshCw, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import type {
@@ -48,13 +48,19 @@ export function GoogleDriveSyncPanel({
   const confirming = useRef(false);
   const language = data.settings.language;
   const sync = data.settings.sync;
-  const connection = JSON.stringify([sync.deviceId, sync.connectionId, sync.connected, sync.accountEmail]);
+  // Account details can arrive after connecting or upgrading. Only an actual
+  // connection change should dismiss a pending disconnect/delete confirmation.
+  const connection = JSON.stringify([sync.deviceId, sync.connectionId, sync.connected]);
   const pendingAction = pendingConfirm?.connection === connection ? pendingConfirm.action : null;
   useEffect(() => { setPendingConfirm(null); }, [connection]);
   const openConfirm = (action: ConfirmAction) => setPendingConfirm({ action, connection });
   const busy = isBusy(syncStatus);
   const reconnectRequired = syncStatus === "reconnect_required";
   const hasGoogleConnection = Boolean(sync.connected);
+  // Older releases could cache the browser-profile account instead of Drive's.
+  // Show identity only after it has been checked with this connection's token.
+  const accountName = sync.accountInfoUpdatedAt ? sync.accountName?.trim() : undefined;
+  const accountEmail = sync.accountInfoUpdatedAt ? sync.accountEmail?.trim() : undefined;
   const connected = sync.mode !== "off" && hasGoogleConnection;
   const canManageConnection = hasGoogleConnection && !busy;
   const displayMessage = hasGoogleConnection && syncMessage ? syncMessage : (sync.mode === "off"
@@ -112,11 +118,26 @@ export function GoogleDriveSyncPanel({
         <li>{t(language, "googleDriveManualExportStillWorks")}</li>
       </ul>
 
+      {hasGoogleConnection ? (
+        <section
+          aria-label={t(language, "googleDriveConnectedAccount")}
+          className="mt-4 flex items-start gap-3 rounded-lg border border-[var(--border)] p-3 text-sm"
+        >
+          <UserRound aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--accent)]" size={20} />
+          <div className="min-w-0">
+            <h4 className="font-semibold">{t(language, "googleDriveConnectedAccount")}</h4>
+            {accountName ? <div className="mt-1 [overflow-wrap:anywhere]" dir="auto">{accountName}</div> : null}
+            {accountEmail ? (
+              <div className="muted mt-1 break-all" dir="ltr">{accountEmail}</div>
+            ) : (
+              <p className="muted mt-1 leading-6">{t(language, "googleDriveAccountDetailsPending")}</p>
+            )}
+          </div>
+        </section>
+      ) : null}
+
       <div className="mt-4 rounded-lg border border-[var(--border)] p-3 text-sm">
         <div className="font-semibold">{displayMessage}</div>
-        {sync.accountEmail || sync.accountName ? (
-          <div className="muted mt-1">{sync.accountName ?? sync.accountEmail}</div>
-        ) : null}
         {hasGoogleConnection && sync.lastSyncedAt ? (
           <div className="muted mt-1">{t(language, "googleDriveLastSynced", { time: formatDateTime(sync.lastSyncedAt) })}</div>
         ) : null}

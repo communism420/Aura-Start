@@ -1,6 +1,6 @@
 # Aura Start vs A Fine Start
 
-Current Aura Start version: **2.1.1**. Public A Fine Start references checked on **2026-10-04**.
+Current Aura Start version: **2.1.2**. Public A Fine Start references checked on **2026-10-15**.
 
 Aura Start is an independent, open-source, local-first start page focused on grouped links, data ownership, and optional Google Drive synchronization. It is not affiliated with A Fine Start.
 
@@ -17,13 +17,13 @@ Aura Start is an independent, open-source, local-first start page focused on gro
 
 The A Fine Start column describes public features only. An unverified feature is not a claim that it is absent.
 
-| Area | Aura Start 2.1.1 | A Fine Start |
+| Area | Aura Start 2.1.2 | A Fine Start |
 | --- | --- | --- |
 | Local use | No account required; data is stored in the browser | Free local use; no account required |
 | Source | MIT-licensed source in this repository | Source availability not assessed here |
 | Platforms | Chrome/Chromium and Firefox extension builds | Official site links Chrome, Firefox, Edge, and Web |
-| Start-page integration | New tabs in supported builds; Firefox 142+ also declares the homepage for new windows and the Home button, under Firefox's user controls | New-tab and web start-page use are described publicly; exact homepage integration is not assessed here |
-| Organization | Groups nested up to two levels; descriptions, tags, drag-and-drop ordering | Grouped links with sorting and drag-and-drop |
+| Start-page integration | New tabs in supported builds; Firefox 142+ also declares the homepage for new windows and the Home button, under Firefox's user controls | New-tab and web start page; official help describes manually setting the Firefox homepage URL |
+| Organization | Groups nested up to two levels; descriptions, tags, precise drag-and-drop with animated insertion space, keyboard controls, and reduced-motion support | Grouped links with sorting and drag-and-drop |
 | Search | Fuzzy search, supported query modifiers, and keyboard navigation | Search pane and keyboard navigation |
 | Capturing tabs | Optional current-window preview and save flow with runtime tabs permission | Quick-add from the current page |
 | Export and migration | Full Backup ZIP; Settings and links only JSON; Browser Bookmarks HTML, Markdown, CSV, and A Fine Start-compatible codes | Import/export codes; help states that browser-bookmark-format export is unavailable |
@@ -44,11 +44,13 @@ Accessible older copies are merged before conditional cleanup. Simultaneous firs
 
 The implementation is independent of A Fine Start. Similar goals do not establish identical internals or equal reliability. See [installed-extension test evidence](INSTALLED_EXTENSION_TEST_MATRIX.md) for the conditions actually tested; controlled Google HTTP simulations are distinguished from real-account checks.
 
+Aura Start 2.1.2 shows the connected Drive account's name and email in Settings and its email in the header, including for a retained paused connection. Existing connections retrieve these details quietly with their current Drive authorization. This optional lookup is separate from file sync and does not upload settings or animate the sync indicator. Account details are excluded from the shared Drive document; manual JSON/ZIP backups may contain local account metadata, but never OAuth tokens.
+
 ## Data ownership and permissions
 
 Full Backup ZIP contains JSON data and referenced custom background images, plus only the currently selected original Countdown audio file. The built-in alarm, obsolete custom sounds, and a separate generated playback copy are not exported. Settings and links only JSON still includes notes and restore history, but omits image/audio bytes. Manual backups work without Google Drive.
 
-Drive synchronization includes saved preferences, notes, the custom background, and the selected audio together with its portable playback clip. Restore history, running timers, account credentials, connection mode, and browser permission grants remain local. New settings are added without resetting existing preferences. Aura Start has no application backend, analytics, tracking, ads, or required account; optional sync sends the selected data to Google.
+Drive synchronization includes saved preferences, notes, the custom background, and the selected audio together with its portable playback clip. Restore history, running timers, account identity and credentials, connection mode, and browser permission grants remain local. New settings are added without resetting existing preferences. Aura Start has no application backend, analytics, tracking, ads, or required account; optional sync sends the selected data to Google.
 
 Chrome builds use `storage`, `identity`, and `alarms`; Firefox builds omit `identity`. Both declare only Google API/OAuth hosts and optional runtime `tabs` for Save open tabs. Firefox declares optional data-transmission categories and requests consent during interactive Drive connection; Firefox may show a separate prompt. No full Drive access, browser history, cookies, content scripts, or remote runtime code is requested. See [Privacy Policy](https://aurastart.pages.dev/privacy-policy.html) for the complete disclosure.
 

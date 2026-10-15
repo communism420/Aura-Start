@@ -1,5 +1,6 @@
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { useDroppable } from "@dnd-kit/core";
+import { SortableContext } from "@dnd-kit/sortable";
+import { useDndContext, useDroppable } from "@dnd-kit/core";
+import { useLayoutEffect } from "react";
 import { ChevronDown, ChevronRight, FolderPlus, GripVertical, LinkIcon, Pencil, Trash2 } from "lucide-react";
 import { t } from "../i18n";
 import type { AuraStartGroup, AuraStartLink, AuraStartSettings } from "../types";
@@ -7,12 +8,18 @@ import { searchResultId, type SearchHighlightMap } from "../utils/search";
 import { BookmarkLinkItem } from "./BookmarkLinkItem";
 import { HighlightedText } from "./HighlightedText";
 import { SortableLinkItem } from "./SortableLinkItem";
+import type { DropPlacement } from "../utils/dragPlacement";
+import { projectLinkDragPreview } from "../utils/linkDragPreview";
+
+const stationarySortingStrategy = () => null;
 
 type BookmarkGroupCardProps = {
   group: AuraStartGroup;
   settings: AuraStartSettings;
   searchMode: boolean;
   editMode: boolean;
+  overlay?: boolean;
+  placement?: DropPlacement | null;
   activeGroupId?: string | null;
   activeLinkId?: string | null;
   canAcceptChildGroups?: boolean;
@@ -21,6 +28,7 @@ type BookmarkGroupCardProps = {
   searchHighlights?: SearchHighlightMap;
   selectedSearchResultId?: string | null;
   sortable?: {
+    setActivatorNodeRef: (node: HTMLElement | null) => void;
     attributes: React.HTMLAttributes<HTMLElement>;
     listeners: React.HTMLAttributes<HTMLElement> | undefined;
     isDragging: boolean;
@@ -40,6 +48,8 @@ export function BookmarkGroupCard({
   settings,
   searchMode,
   editMode,
+  overlay = false,
+  placement,
   activeGroupId,
   activeLinkId,
   canAcceptChildGroups = false,
@@ -57,17 +67,34 @@ export function BookmarkGroupCard({
   onDeleteLink
 }: BookmarkGroupCardProps) {
   const droppable = useDroppable({
-    id: `group-drop:${group.id}`,
-    data: { type: "group-drop", groupId: group.id },
-    disabled: searchMode || !editMode
+    id: `${overlay ? "overlay-" : ""}group-drop:${group.id}`,
+    data: { type: "group-drop", groupId: group.id, collapsed: group.collapsed, empty: group.links.length === 0 },
+    disabled: overlay || searchMode || !editMode || Boolean(activeGroupId)
   });
   const childDroppable = useDroppable({
-    id: `group-child-drop:${group.id}`,
+    id: `${overlay ? "overlay-" : ""}group-child-drop:${group.id}`,
     data: { type: "group-child-drop", groupId: group.id },
-    disabled: searchMode || !editMode || !canAcceptChildGroups
+    disabled: overlay || searchMode || !editMode || !canAcceptChildGroups
   });
   const collapsed = group.collapsed && !searchMode;
   const sortedLinks = group.links.slice().sort((a, b) => a.order - b.order);
+  const { active, droppableRects, measureDroppableContainers } = useDndContext();
+  const previewRows = sortedLinks.flatMap((link) => {
+    const rect = droppableRects.get(`link:${link.id}`);
+    return rect ? [{ id: link.id, top: rect.top, height: rect.height }] : [];
+  });
+  const firstTop = previewRows[0]?.top ?? 0;
+  const preview = !overlay && !collapsed && activeLinkId && placement?.kind === "link"
+    && placement.containerId === group.id && previewRows.length === sortedLinks.length && previewRows.length > 0
+    ? projectLinkDragPreview(previewRows.map((row) => ({ ...row, top: row.top - firstTop })),
+      activeLinkId, active?.rect.current.initial?.height ?? 0, placement.beforeId)
+    : null;
+  const extraHeight = preview?.extraHeight ?? 0;
+  // The end spacer makes room for incoming links and moves following groups.
+  // Remeasure their real layout once; inner-row transforms never affect hits.
+  useLayoutEffect(() => {
+    if (activeLinkId) measureDroppableContainers([]);
+  }, [activeLinkId, extraHeight, measureDroppableContainers]);
   const language = settings.language;
   const stopDragActivation = (event: React.PointerEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -75,6 +102,8 @@ export function BookmarkGroupCard({
   const content = (
     <section
       className={`bookmark-group ${editMode ? "bookmark-group-editing" : ""} ${sortable?.isDragging || sortable?.isDropPending ? "group-placeholder" : ""}`}
+      ref={droppable.setNodeRef}
+      data-drop-edge={placement?.kind === "link" && placement.markerId === `group-drop:${group.id}` ? "inside" : undefined}
     >
       {editMode && sortable?.listeners ? (
         <div
@@ -85,11 +114,13 @@ export function BookmarkGroupCard({
       ) : null}
       <div
         className="group-name-row"
-        {...(editMode ? sortable?.attributes ?? {} : {})}
-        {...(editMode ? sortable?.listeners ?? {} : {})}
+        onPointerDown={editMode ? sortable?.listeners?.onPointerDown : undefined}
       >
         {editMode ? (
           <button
+            {...sortable?.attributes}
+            {...sortable?.listeners}
+            ref={sortable?.setActivatorNodeRef}
             aria-label={t(language, "dragGroup", { title: group.title })}
             className="group-handle"
             type="button"
@@ -159,9 +190,9 @@ export function BookmarkGroupCard({
         ) : null}
       </div>
       {!collapsed ? (
-        <div className="bookmark-list" ref={droppable.setNodeRef}>
+        <div className="bookmark-list">
           {sortedLinks.length ? (
-            searchMode ? (
+            searchMode || overlay ? (
               <div>
                 {sortedLinks.map((link) => (
                   <BookmarkLinkItem
@@ -179,10 +210,13 @@ export function BookmarkGroupCard({
                 ))}
               </div>
             ) : (
-              <SortableContext items={sortedLinks.map((link) => `link:${link.id}`)} strategy={verticalListSortingStrategy}>
-                <div>
+              <SortableContext items={sortedLinks.map((link) => `link:${link.id}`)} strategy={stationarySortingStrategy}>
+                <div className="bookmark-link-preview-list">
                   {sortedLinks.map((link) => (
                     <SortableLinkItem
+                      placement={placement}
+                      previewOffset={preview?.offsets[link.id] ?? 0}
+                      linkDragActive={Boolean(activeLinkId)}
                       isDropPending={activeLinkId === link.id}
                       disabled={searchMode || !editMode}
                       editMode={editMode}
@@ -197,6 +231,11 @@ export function BookmarkGroupCard({
                       onEdit={onEditLink}
                     />
                   ))}
+                  {preview ? (
+                    <div aria-hidden="true" className="link-insertion-gap"
+                      style={{ top: preview.gapTop, height: preview.gapHeight }} />
+                  ) : null}
+                  <div aria-hidden="true" className="link-insertion-space" style={{ height: extraHeight }} />
                 </div>
               </SortableContext>
             )
@@ -214,10 +253,12 @@ export function BookmarkGroupCard({
       {canAcceptChildGroups && activeGroupId ? (
         <div
           aria-label={t(language, "dropGroupInside", { title: group.title })}
+          title={t(language, "dropGroupInside", { title: group.title })}
           className={`group-child-drop-zone ${childDroppable.isOver ? "group-drop-zone-active" : ""}`}
           ref={childDroppable.setNodeRef}
           role="button"
         >
+          <FolderPlus aria-hidden="true" size={12} />
           <span className="sr-only">{t(language, "dropGroupInside", { title: group.title })}</span>
         </div>
       ) : null}

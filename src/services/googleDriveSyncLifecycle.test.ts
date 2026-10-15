@@ -76,6 +76,69 @@ describe("Google Drive page lifecycle", () => {
     expect(mocks.request).not.toHaveBeenCalled();
   });
 
+  it("refreshes account display on a visible paused page without requesting file synchronization", async () => {
+    const refreshAccount = vi.fn(async () => undefined);
+    cleanup = installGoogleDriveSyncPageLifecycle({
+      canSync: () => false, canPollRemote: () => false, refreshAccount, onDataChanged: vi.fn()
+    });
+    pageWindow.dispatchEvent(new Event("focus"));
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(refreshAccount).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(refreshAccount).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(refreshAccount).toHaveBeenCalledTimes(2);
+    expect(mocks.poll).not.toHaveBeenCalled();
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
+  it("suspends scheduled account refresh while hidden or offline and stops it on teardown", async () => {
+    const refreshAccount = vi.fn(async () => undefined);
+    cleanup = installGoogleDriveSyncPageLifecycle({
+      canSync: () => false, canPollRemote: () => false, refreshAccount, onDataChanged: vi.fn()
+    });
+    pageDocument.visibilityState = "hidden";
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(refreshAccount).not.toHaveBeenCalled();
+    pageDocument.visibilityState = "visible";
+    vi.stubGlobal("navigator", { onLine: false });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(refreshAccount).not.toHaveBeenCalled();
+    vi.stubGlobal("navigator", { onLine: true });
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(refreshAccount).toHaveBeenCalledTimes(1);
+    cleanup();
+    await vi.advanceTimersByTimeAsync(60_000);
+    pageWindow.dispatchEvent(new Event("online"));
+    expect(refreshAccount).toHaveBeenCalledTimes(1);
+    expect(mocks.poll).not.toHaveBeenCalled();
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
+  it("retries account hydration on returning online even when there are no eligible file changes", async () => {
+    const refreshAccount = vi.fn(async () => undefined);
+    cleanup = installGoogleDriveSyncPageLifecycle({
+      canSync: () => false, canPollRemote: () => false, refreshAccount, onDataChanged: vi.fn()
+    });
+    pageWindow.dispatchEvent(new Event("online"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(refreshAccount).toHaveBeenCalledTimes(1);
+    expect(mocks.poll).not.toHaveBeenCalled();
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
+  it("does not interrupt normal file polling after an optional account lookup failure", async () => {
+    const refreshAccount = vi.fn().mockRejectedValueOnce(new Error("Account endpoint temporarily unavailable"))
+      .mockResolvedValue(undefined);
+    cleanup = installGoogleDriveSyncPageLifecycle({
+      canSync: () => false, canPollRemote: () => true, refreshAccount, onDataChanged: vi.fn()
+    });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(refreshAccount).toHaveBeenCalledTimes(2);
+    expect(mocks.poll).toHaveBeenCalledTimes(2);
+    expect(mocks.request).not.toHaveBeenCalled();
+  });
+
   it("suspends fast checks while hidden, offline, or disconnected and does not poll immediately on return", async () => {
     let connected = true;
     cleanup = installGoogleDriveSyncPageLifecycle({ canSync: () => false, canPollRemote: () => connected, onDataChanged: vi.fn() });

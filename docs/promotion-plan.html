@@ -21,12 +21,12 @@
         </nav>
       </header>
       <main class="doc">
-<div class="kicker">Aura Start Docs · 2.1.1</div>
+<div class="kicker">Aura Start Docs · 2.1.2</div>
 <h1 id="aura-start-promotion-plan">Aura Start Promotion Plan</h1>
 <blockquote>
 <p>Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.</p>
 </blockquote>
-<p>This plan covers Aura Start 2.1.1 and was updated on 2026-10-04. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.</p>
+<p>This plan covers Aura Start 2.1.2 and was updated on 2026-10-15. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.</p>
 <h2 id="1-positioning">1. Positioning</h2>
 <p>Aura Start is a local-first, open-source, customizable start page for people who want nested grouped links, fast search, and exportable data without account lock-in.</p>
 <p>Core message:</p>
@@ -39,7 +39,9 @@
 <li>Optional Google Drive sync through one shared, visible <code>aura-start-sync.json</code> across Chrome, Firefox, and compatible Chromium browsers.</li>
 <li>Optional Save open tabs with an explicit runtime tabs permission prompt.</li>
 <li>Backgrounds, notes, and Countdown with custom audio, including optional sync of that media.</li>
-<li>Firefox 142+ homepage, new windows, and Home button support in 2.1.1, under Firefox's confirmation and user controls. Chromium continues to replace new tabs only.</li>
+<li>Firefox 142+ homepage, new windows, and Home button support since 2.1.1, under Firefox's confirmation and user controls. Chromium continues to replace new tabs only.</li>
+<li>Stable link/group reordering with smooth neighboring-link previews, keyboard controls, and reduced-motion support.</li>
+<li>The connected Drive account is visible in Settings and the header, including for existing connections after automatic lookup.</li>
 <li>MIT-licensed application source; third-party components retain their licenses.</li>
 </ul>
 <h2 id="2-target-users">2. Target Users</h2>
@@ -84,11 +86,11 @@
 <h2 id="6-reddit-forum-post-draft-power-user-workflow">6. Reddit / Forum Post Draft: Power-User Workflow</h2>
 <p>Title:</p>
 <blockquote>
-<p>Aura Start 2.1.1 brings your start page to Firefox home and new windows</p>
+<p>Aura Start 2.1.2 improves link reordering and shows your connected Drive account</p>
 </blockquote>
 <p>Body:</p>
 <blockquote>
-<p>Aura Start is a local-first browser start page for grouped links. Version 2.1.1 adds Firefox homepage and new-window support alongside new tabs, with Firefox's confirmation and homepage controls. The 2.1.0 release introduced shared Google Drive sync, Countdown with custom audio, full ZIP backups, and migration of new preferences without resetting existing settings. Those features remain available, together with nested groups, fuzzy search, Restore Timeline, Save open tabs, Command Palette, and Duplicate Finder.</p>
+<p>Aura Start is a local-first browser start page for grouped links. Version 2.1.2 improves link and group reordering with stable drop previews, smoothly moving neighboring links, keyboard controls, and reduced-motion support. It also shows the connected Google Drive account and automatically retrieves those details for existing connections, without new permissions. Firefox homepage support, optional shared Drive sync, Countdown, full backups, search, and local Restore Timeline remain available.</p>
 <p>It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.</p>
 </blockquote>
 <h2 id="7-github-release-text">7. GitHub Release Text</h2>
@@ -142,7 +144,8 @@
 <li>Installation problems</li>
 <li>Import from A Fine Start errors</li>
 <li>Export file correctness</li>
-<li>Nested group drag-and-drop issues</li>
+<li>Link and nested-group placement, smooth previews, keyboard dragging, cancellation, and reduced-motion behavior</li>
+<li>Drive account display after new connection and update, retry after offline use, and behavior after disconnect</li>
 <li>Fuzzy search relevance</li>
 <li>Save open tabs permission confusion</li>
 <li>Restore Timeline clarity</li>

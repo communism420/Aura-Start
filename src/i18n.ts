@@ -3,6 +3,7 @@ import { timerTranslations } from "./i18nTimer";
 import { notesTranslations } from "./i18nNotes";
 import { backupTranslations } from "./i18nBackup";
 import { driveDeletionTranslations } from "./i18nDriveDeletion";
+import { driveAccountTranslations } from "./i18nDriveAccount";
 import type { AuraLanguage } from "./types";
 
 export const languageOptions: Array<{ code: AuraLanguage; label: string }> = [
@@ -23,7 +24,8 @@ const en = {
   ...timerTranslations.en,
   ...notesTranslations.en,
   ...backupTranslations.en,
-    ...driveDeletionTranslations.en,
+  ...driveDeletionTranslations.en,
+  ...driveAccountTranslations.en,
   actionFailed: "Action failed",
   add: "Add",
   addGroup: "Add group",
@@ -160,7 +162,7 @@ const en = {
   googleDriveRestoreSuccess: "Google Drive data restored",
   googleDriveRestoreSuccessDescription: "A local restore point protects your data before cloud changes are applied.",
   googleDriveRestoring: "Restoring from Google Drive...",
-  googleDriveSyncDescription: "Keep your groups, links, and settings in sync across devices. Connect the same Google account on every device using Aura Start 2.1.1.",
+  googleDriveSyncDescription: "Keep your groups, links, and settings in sync across devices. Connect the same Google account on every device using Aura Start.",
   googleDriveSyncDisabled: "Sync disabled",
   googleDriveSyncFailed: "Google Drive sync failed",
   googleDriveSyncFileDeleted: "Google Drive backup deleted",
@@ -629,7 +631,7 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     googleDriveRestoreSuccess: "Данные Google Drive восстановлены",
     googleDriveRestoreSuccessDescription: "Перед применением изменений из облака локальные данные защищаются точкой восстановления.",
     googleDriveRestoring: "Восстановление из Google Drive...",
-    googleDriveSyncDescription: "Единые группы, ссылки и настройки на всех устройствах. Подключите один Google-аккаунт на каждом устройстве с Aura Start 2.1.1.",
+    googleDriveSyncDescription: "Единые группы, ссылки и настройки на всех устройствах. Подключите один Google-аккаунт на каждом устройстве с Aura Start.",
     googleDriveSyncDisabled: "Синхронизация выключена",
     googleDriveSyncFailed: "Синхронизация Google Drive не удалась",
     googleDriveSyncFileDeleted: "Копия Google Drive удалена",
@@ -990,7 +992,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.ru,
     ...notesTranslations.ru,
     ...backupTranslations.ru,
-    ...driveDeletionTranslations.ru
+    ...driveDeletionTranslations.ru,
+    ...driveAccountTranslations.ru
   },
   es: {
     ...en,
@@ -1167,7 +1170,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.es,
     ...notesTranslations.es,
     ...backupTranslations.es,
-    ...driveDeletionTranslations.es
+    ...driveDeletionTranslations.es,
+    ...driveAccountTranslations.es
   },
   de: {
     ...en,
@@ -1308,7 +1312,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.de,
     ...notesTranslations.de,
     ...backupTranslations.de,
-    ...driveDeletionTranslations.de
+    ...driveDeletionTranslations.de,
+    ...driveAccountTranslations.de
   },
   fr: {
     ...en,
@@ -1449,7 +1454,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.fr,
     ...notesTranslations.fr,
     ...backupTranslations.fr,
-    ...driveDeletionTranslations.fr
+    ...driveDeletionTranslations.fr,
+    ...driveAccountTranslations.fr
   },
   pt: {
     ...en,
@@ -1590,7 +1596,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.pt,
     ...notesTranslations.pt,
     ...backupTranslations.pt,
-    ...driveDeletionTranslations.pt
+    ...driveDeletionTranslations.pt,
+    ...driveAccountTranslations.pt
   },
   uk: {
     ...en,
@@ -1738,7 +1745,8 @@ const translations: Record<AuraLanguage, Record<I18nKey, string>> = {
     ...timerTranslations.uk,
     ...notesTranslations.uk,
     ...backupTranslations.uk,
-    ...driveDeletionTranslations.uk
+    ...driveDeletionTranslations.uk,
+    ...driveAccountTranslations.uk
   }
 };
 

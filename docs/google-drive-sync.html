@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta
       name="description"
-      content="Aura Start 2.1.1 Google Drive sync guide: shared groups and links across devices, automatic merging, background updates, migration, and local-first storage."
+      content="Aura Start 2.1.2 Google Drive sync guide: shared groups and links across devices, automatic merging, background updates, migration, and local-first storage."
     >
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="stylesheet" href="assets/site.css">
@@ -28,7 +28,7 @@
       </header>
 
       <main class="doc">
-        <span class="kicker">Aura Start 2.1.1 user guide</span>
+        <span class="kicker">Aura Start 2.1.2 user guide</span>
         <h1>Google Drive Sync</h1>
         <p>
           Google Drive sync is optional and off by default. Aura Start remains usable
@@ -38,7 +38,7 @@
 
         <h2>What sync stores</h2>
         <p>
-          Aura Start 2.1.1 shares groups, links, ordering, nesting, shared user preferences, Markdown notes,
+          Aura Start 2.1.2 shares groups, links, ordering, nesting, shared user preferences, Markdown notes,
           the saved custom background image, and the selected Countdown sound across installations connected to
           the same Google account. All updated installations read and update one shared
           <code>aura-start-sync.json</code> in normal Drive storage, marked with Aura Start
@@ -127,12 +127,35 @@
         <h2>Connection behavior</h2>
         <p>
           Connect the same Google account on every device and update all connected
-          installations to the latest 2.1.1 build. Connection and reconnection merge existing local data
+          installations to the latest build. Connection and reconnection merge existing local data
           with accessible cloud snapshots; an empty installation receives the existing
           cloud data. Aura Start protects local content with a restore point before
           applying cloud changes. If no snapshot exists, connection creates one from
           your local data. Onboarding's Restore from Google Drive action instead shows
           a clear no-backup error without changing local data.
+        </p>
+
+        <h2>Connected account</h2>
+        <p>
+          Settings shows the connected Google account's name and email; the header
+          shows its email, including when synchronization is paused. These details
+          come from Google Drive using the current connection, so a different browser
+          profile cannot supply the wrong account label. Existing connections retrieve
+          the details automatically after updating, without additional permissions or
+          a new sign-in prompt solely for this lookup. Until verified details are available,
+          Settings shows a neutral message instead of using the browser profile's identity.
+          A temporary failure keeps the connection intact and retries quietly. Cached
+          details can still be shown while sync is paused. Account details are cached locally
+          and excluded from the shared Drive file; manual JSON and ZIP backups can
+          include this metadata, but never authorization tokens.
+        </p>
+        <p>
+          This account lookup is separate from file synchronization. It reads only the
+          connected Drive account's display name and email using the existing authorization;
+          it does not fetch an avatar, upload content, create a restore point, or change the
+          last-sync timestamp. Cached details are refreshed periodically while Aura Start
+          is running. If Google has revoked the existing grant, use Reconnect Google Drive;
+          the account lookup does not bypass that requirement.
         </p>
 
         <h2>Automatic sync after connection</h2>
@@ -224,11 +247,16 @@
           retries cannot change these Google Cloud rules.
         </p>
 
-        <h2>Upgrading to 2.1.1</h2>
+        <h2>Upgrading to 2.1.2</h2>
         <p>
-          Update every connected device to the latest 2.1.1 build before using shared sync.
-          Earlier builds do not participate in the single-file protocol and can create
-          per-device copies again. Aura Start reads accessible older backups, including
+          Update connected installations to 2.1.2 to receive the current fixes and account
+          display. The shared-file protocol introduced in 2.1.0 is retained; updating from
+          2.1.0 or 2.1.1 does not itself require another sign-in or a new Drive file.
+          Existing valid connections retrieve their account details automatically.
+        </p>
+        <p>
+          Installations still using 2.0.5 or an older per-device sync scheme can create
+          separate copies again. Aura Start reads accessible older backups, including
           Chrome's hidden <code>appDataFolder</code>, and creates a new shared file ID during
           migration. It verifies the combined data and selected media in that file before
           conditionally removing covered older copies. A changed copy is merged again;
@@ -248,7 +276,7 @@
 
         <p>
           A custom background saved in 2.0.5 is migrated automatically before the first
-          2.1.1 sync, including a saved image that is not currently selected. Aura Start
+          sync with the current version, including a saved image that is not currently selected. Aura Start
           keeps the original image until migration is durably saved. Older cloud
           snapshots without image data are not treated as a request to remove it, so
           you do not need to upload the image again. If migration cannot finish,

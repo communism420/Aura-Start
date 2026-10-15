@@ -70,6 +70,8 @@ Upload the PNG images in this order:
 | `04-custom-timer-sound-1280x800.png` | Countdown settings with a sample WAV imported through the real file input. |
 | `05-google-drive-sync-1280x800.png` | The actual Google Drive settings while disconnected. |
 
+The current 2.1.2 interface also includes smooth link-placement previews, keyboard dragging, reduced-motion support, and verified connected-account details. The five static scenes do not demonstrate movement, and the Drive scene deliberately stays disconnected: it does not show or validate a Google account. Describe those features in the accompanying guides; never paste a name/email or drawn drag state into a capture.
+
 The screenshot ZIP is a convenient bundle of the five interface images, not an extension release package. Store screenshot fields expect the individual PNG files.
 
 The Chrome run directory additionally contains:
@@ -98,7 +100,7 @@ Run `npm run test:screenshots` for the capture helper's regression checks, inclu
 
 ## Public Website And Older Artwork
 
-This command does not refresh the website gallery automatically. The current public images in `docs/assets/screenshots/` with `*-2-1-1-20261004.png` filenames are reviewed copies from the 2.1.1 run `20261004T030628Z-10391764`, captured on October 4, 2026 in Chrome 154. The [asset inventory](assets/store/README.md) maps the store and public names, and a [public capture record](assets/screenshots/capture-2-1-1-20261004.json) records their hashes and build fingerprint.
+This command does not refresh the website gallery automatically. The current public images in `docs/assets/screenshots/` with `*-2-1-2-20261015.png` filenames are reviewed copies from the 2.1.2 run `20261015T101432Z-175107ab`, captured on October 15, 2026 in Chrome 155. The [asset inventory](assets/store/README.md) maps the store and public names, and a [public capture record](assets/screenshots/capture-2-1-2-20261015.json) records their hashes and build fingerprint.
 
 When updating the website, copy the reviewed original PNGs without redrawing or changing their contents. Use new versioned filenames, update the home-page images and gallery captions to match the actual scenes, and refresh the public capture record. Keep local paths, credentials, and personal data out of that record.
 

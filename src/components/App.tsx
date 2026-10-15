@@ -95,7 +95,6 @@ export function App({ initialSettingsOpen = false }: AppProps) {
     updateLink,
     deleteLink,
     deleteLinksWithRestorePoint,
-    reorderGroups,
     moveLink,
     addDemoData,
     removeDemoData,
@@ -796,14 +795,9 @@ export function App({ initialSettingsOpen = false }: AppProps) {
                   showError(caught instanceof Error ? caught.message : t(language, "couldNotMoveLink"))
                 );
               }}
-              onMoveGroup={(groupId, parentId) => {
-                return moveGroup(groupId, parentId).catch((caught: unknown) =>
+              onMoveGroup={(groupId, parentId, beforeGroupId) => {
+                return moveGroup(groupId, parentId, beforeGroupId).catch((caught: unknown) =>
                   showError(caught instanceof Error ? caught.message : t(language, "couldNotMoveGroup"))
-                );
-              }}
-              onReorderGroups={(orderedGroupIds, parentId) => {
-                return reorderGroups(orderedGroupIds, parentId).catch((caught: unknown) =>
-                  showError(caught instanceof Error ? caught.message : t(language, "couldNotReorderGroups"))
                 );
               }}
               onToggle={(groupId) => {

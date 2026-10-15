@@ -93,6 +93,7 @@ function normalizeSyncSettings(value: unknown): AuraSyncSettings {
     accountEmail: optionalTrimmedString(sync.accountEmail),
     accountName: optionalTrimmedString(sync.accountName),
     accountAvatarUrl: optionalTrimmedString(sync.accountAvatarUrl),
+    accountInfoUpdatedAt: normalizeOptionalIso(sync.accountInfoUpdatedAt),
     cloudFileId: optionalTrimmedString(sync.cloudFileId),
     // Pausing network activity is independent of retaining the account for a
     // deletion retry or an explicit reconnect after a cloud copy was removed.

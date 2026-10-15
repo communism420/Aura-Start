@@ -3,7 +3,7 @@
 > Maintainer-only document. This file is for project release preparation and is not needed for normal Aura Start users.
 
 
-This plan covers Aura Start 2.1.1 and was updated on 2026-10-04. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.
+This plan covers Aura Start 2.1.2 and was updated on 2026-10-15. It supports release communication without spam, fake reviews, or unsupported competitor claims. Verify live store links before publication.
 
 ## 1. Positioning
 
@@ -19,7 +19,9 @@ Core message:
 - Optional Google Drive sync through one shared, visible `aura-start-sync.json` across Chrome, Firefox, and compatible Chromium browsers.
 - Optional Save open tabs with an explicit runtime tabs permission prompt.
 - Backgrounds, notes, and Countdown with custom audio, including optional sync of that media.
-- Firefox 142+ homepage, new windows, and Home button support in 2.1.1, under Firefox's confirmation and user controls. Chromium continues to replace new tabs only.
+- Firefox 142+ homepage, new windows, and Home button support since 2.1.1, under Firefox's confirmation and user controls. Chromium continues to replace new tabs only.
+- Stable link/group reordering with smooth neighboring-link previews, keyboard controls, and reduced-motion support.
+- The connected Drive account is visible in Settings and the header, including for existing connections after automatic lookup.
 - MIT-licensed application source; third-party components retain their licenses.
 
 ## 2. Target Users
@@ -70,11 +72,11 @@ Body:
 
 Title:
 
-> Aura Start 2.1.1 brings your start page to Firefox home and new windows
+> Aura Start 2.1.2 improves link reordering and shows your connected Drive account
 
 Body:
 
-> Aura Start is a local-first browser start page for grouped links. Version 2.1.1 adds Firefox homepage and new-window support alongside new tabs, with Firefox's confirmation and homepage controls. The 2.1.0 release introduced shared Google Drive sync, Countdown with custom audio, full ZIP backups, and migration of new preferences without resetting existing settings. Those features remain available, together with nested groups, fuzzy search, Restore Timeline, Save open tabs, Command Palette, and Duplicate Finder.
+> Aura Start is a local-first browser start page for grouped links. Version 2.1.2 improves link and group reordering with stable drop previews, smoothly moving neighboring links, keyboard controls, and reduced-motion support. It also shows the connected Google Drive account and automatically retrieves those details for existing connections, without new permissions. Firefox homepage support, optional shared Drive sync, Countdown, full backups, search, and local Restore Timeline remain available.
 >
 > It has no required account, no analytics, no tracking, and no backend. I am looking for honest feedback from people who keep many saved links on their start page.
 
@@ -133,7 +135,8 @@ Focus on:
 - Installation problems
 - Import from A Fine Start errors
 - Export file correctness
-- Nested group drag-and-drop issues
+- Link and nested-group placement, smooth previews, keyboard dragging, cancellation, and reduced-motion behavior
+- Drive account display after new connection and update, retry after offline use, and behavior after disconnect
 - Fuzzy search relevance
 - Save open tabs permission confusion
 - Restore Timeline clarity

@@ -21,9 +21,9 @@
         </nav>
       </header>
       <main class="doc">
-<div class="kicker">Aura Start Docs · 2.1.1</div>
+<div class="kicker">Aura Start Docs · 2.1.2</div>
 <h1 id="aura-start-vs-a-fine-start">Aura Start vs A Fine Start</h1>
-<p>Current Aura Start version: <strong>2.1.1</strong>. Public A Fine Start references checked on <strong>2026-10-04</strong>.</p>
+<p>Current Aura Start version: <strong>2.1.2</strong>. Public A Fine Start references checked on <strong>2026-10-15</strong>.</p>
 <p>Aura Start is an independent, open-source, local-first start page focused on grouped links, data ownership, and optional Google Drive synchronization. It is not affiliated with A Fine Start.</p>
 <h2 id="when-aura-start-may-fit-your-workflow">When Aura Start may fit your workflow</h2>
 <ul>
@@ -40,7 +40,7 @@
 <thead>
 <tr>
 <th>Area</th>
-<th>Aura Start 2.1.1</th>
+<th>Aura Start 2.1.2</th>
 <th>A Fine Start</th>
 </tr>
 </thead>
@@ -63,11 +63,11 @@
 <tr>
 <td>Start-page integration</td>
 <td>New tabs in supported builds; Firefox 142+ also declares the homepage for new windows and the Home button, under Firefox's user controls</td>
-<td>New-tab and web start-page use are described publicly; exact homepage integration is not assessed here</td>
+<td>New-tab and web start page; official help describes manually setting the Firefox homepage URL</td>
 </tr>
 <tr>
 <td>Organization</td>
-<td>Groups nested up to two levels; descriptions, tags, drag-and-drop ordering</td>
+<td>Groups nested up to two levels; descriptions, tags, precise drag-and-drop with animated insertion space, keyboard controls, and reduced-motion support</td>
 <td>Grouped links with sorting and drag-and-drop</td>
 </tr>
 <tr>
@@ -113,9 +113,10 @@
 <p>While Aura Start is visible and online, remote checks normally run about every five seconds. With pages hidden or closed, background checks run about once a minute while the browser is running. Browser scheduling, offline periods, Google responses, and retry backoff can increase delivery time. Opening an unchanged page does not itself upload data or show a sync animation. Polling without changes does not rewrite the shared file.</p>
 <p>Accessible older copies are merged before conditional cleanup. Simultaneous first connections can briefly create duplicates before consolidation. Chrome's native authorization also retains <code>drive.appdata</code> for accessible legacy hidden backups; Aura Start's current Device authorization in Firefox/Helium requests <code>drive.file</code> only and cannot read those hidden copies with that grant. New shared data is stored in ordinary Drive in every browser.</p>
 <p>The implementation is independent of A Fine Start. Similar goals do not establish identical internals or equal reliability. See <a href="https://github.com/communism420/Aura-Start/blob/main/docs/INSTALLED_EXTENSION_TEST_MATRIX.md">installed-extension test evidence</a> for the conditions actually tested; controlled Google HTTP simulations are distinguished from real-account checks.</p>
+<p>Aura Start 2.1.2 shows the connected Drive account's name and email in Settings and its email in the header, including for a retained paused connection. Existing connections retrieve these details quietly with their current Drive authorization. This optional lookup is separate from file sync and does not upload settings or animate the sync indicator. Account details are excluded from the shared Drive document; manual JSON/ZIP backups may contain local account metadata, but never OAuth tokens.</p>
 <h2 id="data-ownership-and-permissions">Data ownership and permissions</h2>
 <p>Full Backup ZIP contains JSON data and referenced custom background images, plus only the currently selected original Countdown audio file. The built-in alarm, obsolete custom sounds, and a separate generated playback copy are not exported. Settings and links only JSON still includes notes and restore history, but omits image/audio bytes. Manual backups work without Google Drive.</p>
-<p>Drive synchronization includes saved preferences, notes, the custom background, and the selected audio together with its portable playback clip. Restore history, running timers, account credentials, connection mode, and browser permission grants remain local. New settings are added without resetting existing preferences. Aura Start has no application backend, analytics, tracking, ads, or required account; optional sync sends the selected data to Google.</p>
+<p>Drive synchronization includes saved preferences, notes, the custom background, and the selected audio together with its portable playback clip. Restore history, running timers, account identity and credentials, connection mode, and browser permission grants remain local. New settings are added without resetting existing preferences. Aura Start has no application backend, analytics, tracking, ads, or required account; optional sync sends the selected data to Google.</p>
 <p>Chrome builds use <code>storage</code>, <code>identity</code>, and <code>alarms</code>; Firefox builds omit <code>identity</code>. Both declare only Google API/OAuth hosts and optional runtime <code>tabs</code> for Save open tabs. Firefox declares optional data-transmission categories and requests consent during interactive Drive connection; Firefox may show a separate prompt. No full Drive access, browser history, cookies, content scripts, or remote runtime code is requested. See <a href="https://aurastart.pages.dev/privacy-policy.html">Privacy Policy</a> for the complete disclosure.</p>
 <p>Disconnect without cloud deletion affects this installation and keeps the cloud file. The delete-on-disconnect preference is on by default and requires a separate confirmation. Confirmed cloud deletion pauses synchronization, deletes and verifies accessible Aura Start copies, and then disconnects locally. Failures retain a paused account for retry; inaccessible hidden legacy data is reported rather than claimed as deleted. Local data remains intact. Disconnect other installations before cloud deletion to avoid older installations recreating a copy.</p>
 <h2 id="migration">Migration</h2>
