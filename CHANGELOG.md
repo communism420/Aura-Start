@@ -4,7 +4,7 @@
 
 ## Aura Start 2.1.2 — Drag And Drop And Connected Accounts
 
-Changes compared with 2.1.1. This describes the current source; store availability may differ.
+Changes compared with 2.1.1. Released in the [Chrome Web Store](https://chromewebstore.google.com/detail/aura-start/pdhhhnmcampmmklkbbfbmniijmgjiabi) and [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/aura-start/). Availability in both stores was confirmed by the project maintainer on October 21, 2026.
 
 - Reworked link and group dragging with stable hit targets and an explicit insertion marker. The preview and saved order now use the same destination, avoiding jitter and incorrect placement when moving upward, downward, or between groups.
 - Links smoothly move aside to open a space matching the dragged row's height. Incoming links get room in the destination group, and reduced-motion preferences disable the animation.
